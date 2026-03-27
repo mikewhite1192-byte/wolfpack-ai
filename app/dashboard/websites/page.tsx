@@ -207,6 +207,15 @@ export default function WebsitesPage() {
                   >
                     {page.published ? "Unpublish" : "Publish"}
                   </button>
+                  <a
+                    href={`/s/${page.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="wp-btn wp-btn-sm wp-btn-ghost"
+                    style={{ textDecoration: "none", textAlign: "center" }}
+                  >
+                    Preview
+                  </a>
                   <button
                     className="wp-btn wp-btn-sm wp-btn-ghost"
                     onClick={() => setRevisionPage(page)}
