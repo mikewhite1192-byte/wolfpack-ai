@@ -16,6 +16,84 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+const DEMO_MSGS = [
+  { type: "in", text: "Hey I saw your ad about roof inspections. My roof has been leaking", delay: 0 },
+  { type: "out", text: "Hey Mike! That sounds stressful. How long has that been going on?", delay: 2000 },
+  { type: "in", text: "Probably 3-4 months now. Gets worse every storm", delay: 4500 },
+  { type: "out", text: "Wow 3-4 months... what have you tried so far to fix it?", delay: 6500 },
+  { type: "in", text: "Had a handyman put some tar on it but it didnt help", delay: 9000 },
+  { type: "out", text: "Yeah that usually doesn't hold up. How has the leak been affecting things inside?", delay: 11000 },
+  { type: "in", text: "My ceiling has a water stain thats getting bigger. Wife is worried about mold", delay: 13500 },
+  { type: "out", text: "That's a real concern. What would it mean for you if that was completely taken care of?", delay: 15500 },
+  { type: "in", text: "Honestly that would be a huge relief", delay: 18000 },
+  { type: "out", text: "We do free inspections. Would it make sense to set one up? I have Thursday at 10am or Friday at 2pm", delay: 20000 },
+  { type: "in", text: "Thursday at 10 works!", delay: 22500 },
+  { type: "out", text: "Perfect, you're all set! Calendar invite heading to your email right now", delay: 24000 },
+];
+
+function PhoneMockup() {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [showTyping, setShowTyping] = useState(false);
+
+  useEffect(() => {
+    if (visibleCount >= DEMO_MSGS.length) {
+      // Reset after a pause
+      const timer = setTimeout(() => {
+        setVisibleCount(0);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+
+    const nextMsg = DEMO_MSGS[visibleCount];
+    const prevDelay = visibleCount > 0 ? DEMO_MSGS[visibleCount - 1].delay : 0;
+    const wait = nextMsg.delay - prevDelay;
+
+    // Show typing indicator before AI messages
+    if (nextMsg.type === "out" && visibleCount > 0) {
+      const typingTimer = setTimeout(() => setShowTyping(true), wait - 1200);
+      const msgTimer = setTimeout(() => {
+        setShowTyping(false);
+        setVisibleCount(c => c + 1);
+      }, wait);
+      return () => { clearTimeout(typingTimer); clearTimeout(msgTimer); };
+    }
+
+    const timer = setTimeout(() => {
+      setVisibleCount(c => c + 1);
+    }, wait);
+    return () => clearTimeout(timer);
+  }, [visibleCount]);
+
+  const visible = DEMO_MSGS.slice(0, visibleCount);
+
+  return (
+    <div className="lp-phone">
+      <div className="lp-phone-notch" />
+      <div className="lp-phone-header">
+        <div className="lp-phone-name">Wolf Pack AI</div>
+        <div className="lp-phone-sub">AI Sales Agent</div>
+      </div>
+      <div className="lp-phone-msgs">
+        {visible.map((m, i) => {
+          const next = visible[i + 1];
+          const isTail = !next || next.type !== m.type;
+          return (
+            <div key={i} className={`lp-chat-row ${m.type === "in" ? "in" : "out"}${isTail ? " tail" : ""}`} style={{ animationDelay: "0s" }}>
+              <div className={`lp-chat-bubble ${m.type === "in" ? "in" : "out"}`}>{m.text}</div>
+              {isTail && <div className="lp-chat-time">{m.type === "out" ? "AI · " : ""}Just now</div>}
+            </div>
+          );
+        })}
+        {showTyping && (
+          <div className="lp-chat-row in" style={{ opacity: 1 }}>
+            <div className="lp-chat-typing"><span /><span /><span /></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <div style={{ background: "#0D1426", color: "#e8eaf0", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" }}>
@@ -30,18 +108,50 @@ export default function Home() {
 
         .lp-section { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
 
-        .lp-hero { text-align: center; padding: 100px 40px 80px; max-width: 800px; margin: 0 auto; }
-        .lp-hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 64px; line-height: 1.05; letter-spacing: 1px; margin: 0 0 20px; }
+        .lp-hero { display: flex; align-items: center; gap: 60px; padding: 80px 40px 60px; max-width: 1100px; margin: 0 auto; }
+        .lp-hero-left { flex: 1; }
+        .lp-hero-right { flex-shrink: 0; width: 320px; }
+        .lp-hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1.05; letter-spacing: 1px; margin: 0 0 20px; }
         .lp-hero h1 span { color: #E86A2A; }
-        .lp-hero p { font-size: 18px; color: #b0b4c8; line-height: 1.7; margin: 0 0 36px; max-width: 600px; margin-left: auto; margin-right: auto; }
-        .lp-hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .lp-hero p { font-size: 17px; color: #b0b4c8; line-height: 1.7; margin: 0 0 32px; }
+        .lp-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
         .lp-btn-primary { padding: 16px 36px; background: #E86A2A; color: #fff; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 700; }
         .lp-btn-primary:hover { background: #d45a1a; }
         .lp-btn-secondary { padding: 16px 36px; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #e8eaf0; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 600; }
         .lp-btn-secondary:hover { border-color: #E86A2A; color: #E86A2A; }
-        .lp-hero-stat { display: flex; gap: 48px; justify-content: center; margin-top: 60px; }
+        .lp-hero-stat { display: flex; gap: 40px; margin-top: 48px; }
         .lp-stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #E86A2A; }
         .lp-stat-label { font-size: 13px; color: #b0b4c8; margin-top: 4px; }
+
+        .lp-phone { width: 300px; background: #111827; border-radius: 28px; border: 2px solid rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+        .lp-phone-notch { width: 120px; height: 24px; background: #0D1426; border-radius: 0 0 14px 14px; margin: 0 auto; }
+        .lp-phone-header { padding: 12px 16px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .lp-phone-name { font-size: 14px; font-weight: 700; color: #e8eaf0; }
+        .lp-phone-sub { font-size: 10px; color: #b0b4c8; }
+        .lp-phone-msgs { padding: 14px 12px; min-height: 320px; display: flex; flex-direction: column; gap: 3px; justify-content: flex-end; }
+        .lp-chat-row { display: flex; flex-direction: column; margin-bottom: 2px; opacity: 0; animation: lp-msg-in 0.4s ease forwards; }
+        .lp-chat-row.in { align-items: flex-start; padding-right: 40px; }
+        .lp-chat-row.out { align-items: flex-end; padding-left: 40px; }
+        .lp-chat-row.tail { margin-bottom: 6px; }
+        .lp-chat-bubble { width: fit-content; max-width: 90%; padding: 8px 12px; font-size: 13px; line-height: 1.4; }
+        .lp-chat-bubble.in { background: #1E293B; color: #e8eaf0; border-radius: 16px 16px 16px 4px; }
+        .lp-chat-bubble.out { background: #E86A2A; color: #fff; border-radius: 16px 16px 4px 16px; }
+        .lp-chat-time { font-size: 9px; color: #666; margin-top: 2px; padding: 0 4px; }
+        .lp-chat-typing { display: flex; gap: 4px; padding: 10px 14px; background: #1E293B; border-radius: 16px 16px 16px 4px; width: fit-content; }
+        .lp-chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: #666; animation: lp-dot 1.2s ease-in-out infinite; }
+        .lp-chat-typing span:nth-child(2) { animation-delay: 0.15s; }
+        .lp-chat-typing span:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes lp-msg-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes lp-dot { 0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); } 30% { opacity: 1; transform: scale(1); } }
+
+        @media (max-width: 768px) {
+          .lp-hero { flex-direction: column; text-align: center; padding: 60px 24px 40px; gap: 40px; }
+          .lp-hero h1 { font-size: 40px; }
+          .lp-hero-btns { justify-content: center; }
+          .lp-hero-stat { justify-content: center; }
+          .lp-hero-right { width: 280px; }
+        }
 
         .lp-problem { padding: 80px 40px; text-align: center; max-width: 800px; margin: 0 auto; }
         .lp-problem h2 { font-family: 'Bebas Neue', sans-serif; font-size: 40px; margin: 0 0 20px; }
@@ -103,9 +213,7 @@ export default function Home() {
         .lp-footer { border-top: 1px solid rgba(255,255,255,0.07); padding: 32px 40px; text-align: center; font-size: 13px; color: #666; }
 
         @media (max-width: 768px) {
-          .lp-hero h1 { font-size: 40px; }
           .lp-features-grid { grid-template-columns: 1fr; }
-          .lp-hero-stat { flex-direction: column; gap: 24px; }
           .lp-nav-links { display: none; }
         }
       `}</style>
@@ -124,25 +232,30 @@ export default function Home() {
 
       {/* Hero */}
       <div className="lp-hero">
-        <h1>Your <span>AI Sales Agent</span> That Never Sleeps</h1>
-        <p>Texts your leads in seconds, qualifies them, handles objections, and books appointments. All on autopilot. While you focus on closing.</p>
-        <div className="lp-hero-btns">
-          <Link href="/demo" className="lp-btn-primary">See It In Action</Link>
-          <Link href="/book/default" className="lp-btn-secondary">Book a Demo</Link>
+        <div className="lp-hero-left">
+          <h1>Your <span>AI Sales Agent</span> That Never Sleeps</h1>
+          <p>Texts your leads in seconds, qualifies them, handles objections, and books appointments. All on autopilot. While you focus on closing.</p>
+          <div className="lp-hero-btns">
+            <Link href="/demo" className="lp-btn-primary">See It In Action</Link>
+            <Link href="/book/default" className="lp-btn-secondary">Book a Demo</Link>
+          </div>
+          <div className="lp-hero-stat">
+            <div>
+              <div className="lp-stat-num">3 SEC</div>
+              <div className="lp-stat-label">Average response time</div>
+            </div>
+            <div>
+              <div className="lp-stat-num">24/7</div>
+              <div className="lp-stat-label">Never misses a lead</div>
+            </div>
+            <div>
+              <div className="lp-stat-num">10X</div>
+              <div className="lp-stat-label">More booked</div>
+            </div>
+          </div>
         </div>
-        <div className="lp-hero-stat">
-          <div>
-            <div className="lp-stat-num">3 SEC</div>
-            <div className="lp-stat-label">Average response time</div>
-          </div>
-          <div>
-            <div className="lp-stat-num">24/7</div>
-            <div className="lp-stat-label">Never misses a lead</div>
-          </div>
-          <div>
-            <div className="lp-stat-num">10X</div>
-            <div className="lp-stat-label">More appointments booked</div>
-          </div>
+        <div className="lp-hero-right">
+          <PhoneMockup />
         </div>
       </div>
 
