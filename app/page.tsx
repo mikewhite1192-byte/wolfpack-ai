@@ -66,10 +66,13 @@ function PhoneMockup() {
 
   const visible = DEMO_MSGS.slice(0, visibleCount);
 
-  const msgEndRef = useRef<HTMLDivElement>(null);
+  const msgsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    msgEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = msgsContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [visibleCount, showTyping]);
 
   return (
@@ -80,7 +83,7 @@ function PhoneMockup() {
         <div className="lp-phone-name">Wolf Pack AI</div>
         <div className="lp-phone-sub">iMessage</div>
       </div>
-      <div className="lp-phone-msgs">
+      <div className="lp-phone-msgs" ref={msgsContainerRef} style={{ overflowY: "auto" }}>
         <div className="lp-phone-msgs-inner">
           {visible.map((m, i) => {
             const next = visible[i + 1];
@@ -97,7 +100,7 @@ function PhoneMockup() {
               <div className="lp-chat-typing"><span /><span /><span /></div>
             </div>
           )}
-          <div ref={msgEndRef} />
+          <div />
         </div>
       </div>
       <div className="lp-phone-input">
