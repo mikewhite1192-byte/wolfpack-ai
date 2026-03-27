@@ -268,8 +268,8 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
 
     // CRM-stored emails — data already available
     const thread = emailThreads.find(t => t.id === threadId);
-    if (thread && (thread as Record<string, unknown>).crmMessages) {
-      const crm = (thread as Record<string, unknown>).crmMessages as Array<Record<string, unknown>>;
+    if (thread && (thread as unknown as Record<string, unknown>).crmMessages) {
+      const crm = (thread as unknown as Record<string, unknown>).crmMessages as Array<Record<string, unknown>>;
       setEmailDetails(prev => ({
         ...prev,
         [threadId]: crm.map(m => ({
