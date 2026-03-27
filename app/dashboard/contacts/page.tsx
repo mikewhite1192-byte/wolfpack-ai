@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import DealPanel from "../components/DealPanel";
+import CsvImportModal from "../components/CsvImportModal";
 
 const T = {
   orange: "#E86A2A",
@@ -43,6 +44,7 @@ export default function ContactsPage() {
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", company: "" });
   const [saving, setSaving] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<string | null>(null);
+  const [showImport, setShowImport] = useState(false);
 
   const fetchContacts = useCallback(async () => {
     setLoading(true);
@@ -139,7 +141,10 @@ export default function ContactsPage() {
 
       <div className="contacts-header">
         <div className="contacts-title">CONTACTS</div>
-        <button className="contacts-btn" onClick={() => setShowForm(true)}>+ Add Contact</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowImport(true)} style={{ padding: "10px 18px", background: T.surface, color: T.text, fontSize: 13, fontWeight: 600, border: `1px solid ${T.border}`, borderRadius: 8, cursor: "pointer" }}>📄 Import CSV</button>
+          <button className="contacts-btn" onClick={() => setShowForm(true)}>+ Add Contact</button>
+        </div>
       </div>
 
       <div className="contacts-tabs">
@@ -248,6 +253,11 @@ export default function ContactsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* CSV Import */}
+      {showImport && (
+        <CsvImportModal onClose={() => setShowImport(false)} onComplete={fetchContacts} />
       )}
 
       {/* Deal Detail Panel */}
