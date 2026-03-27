@@ -33,14 +33,22 @@ interface ChatMessage {
 }
 
 const AI_QUESTIONS = [
-  "What's this landing page for? What business or service?",
-  "Who's your target customer?",
-  "What's the main thing you want visitors to do? (book a call, fill a form, buy something)",
-  "What's your headline? Or should I come up with one?",
-  "Any specific colors or branding? (or I'll use a clean default)",
+  "What's your business name?",
+  "What do you do? What services or products do you offer?",
+  "Who's your ideal customer? Who are you trying to reach?",
+  "What do you want visitors to do on this page? (book a call, fill out a form, call you, etc.)",
+  "What's your phone number?",
+  "What's your email address?",
+  "What's your business address? (or just city/state if you prefer)",
+  "Do you have a logo URL? (paste a link, or type 'no' and we'll use text)",
+  "What's your headline? Something catchy, or I can come up with one for you",
+  "What colors do you want? (your brand colors, or describe the vibe like 'dark and professional' or 'bright and friendly')",
+  "Any testimonials or reviews you want on the page? (paste them or type 'skip')",
+  "Anything else you want on there? Hours, special offers, guarantees, etc.",
+  "Any websites you like the look of? Drop 2 or 3 links for inspiration (or type 'skip')",
 ];
 
-const ANSWER_KEYS = ["business", "audience", "cta", "headline", "colors"];
+const ANSWER_KEYS = ["businessName", "services", "audience", "cta", "phone", "email", "address", "logo", "headline", "colors", "testimonials", "extras", "inspiration"];
 
 export default function WebsitesPage() {
   const [pages, setPages] = useState<LandingPage[]>([]);
@@ -48,6 +56,9 @@ export default function WebsitesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingPage, setEditingPage] = useState<LandingPage | null>(null);
   const [showDomainModal, setShowDomainModal] = useState<LandingPage | null>(null);
+  const [revisionPage, setRevisionPage] = useState<LandingPage | null>(null);
+  const [revisionInput, setRevisionInput] = useState("");
+  const [revising, setRevising] = useState(false);
 
   useEffect(() => {
     fetchPages();
@@ -198,9 +209,15 @@ export default function WebsitesPage() {
                   </button>
                   <button
                     className="wp-btn wp-btn-sm wp-btn-ghost"
+                    onClick={() => setRevisionPage(page)}
+                  >
+                    Make Changes
+                  </button>
+                  <button
+                    className="wp-btn wp-btn-sm wp-btn-ghost"
                     onClick={() => setEditingPage(page)}
                   >
-                    Edit
+                    Edit Code
                   </button>
                   <button
                     className="wp-btn wp-btn-sm wp-btn-ghost"
@@ -247,6 +264,85 @@ export default function WebsitesPage() {
           page={showDomainModal}
           onClose={() => setShowDomainModal(null)}
         />
+      )}
+
+      {/* Revision Modal */}
+      {revisionPage && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => !revising && setRevisionPage(null)}>
+          <div style={{ width: 600, maxWidth: "95vw", maxHeight: "90vh", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: T.text }}>MAKE CHANGES</div>
+              <button onClick={() => setRevisionPage(null)} style={{ background: "none", border: "none", color: T.muted, fontSize: 20, cursor: "pointer" }}>×</button>
+            </div>
+
+            {/* Preview */}
+            <div style={{ flex: 1, overflow: "hidden", borderBottom: `1px solid ${T.border}` }}>
+              {revisionPage.html_content ? (
+                <iframe
+                  srcDoc={revisionPage.html_content}
+                  style={{ width: "100%", height: "100%", border: "none", minHeight: 300 }}
+                  sandbox="allow-scripts"
+                />
+              ) : (
+                <div style={{ padding: 40, textAlign: "center", color: T.muted }}>No page content yet</div>
+              )}
+            </div>
+
+            {/* Revision Input */}
+            <div style={{ padding: "16px 24px" }}>
+              <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>Describe what you want to change. Be as specific as you want.</div>
+              <textarea
+                value={revisionInput}
+                onChange={e => setRevisionInput(e.target.value)}
+                placeholder="Make the headline bigger, change the button color to blue, add a section about our warranty..."
+                style={{
+                  width: "100%", padding: "12px 14px", background: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, fontSize: 14,
+                  resize: "none", outline: "none", minHeight: 80, boxSizing: "border-box",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => setRevisionPage(null)}
+                  style={{ padding: "10px 20px", background: "none", border: `1px solid ${T.border}`, borderRadius: 8, color: T.muted, fontSize: 13, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!revisionInput.trim()) return;
+                    setRevising(true);
+                    try {
+                      const res = await fetch(`/api/websites/${revisionPage.id}/generate`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ revisionRequest: revisionInput }),
+                      });
+                      const data = await res.json();
+                      if (data.html) {
+                        setRevisionPage({ ...revisionPage, html_content: data.html });
+                        setRevisionInput("");
+                        fetchPages();
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                    setRevising(false);
+                  }}
+                  disabled={revising || !revisionInput.trim()}
+                  style={{
+                    padding: "10px 24px", background: "#E86A2A", color: "#fff", border: "none",
+                    borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    opacity: revising || !revisionInput.trim() ? 0.5 : 1,
+                  }}
+                >
+                  {revising ? "Updating..." : "Apply Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
