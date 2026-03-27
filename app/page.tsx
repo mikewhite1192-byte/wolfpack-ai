@@ -79,6 +79,14 @@ function PhoneMockup() {
     <div className="lp-phone">
       <div className="lp-phone-inner">
       <div className="lp-phone-notch" />
+      <div className="lp-phone-status">
+        <span>9:41</span>
+        <span style={{ display: "flex", gap: 3, alignItems: "center" }}>
+          <span style={{ fontSize: 9 }}>5G</span>
+          <span style={{ fontSize: 11 }}>▂▄▆█</span>
+          <span style={{ fontSize: 12 }}>🔋</span>
+        </span>
+      </div>
       <div className="lp-phone-header">
         <div className="lp-phone-avatar">WP</div>
         <div className="lp-phone-name">Wolf Pack AI</div>
@@ -105,6 +113,7 @@ function PhoneMockup() {
         </div>
       </div>
       <div className="lp-phone-input">
+        <div className="lp-phone-input-plus">+</div>
         <div className="lp-phone-input-bar">iMessage</div>
         <div className="lp-phone-input-send">↑</div>
       </div>
@@ -143,33 +152,35 @@ export default function Home() {
         .lp-stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #E86A2A; }
         .lp-stat-label { font-size: 13px; color: #b0b4c8; margin-top: 4px; }
 
-        .lp-phone { width: 280px; background: #000; border-radius: 40px; padding: 8px; box-shadow: 0 24px 80px rgba(0,0,0,0.6); position: relative; }
-        .lp-phone-inner { background: #fff; border-radius: 32px; overflow: hidden; }
-        .lp-phone-notch { width: 90px; height: 24px; background: #000; border-radius: 0 0 16px 16px; margin: 0 auto; }
-        .lp-phone-header { padding: 6px 14px 8px; text-align: center; background: #f2f2f7; }
-        .lp-phone-avatar { width: 28px; height: 28px; border-radius: 50%; background: #007AFF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin: 0 auto 3px; }
+        .lp-phone { width: 270px; background: #1a1a1a; border-radius: 48px; padding: 4px; box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08); position: relative; }
+        .lp-phone-inner { background: #fff; border-radius: 44px; overflow: hidden; position: relative; }
+        .lp-phone-notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 72px; height: 22px; background: #000; border-radius: 14px; z-index: 10; }
+        .lp-phone-status { display: flex; justify-content: space-between; align-items: center; padding: 10px 24px 0; background: #f2f2f7; font-size: 10px; font-weight: 600; color: #000; height: 36px; }
+        .lp-phone-header { padding: 2px 14px 8px; text-align: center; background: #f2f2f7; border-bottom: 0.5px solid #c7c7cc; }
+        .lp-phone-avatar { width: 28px; height: 28px; border-radius: 50%; background: #007AFF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin: 0 auto 2px; }
         .lp-phone-name { font-size: 12px; font-weight: 600; color: #000; }
         .lp-phone-sub { font-size: 9px; color: #8e8e93; }
-        .lp-phone-msgs { padding: 8px 8px; height: 300px; overflow: hidden; display: flex; flex-direction: column; gap: 2px; background: #fff; }
-        .lp-phone-msgs-inner { display: flex; flex-direction: column; gap: 2px; margin-top: auto; }
-        .lp-chat-row { display: flex; flex-direction: column; margin-bottom: 1px; opacity: 0; animation: lp-msg-in 0.35s ease forwards; }
-        .lp-chat-row.in { align-items: flex-start; padding-left: 4px; padding-right: 50px; }
-        .lp-chat-row.out { align-items: flex-end; padding-right: 4px; padding-left: 50px; }
+        .lp-phone-msgs { padding: 8px 8px; height: 290px; overflow: hidden; display: flex; flex-direction: column; gap: 1px; background: #fff; }
+        .lp-phone-msgs-inner { display: flex; flex-direction: column; gap: 1px; margin-top: auto; }
+        .lp-chat-row { display: flex; flex-direction: column; margin-bottom: 1px; opacity: 0; animation: lp-msg-in 0.3s ease forwards; }
+        .lp-chat-row.in { align-items: flex-start; padding-left: 6px; padding-right: 44px; }
+        .lp-chat-row.out { align-items: flex-end; padding-right: 6px; padding-left: 44px; }
         .lp-chat-row.tail { margin-bottom: 4px; }
-        .lp-chat-bubble { width: fit-content; max-width: 100%; padding: 7px 12px; font-size: 13px; line-height: 1.35; }
-        .lp-chat-bubble.in { background: #e9e9eb; color: #000; border-radius: 18px; }
-        .lp-chat-row.tail .lp-chat-bubble.in { border-radius: 18px 18px 18px 4px; }
-        .lp-chat-bubble.out { background: #007AFF; color: #fff; border-radius: 18px; }
-        .lp-chat-row.tail .lp-chat-bubble.out { border-radius: 18px 18px 4px 18px; }
-        .lp-chat-time { font-size: 9px; color: #8e8e93; margin-top: 2px; padding: 0 6px; }
-        .lp-chat-typing { display: flex; gap: 4px; padding: 10px 14px; background: #e9e9eb; border-radius: 18px 18px 18px 4px; width: fit-content; }
-        .lp-chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: #8e8e93; animation: lp-dot 1.2s ease-in-out infinite; }
+        .lp-chat-bubble { width: fit-content; max-width: 100%; padding: 6px 11px; font-size: 12.5px; line-height: 1.35; -webkit-font-smoothing: antialiased; }
+        .lp-chat-bubble.in { background: #e9e9eb; color: #000; border-radius: 16px; }
+        .lp-chat-row.tail .lp-chat-bubble.in { border-radius: 16px 16px 16px 4px; }
+        .lp-chat-bubble.out { background: #007AFF; color: #fff; border-radius: 16px; }
+        .lp-chat-row.tail .lp-chat-bubble.out { border-radius: 16px 16px 4px 16px; }
+        .lp-chat-time { font-size: 8px; color: #8e8e93; margin-top: 1px; padding: 0 6px; }
+        .lp-chat-typing { display: flex; gap: 3px; padding: 8px 12px; background: #e9e9eb; border-radius: 16px 16px 16px 4px; width: fit-content; }
+        .lp-chat-typing span { width: 5px; height: 5px; border-radius: 50%; background: #8e8e93; animation: lp-dot 1.2s ease-in-out infinite; }
         .lp-chat-typing span:nth-child(2) { animation-delay: 0.15s; }
         .lp-chat-typing span:nth-child(3) { animation-delay: 0.3s; }
-        .lp-phone-input { background: #f2f2f7; padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
-        .lp-phone-input-bar { flex: 1; background: #fff; border: 1px solid #c7c7cc; border-radius: 16px; padding: 5px 12px; font-size: 11px; color: #8e8e93; }
-        .lp-phone-input-send { width: 24px; height: 24px; border-radius: 50%; background: #007AFF; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
-        .lp-phone-home { width: 100px; height: 4px; background: #000; border-radius: 2px; margin: 6px auto; }
+        .lp-phone-input { background: #f2f2f7; padding: 6px 10px; display: flex; align-items: center; gap: 6px; border-top: 0.5px solid #d1d1d6; }
+        .lp-phone-input-plus { color: #007AFF; font-size: 18px; font-weight: 300; }
+        .lp-phone-input-bar { flex: 1; background: #fff; border: 0.5px solid #c7c7cc; border-radius: 16px; padding: 5px 12px; font-size: 11px; color: #8e8e93; }
+        .lp-phone-input-send { width: 24px; height: 24px; border-radius: 50%; background: #007AFF; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; }
+        .lp-phone-home { width: 100px; height: 4px; background: #1a1a1a; border-radius: 100px; margin: 6px auto 2px; }
 
         @keyframes lp-msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes lp-dot { 0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); } 30% { opacity: 1; transform: scale(1); } }
