@@ -1,0 +1,26 @@
+name: Vercel Alias
+on:
+  push:
+    branches: [main]
+
+jobs:
+  alias:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Vercel deploy
+        run: sleep 90
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+
+      - name: Get latest deployment
+        id: deploy
+        run: |
+          DEPLOY_URL=$(vercel ls --token ${{ secrets.VERCEL_TOKEN }} --scope mikes-projects-01e99254 2>&1 | grep "thewolfpack-ai" | grep "Ready" | head -1 | awk '{print $4}')
+          echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+
+      - name: Alias to domain
+        if: steps.deploy.outputs.url
+        run: |
+          vercel alias ${{ steps.deploy.outputs.url }} thewolfpack.ai --token ${{ secrets.VERCEL_TOKEN }} --scope mikes-projects-01e99254
+          vercel alias ${{ steps.deploy.outputs.url }} thewolfpack-ai.vercel.app --token ${{ secrets.VERCEL_TOKEN }} --scope mikes-projects-01e99254
