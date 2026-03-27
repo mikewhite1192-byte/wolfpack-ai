@@ -59,6 +59,7 @@ interface Call {
   id: string;
   direction: string;
   duration_seconds: number | null;
+  recording_url: string | null;
   ai_summary: string | null;
   ai_score: number | null;
   created_at: string;
@@ -597,7 +598,9 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
 
               <div className="dp-actions">
                 {deal.phone && (
-                  <button className="dp-action-btn">
+                  <button className="dp-action-btn" onClick={() => {
+                    window.dispatchEvent(new CustomEvent("open-dialer", { detail: { number: deal.phone } }));
+                  }}>
                     📞 Call
                   </button>
                 )}
@@ -770,6 +773,9 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
                           <span className="dp-badge" style={{ background: c.ai_score >= 70 ? `${T.green}20` : `${T.red}20`, color: c.ai_score >= 70 ? T.green : T.red, marginTop: 4 }}>
                             Score: {c.ai_score}
                           </span>
+                        )}
+                        {c.recording_url && (
+                          <audio controls style={{ width: "100%", marginTop: 6, height: 32 }} src={c.recording_url} />
                         )}
                         {c.ai_summary && <div style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>{c.ai_summary}</div>}
                         <div className="dp-tl-time">{formatTime(c.created_at)}</div>

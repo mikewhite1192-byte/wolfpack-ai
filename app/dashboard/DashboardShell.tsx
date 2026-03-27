@@ -28,8 +28,8 @@ const NAV = [
   { label: "Settings", href: "/dashboard/settings", icon: "⚙" },
 ];
 
-function DialPad({ onClose }: { onClose: () => void }) {
-  const [number, setNumber] = useState("");
+function DialPad({ onClose, initialNumber }: { onClose: () => void; initialNumber?: string }) {
+  const [number, setNumber] = useState(initialNumber || "");
   const [callStatus, setCallStatus] = useState<"idle" | "connecting" | "connected" | "ended">("idle");
   const [duration, setDuration] = useState(0);
   const deviceRef = useRef<any>(null);
@@ -196,6 +196,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const router = useRouter();
   const { isLoaded, isSignedIn } = useUser();
   const [dialOpen, setDialOpen] = useState(false);
+  const [dialNumber, setDialNumber] = useState("");
   const [notifications] = useState(3);
 
   useEffect(() => {
@@ -203,6 +204,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       router.push("/sign-in");
     }
   }, [isLoaded, isSignedIn, router]);
+
+  // Listen for open-dialer events from deal cards
+  useEffect(() => {
+    function handleOpenDialer(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.number) setDialNumber(detail.number);
+      setDialOpen(true);
+    }
+    window.addEventListener("open-dialer", handleOpenDialer);
+    return () => window.removeEventListener("open-dialer", handleOpenDialer);
+  }, []);
 
   if (!isLoaded) {
     return <div style={{ minHeight: "100vh", background: "#0D1426", display: "flex", alignItems: "center", justifyContent: "center", color: "#b0b4c8" }}>Loading...</div>;
@@ -283,7 +295,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
       </aside>
 
-      {dialOpen && <DialPad onClose={() => setDialOpen(false)} />}
+      {dialOpen && <DialPad onClose={() => { setDialOpen(false); setDialNumber(""); }} initialNumber={dialNumber} />}
 
       {/* Main */}
       <div className="db-main">
