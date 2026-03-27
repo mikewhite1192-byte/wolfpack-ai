@@ -1,18 +1,14 @@
-import { auth } from "@clerk/nextjs/server";
 import { neon } from "@neondatabase/serverless";
 
 const sql = neon(process.env.DATABASE_URL!);
 
+// Simple workspace getter — no auth dependency
+// Auth is handled client-side via Clerk's useUser hook
 export async function getOrCreateWorkspace() {
-  const { userId, orgId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  // Use orgId if available, otherwise use userId as org identifier
-  const effectiveOrgId = orgId || userId;
-
-  // Check for existing workspace
+  // For now, get the first active workspace
+  // Multi-tenancy will be added when we build team management
   const existing = await sql`
-    SELECT * FROM workspaces WHERE org_id = ${effectiveOrgId} AND status = 'active' LIMIT 1
+    SELECT * FROM workspaces WHERE status = 'active' ORDER BY created_at ASC LIMIT 1
   `;
 
   if (existing.length > 0) return existing[0];
@@ -20,11 +16,10 @@ export async function getOrCreateWorkspace() {
   // Create default workspace + pipeline stages
   const workspace = await sql`
     INSERT INTO workspaces (org_id, name, slug)
-    VALUES (${effectiveOrgId}, 'My Workspace', ${effectiveOrgId})
+    VALUES ('default', 'My Workspace', 'default')
     RETURNING *
   `;
 
-  // Create default pipeline stages
   const stages = [
     { name: "New Lead", position: 0, color: "#3498db", is_won: false, is_lost: false },
     { name: "Contacted", position: 1, color: "#9b59b6", is_won: false, is_lost: false },
@@ -42,10 +37,4 @@ export async function getOrCreateWorkspace() {
   }
 
   return workspace[0];
-}
-
-export async function requireAuth() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-  return userId;
 }

@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import AiAssistant from "./components/AiAssistant";
 
 const T = {
@@ -190,8 +191,24 @@ function DialPad({ onClose }: { onClose: () => void }) {
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isLoaded, isSignedIn } = useUser();
   const [dialOpen, setDialOpen] = useState(false);
   const [notifications] = useState(3);
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push("/sign-in");
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  if (!isLoaded) {
+    return <div style={{ minHeight: "100vh", background: "#0D1426", display: "flex", alignItems: "center", justifyContent: "center", color: "#b0b4c8" }}>Loading...</div>;
+  }
+
+  if (!isSignedIn) {
+    return <div style={{ minHeight: "100vh", background: "#0D1426" }} />;
+  }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: T.bg }}>
