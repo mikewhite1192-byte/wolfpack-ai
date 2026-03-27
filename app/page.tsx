@@ -16,26 +16,30 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-// AI texts shown as blue bubbles with gray typing dots before each
+// Real conversation: AI (blue) texts first, lead (gray) replies
+// Gray typing dots appear before each gray (lead) message
 const DEMO_MSGS = [
-  { text: "Hey Mike! Saw you were looking into roof inspections. How long has the leak been going on?", delay: 0 },
-  { text: "3-4 months is a while. What have you tried so far?", delay: 4000 },
-  { text: "Yeah that usually doesn't hold. How has it been affecting things inside?", delay: 8000 },
-  { text: "That's a real concern. What would it mean if that was taken care of?", delay: 12000 },
-  { text: "We do free inspections. Thursday at 10 or Friday at 2?", delay: 16000 },
-  { text: "You're all set for Thursday! Calendar invite heading to your email 👍", delay: 20000 },
+  { from: "ai", text: "Hey Mike! Saw you were interested in a roof inspection. What's going on with your roof?", delay: 0 },
+  { from: "lead", text: "Been leaking for a few months now", delay: 3500 },
+  { from: "ai", text: "How has that been affecting things inside?", delay: 6000 },
+  { from: "lead", text: "Ceiling has a water stain getting bigger", delay: 9000 },
+  { from: "ai", text: "What would it mean if that was completely taken care of?", delay: 11500 },
+  { from: "lead", text: "Honestly that would be a huge relief", delay: 14500 },
+  { from: "ai", text: "We do free inspections. Thursday at 10 or Friday at 2?", delay: 17000 },
+  { from: "lead", text: "Thursday works!", delay: 19500 },
+  { from: "ai", text: "You're all set! Calendar invite heading to your email 👍", delay: 21500 },
 ];
 
 function PhoneMockup() {
   const [visibleCount, setVisibleCount] = useState(0);
-  const [showTyping, setShowTyping] = useState(true);
+  const [showTyping, setShowTyping] = useState(false);
 
   useEffect(() => {
     if (visibleCount >= DEMO_MSGS.length) {
       const timer = setTimeout(() => {
         setVisibleCount(0);
-        setShowTyping(true);
-      }, 5000);
+        setShowTyping(false);
+      }, 6000);
       return () => clearTimeout(timer);
     }
 
@@ -43,16 +47,21 @@ function PhoneMockup() {
     const prevDelay = visibleCount > 0 ? DEMO_MSGS[visibleCount - 1].delay : 0;
     const wait = nextMsg.delay - prevDelay;
 
-    // Show typing dots, then show the blue message
-    setShowTyping(true);
-    const msgTimer = setTimeout(() => {
-      setShowTyping(false);
-      setVisibleCount(c => c + 1);
-      // Show typing again after a brief pause for next message
-      setTimeout(() => setShowTyping(true), 300);
-    }, Math.max(wait, 1500));
-
-    return () => clearTimeout(msgTimer);
+    if (nextMsg.from === "lead") {
+      // Show gray typing dots first, then reveal the gray message
+      const typingTimer = setTimeout(() => setShowTyping(true), Math.max(wait - 1500, 200));
+      const msgTimer = setTimeout(() => {
+        setShowTyping(false);
+        setVisibleCount(c => c + 1);
+      }, wait);
+      return () => { clearTimeout(typingTimer); clearTimeout(msgTimer); };
+    } else {
+      // AI blue message appears directly (no typing indicator)
+      const timer = setTimeout(() => {
+        setVisibleCount(c => c + 1);
+      }, wait);
+      return () => clearTimeout(timer);
+    }
   }, [visibleCount]);
 
   const visible = DEMO_MSGS.slice(0, visibleCount);
@@ -70,14 +79,6 @@ function PhoneMockup() {
     <div className="lp-phone">
       <div className="lp-phone-inner">
       <div className="lp-phone-notch" />
-      <div className="lp-phone-status">
-        <span>9:41</span>
-        <span style={{ display: "flex", gap: 3, alignItems: "center" }}>
-          <span style={{ fontSize: 9 }}>5G</span>
-          <span style={{ fontSize: 11 }}>▂▄▆█</span>
-          <span style={{ fontSize: 12 }}>🔋</span>
-        </span>
-      </div>
       <div className="lp-phone-header">
         <div className="lp-phone-avatar">WP</div>
         <div className="lp-phone-name">Wolf Pack AI</div>
@@ -85,12 +86,17 @@ function PhoneMockup() {
       </div>
       <div className="lp-phone-msgs" ref={msgsContainerRef} style={{ overflowY: "auto" }}>
         <div className="lp-phone-msgs-inner">
-          {visible.map((m, i) => (
-            <div key={i} className="lp-chat-row in tail">
-              <div className="lp-chat-bubble in">{m.text}</div>
-            </div>
-          ))}
-          {showTyping && visibleCount < DEMO_MSGS.length && (
+          {visible.map((m, i) => {
+            const next = visible[i + 1];
+            const isTail = !next || next.from !== m.from;
+            const side = m.from === "ai" ? "out" : "in";
+            return (
+              <div key={i} className={`lp-chat-row ${side}${isTail ? " tail" : ""}`}>
+                <div className={`lp-chat-bubble ${side}`}>{m.text}</div>
+              </div>
+            );
+          })}
+          {showTyping && (
             <div className="lp-chat-row in" style={{ opacity: 1 }}>
               <div className="lp-chat-typing"><span /><span /><span /></div>
             </div>
@@ -125,7 +131,7 @@ export default function Home() {
 
         .lp-hero { display: flex; align-items: center; gap: 50px; padding: 60px 40px 40px; max-width: 1100px; margin: 0 auto; }
         .lp-hero-left { flex: 1; }
-        .lp-hero-right { flex-shrink: 0; width: 280px; }
+        .lp-hero-right { flex-shrink: 0; width: 260px; }
         .lp-hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 72px; line-height: 0.95; letter-spacing: 1px; margin: 0 0 20px; }
         .lp-hero h1 span { color: #E86A2A; }
         .lp-hero p { font-size: 17px; color: #b0b4c8; line-height: 1.7; margin: 0 0 28px; }
@@ -138,15 +144,14 @@ export default function Home() {
         .lp-stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #E86A2A; }
         .lp-stat-label { font-size: 13px; color: #b0b4c8; margin-top: 4px; }
 
-        .lp-phone { width: 270px; background: #1a1a1a; border-radius: 48px; padding: 4px; box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08); position: relative; }
-        .lp-phone-inner { background: #fff; border-radius: 44px; overflow: hidden; position: relative; }
-        .lp-phone-notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 72px; height: 22px; background: #000; border-radius: 14px; z-index: 10; }
-        .lp-phone-status { display: flex; justify-content: space-between; align-items: center; padding: 10px 24px 0; background: #f2f2f7; font-size: 10px; font-weight: 600; color: #000; height: 36px; }
-        .lp-phone-header { padding: 2px 14px 8px; text-align: center; background: #f2f2f7; border-bottom: 0.5px solid #c7c7cc; }
-        .lp-phone-avatar { width: 28px; height: 28px; border-radius: 50%; background: #007AFF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin: 0 auto 2px; }
-        .lp-phone-name { font-size: 12px; font-weight: 600; color: #000; }
+        .lp-phone { width: 250px; height: 515px; background: #1a1a1a; border-radius: 44px; padding: 3px; box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06); position: relative; display: flex; flex-direction: column; }
+        .lp-phone-inner { background: #fff; border-radius: 41px; overflow: hidden; position: relative; flex: 1; display: flex; flex-direction: column; }
+        .lp-phone-notch { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 70px; height: 20px; background: #000; border-radius: 12px; z-index: 10; }
+        .lp-phone-header { padding: 32px 14px 8px; text-align: center; background: #f2f2f7; border-bottom: 0.5px solid #c7c7cc; }
+        .lp-phone-avatar { width: 26px; height: 26px; border-radius: 50%; background: #007AFF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; margin: 0 auto 2px; }
+        .lp-phone-name { font-size: 11px; font-weight: 600; color: #000; }
         .lp-phone-sub { font-size: 9px; color: #8e8e93; }
-        .lp-phone-msgs { padding: 8px 8px; height: 290px; overflow: hidden; display: flex; flex-direction: column; gap: 1px; background: #fff; }
+        .lp-phone-msgs { padding: 8px 8px; flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 1px; background: #fff; }
         .lp-phone-msgs-inner { display: flex; flex-direction: column; gap: 1px; margin-top: auto; }
         .lp-chat-row { display: flex; flex-direction: column; margin-bottom: 1px; opacity: 0; animation: lp-msg-in 0.3s ease forwards; }
         .lp-chat-row.in { align-items: flex-start; padding-left: 6px; padding-right: 44px; }
@@ -176,7 +181,7 @@ export default function Home() {
           .lp-hero h1 { font-size: 40px; }
           .lp-hero-btns { justify-content: center; }
           .lp-hero-stat { justify-content: center; }
-          .lp-hero-right { width: 280px; }
+          .lp-hero-right { width: 250px; }
         }
 
         .lp-problem { padding: 40px 40px; text-align: center; max-width: 800px; margin: 0 auto; }
