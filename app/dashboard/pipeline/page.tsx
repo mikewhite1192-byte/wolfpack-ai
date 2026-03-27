@@ -154,7 +154,7 @@ export default function PipelinePage() {
       <style>{`
         .pipe-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .pipe-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: ${T.text}; letter-spacing: 1px; }
-        .pipe-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; }
+        .pipe-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; max-width: calc(100vw - 260px); }
         .pipe-col { width: 260px; min-width: 260px; flex-shrink: 0; }
         .pipe-col-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px 8px 0 0; margin-bottom: 8px; }
         .pipe-col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
