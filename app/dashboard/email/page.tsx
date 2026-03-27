@@ -195,7 +195,7 @@ export default function EmailPage() {
   return (
     <div style={{ display: "flex", height: "calc(100vh - 60px)", margin: "-24px", overflow: "hidden" }}>
       <style>{`
-        .em-sidebar { width: 360px; border-right: 1px solid ${T.border}; display: flex; flex-direction: column; background: ${T.bg}; flex-shrink: 0; }
+        .em-sidebar { width: 340px; border-right: 1px solid ${T.border}; display: flex; flex-direction: column; background: ${T.bg}; flex-shrink: 0; overflow: hidden; }
         .em-search { padding: 12px; border-bottom: 1px solid ${T.border}; display: flex; gap: 6px; }
         .em-search input { flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 8px; font-size: 13px; color: ${T.text}; outline: none; font-family: 'Inter', sans-serif; box-sizing: border-box; }
         .em-search input::placeholder { color: ${T.muted}; }
@@ -211,7 +211,7 @@ export default function EmailPage() {
         .em-time { font-size: 10px; color: ${T.muted}; flex-shrink: 0; }
         .em-count { font-size: 10px; color: ${T.muted}; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
 
-        .em-main { flex: 1; display: flex; flex-direction: column; background: ${T.bg}; min-width: 0; }
+        .em-main { flex: 1; display: flex; flex-direction: column; background: ${T.bg}; min-width: 0; overflow: hidden; }
         .em-thread-header { padding: 16px 20px; border-bottom: 1px solid ${T.border}; flex-shrink: 0; }
         .em-thread-subject { font-size: 18px; font-weight: 700; color: ${T.text}; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.5px; }
         .em-msgs { flex: 1; overflow-y: auto; padding: 16px 20px; }
@@ -220,7 +220,7 @@ export default function EmailPage() {
         .em-msg-from { font-size: 13px; font-weight: 700; color: ${T.text}; }
         .em-msg-to { font-size: 11px; color: ${T.muted}; margin-top: 2px; }
         .em-msg-date { font-size: 11px; color: ${T.muted}; flex-shrink: 0; }
-        .em-msg-body { font-size: 13px; color: ${T.text}; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; }
+        .em-msg-body { font-size: 13px; color: ${T.text}; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; max-width: 100%; overflow: hidden; }
         .em-msg-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid ${T.border}; }
         .em-action-btn { padding: 6px 14px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 6px; color: ${T.muted}; font-size: 11px; cursor: pointer; }
         .em-action-btn:hover { border-color: ${T.orange}; color: ${T.orange}; }
