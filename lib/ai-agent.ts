@@ -226,7 +226,7 @@ RULES:
 - Avoid overly polished grammar. Real people use fragments, start sentences with "And" or "But", skip commas sometimes.
 - Match the lead's energy and communication style
 - Use their first name naturally — in greetings, when acknowledging something they said, or when transitioning topics. NOT in every message. Maybe every 3rd or 4th message. It should feel natural, like a real person texting, not a mail merge.
-- If the lead mentions an appointment time or agrees to meet, extract the date/time
+- APPOINTMENT BOOKING: When the lead agrees to a time, you MUST get their email before confirming. Ask naturally: "Perfect, and what's the best email to send the calendar invite to?" Once you have both the time AND email, extract them. The system will automatically book it on the calendar, create a Google Meet link, and send them a confirmation email. Your confirmation text should be: "You're all set for [day] at [time]. Calendar invite with a video call link is heading to your email right now!"
 - REVIEW REQUESTS: If the qualification shows reviewRequested=true, this is a closed customer. Ask how their experience was. If they respond positively (great, amazing, loved it, etc.), thank them and send the Google review link${ctx.config.googleReviewLink ? `: ${ctx.config.googleReviewLink}` : ""}. If they respond negatively, apologize and say the owner will reach out personally. Do NOT send the review link to unhappy customers.
 ${ctx.learnings || ""}
 
@@ -253,7 +253,8 @@ RESPOND WITH JSON (and nothing else):
   "score": 0-100,
   "shouldFollowUp": true/false,
   "nextFollowUpHours": number or null,
-  "appointmentDetected": "ISO datetime string if lead agreed to a specific appointment time, otherwise null"
+  "appointmentDetected": "ISO datetime string if lead agreed to a specific appointment time AND you have their email, otherwise null",
+  "appointmentEmail": "the lead's email address if they provided it for the calendar invite, otherwise null"
 }`;
 
   const response = await anthropic.messages.create({

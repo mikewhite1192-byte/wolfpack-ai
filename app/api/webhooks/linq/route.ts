@@ -7,6 +7,8 @@ import {
 import { sendMessage, markAsRead, startTyping, stopTyping } from "@/lib/linq/client";
 import { runSalesAgent, DEFAULT_CONFIG, type AgentConfig, type LeadQualification, type ConversationStage } from "@/lib/ai-agent";
 import { getLearnings } from "@/lib/ai-learner";
+import { getGmailToken } from "@/lib/gmail";
+import { createCalendarEvent } from "@/lib/calendar";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -243,18 +245,46 @@ export async function POST(req: Request) {
         WHERE id = ${contactId}
       `;
 
-      // If AI detected an appointment, save it
+      // If AI detected an appointment, auto-book calendar + send invite
       if (result.appointmentDetected) {
         try {
           const apptDate = new Date(result.appointmentDetected);
           if (!isNaN(apptDate.getTime())) {
+            const apptEnd = new Date(apptDate.getTime() + 30 * 60000);
+            const apptEmail = (result as Record<string, unknown>).appointmentEmail as string | null;
+            const bizName = agentConfig.businessName || ws.name || "Meeting";
+            const leadName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || "Lead";
+            const useMeet = (agentConfig as Record<string, unknown>).autoGoogleMeet || false;
+
+            // Save appointment to contact
             await sql`
               UPDATE contacts SET
                 appointment_at = ${apptDate.toISOString()},
-                appointment_reminder_sent = false
+                appointment_reminder_sent = false,
+                email = COALESCE(${apptEmail || null}, email)
               WHERE id = ${contactId}
             `;
-            console.log(`[webhook] Appointment detected: ${apptDate.toISOString()}`);
+
+            // Book on Google Calendar if connected
+            try {
+              const calToken = await getGmailToken(ws.id);
+              if (calToken) {
+                await createCalendarEvent(
+                  calToken,
+                  `${bizName} - ${leadName}`,
+                  `Phone: ${from}\nEmail: ${apptEmail || "N/A"}\nBooked via AI Sales Agent`,
+                  apptDate.toISOString(),
+                  apptEnd.toISOString(),
+                  apptEmail || undefined,
+                  useMeet as boolean,
+                );
+                console.log(`[webhook] Calendar event created for ${leadName} at ${apptDate.toISOString()}${useMeet ? " with Google Meet" : ""}`);
+              }
+            } catch (calErr) {
+              console.error("[webhook] Calendar booking failed:", calErr);
+            }
+
+            console.log(`[webhook] Appointment booked: ${apptDate.toISOString()} for ${leadName}${apptEmail ? ` (${apptEmail})` : ""}`);
           }
         } catch { /* invalid date, skip */ }
       }
