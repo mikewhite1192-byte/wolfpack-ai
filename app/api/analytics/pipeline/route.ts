@@ -53,19 +53,23 @@ export async function GET() {
 
       // Average time in each stage (from deal_activity stage_changed events)
       sql`
-        SELECT
-          da.details->>'to' as stage_name,
-          AVG(EXTRACT(EPOCH FROM (
-            COALESCE(
-              LEAD(da.created_at) OVER (PARTITION BY da.deal_id ORDER BY da.created_at),
-              NOW()
-            ) - da.created_at
-          )) / 86400)::float as avg_days
-        FROM deal_activity da
-        JOIN deals d ON d.id = da.deal_id
-        WHERE da.workspace_id = ${workspace.id}
-          AND da.action = 'stage_changed'
-        GROUP BY da.details->>'to'
+        SELECT stage_name, AVG(days_in_stage)::float as avg_days
+        FROM (
+          SELECT
+            da.details->>'to' as stage_name,
+            EXTRACT(EPOCH FROM (
+              COALESCE(
+                LEAD(da.created_at) OVER (PARTITION BY da.deal_id ORDER BY da.created_at),
+                NOW()
+              ) - da.created_at
+            )) / 86400 as days_in_stage
+          FROM deal_activity da
+          JOIN deals d ON d.id = da.deal_id
+          WHERE da.workspace_id = ${workspace.id}
+            AND da.action = 'stage_changed'
+        ) sub
+        WHERE stage_name IS NOT NULL
+        GROUP BY stage_name
       `,
 
       // Lead source breakdown
