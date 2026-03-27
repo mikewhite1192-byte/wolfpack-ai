@@ -1,4 +1,20 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="lp-faq-item" onClick={() => setOpen(!open)} style={{ cursor: "pointer" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="lp-faq-q">{q}</div>
+        <span style={{ color: "#E86A2A", fontSize: 20, fontWeight: 700, flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(45deg)" : "rotate(0)" }}>+</span>
+      </div>
+      {open && <div className="lp-faq-a" style={{ marginTop: 8 }}>{a}</div>}
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -193,13 +209,13 @@ export default function Home() {
           </div>
           <div className="lp-feature">
             <div className="lp-feature-icon">📧</div>
-            <div className="lp-feature-title">Gmail Integration</div>
-            <div className="lp-feature-text">See all emails per lead. Reply, forward, compose right from the CRM. Your signature carries over.</div>
+            <div className="lp-feature-title">Email Integration</div>
+            <div className="lp-feature-text">Gmail and Outlook. See all emails per lead. Reply, forward, compose right from the CRM. Your signature carries over.</div>
           </div>
           <div className="lp-feature">
             <div className="lp-feature-icon">📅</div>
             <div className="lp-feature-title">Calendar + Booking</div>
-            <div className="lp-feature-text">Syncs with Google Calendar. Public booking page. AI books appointments and sends Meet links automatically.</div>
+            <div className="lp-feature-text">Syncs with Google Calendar and Microsoft. Public booking page. AI books appointments and sends video call links automatically.</div>
           </div>
           <div className="lp-feature">
             <div className="lp-feature-icon">📊</div>
@@ -299,40 +315,13 @@ export default function Home() {
       <div className="lp-faq" id="faq">
         <h2>Questions? We Got You.</h2>
 
-        <div className="lp-faq-item">
-          <div className="lp-faq-q">How does the AI know what to say?</div>
-          <div className="lp-faq-a">Our AI is trained on proven sales methodology (NEPQ). It asks the right questions, listens to answers, handles objections naturally, and guides leads to book an appointment. It gets smarter with every conversation.</div>
-        </div>
-
-        <div className="lp-faq-item">
-          <div className="lp-faq-q">Will leads know they're talking to AI?</div>
-          <div className="lp-faq-a">No. The AI texts like a real person on your team. No dashes, no bullet points, no robotic grammar. It mirrors the lead's energy and tone. Most leads have no idea.</div>
-        </div>
-
-        <div className="lp-faq-item">
-          <div className="lp-faq-q">What's the difference between green and blue texts?</div>
-          <div className="lp-faq-a">Green texts (SMS) require A2P registration and can get filtered by carriers. Blue texts (iMessage) go through Apple's network directly with no registration needed, higher deliverability, and a more trusted look. Our Pro plan includes blue texts.</div>
-        </div>
-
-        <div className="lp-faq-item">
-          <div className="lp-faq-q">Can I take over a conversation from the AI?</div>
-          <div className="lp-faq-a">Yes. Every conversation has an AI toggle. Turn it off with one click and you're in control. Turn it back on and the AI picks up where you left off.</div>
-        </div>
-
-        <div className="lp-faq-item">
-          <div className="lp-faq-q">How fast does the AI respond to new leads?</div>
-          <div className="lp-faq-a">Within seconds. Not minutes, not hours. The moment a lead comes in, the AI is texting them. That speed alone puts you ahead of 90% of your competition.</div>
-        </div>
-
-        <div className="lp-faq-item">
-          <div className="lp-faq-q">Do I need any technical skills to set this up?</div>
-          <div className="lp-faq-a">No. When you sign up, our AI bot walks you through setup with a few simple questions about your business. It configures everything automatically. You can be live in minutes.</div>
-        </div>
-
-        <div className="lp-faq-item">
-          <div className="lp-faq-q">What happens if a lead goes cold?</div>
-          <div className="lp-faq-a">The AI automatically follows up with a different approach each time. Day 1, day 3, day 7, day 14. Each follow-up uses a different angle based on the conversation history. No lead gets forgotten.</div>
-        </div>
+        <FaqItem q="How does the AI know what to say?" a="Our AI is trained on proven sales methodology (NEPQ). It asks the right questions, listens to answers, handles objections naturally, and guides leads to book an appointment. It gets smarter with every conversation." />
+        <FaqItem q="Will leads know they're talking to AI?" a="No. The AI texts like a real person on your team. No dashes, no bullet points, no robotic grammar. It mirrors the lead's energy and tone. Most leads have no idea." />
+        <FaqItem q="What's the difference between green and blue texts?" a="Green texts (SMS) require A2P registration and can get filtered by carriers. Blue texts (iMessage) go through Apple's network directly with no registration needed, higher deliverability, and a more trusted look. Our Pro plan includes blue texts." />
+        <FaqItem q="Can I take over a conversation from the AI?" a="Yes. Every conversation has an AI toggle. Turn it off with one click and you're in control. Turn it back on and the AI picks up where you left off." />
+        <FaqItem q="How fast does the AI respond to new leads?" a="Within seconds. Not minutes, not hours. The moment a lead comes in, the AI is texting them. That speed alone puts you ahead of 90% of your competition." />
+        <FaqItem q="Do I need any technical skills to set this up?" a="No. When you sign up, our AI bot walks you through setup with a few simple questions about your business. It configures everything automatically. You can be live in minutes." />
+        <FaqItem q="What happens if a lead goes cold?" a="The AI automatically follows up with a different approach each time. Day 1, day 3, day 7, day 14. Each follow-up uses a different angle based on the conversation history. No lead gets forgotten." />
       </div>
 
       {/* Final CTA */}
