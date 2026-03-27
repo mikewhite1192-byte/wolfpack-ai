@@ -265,6 +265,29 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
     }
     setExpandedEmail(threadId);
     if (emailDetails[threadId]) return;
+
+    // CRM-stored emails — data already available
+    const thread = emailThreads.find(t => t.id === threadId);
+    if (thread && (thread as Record<string, unknown>).crmMessages) {
+      const crm = (thread as Record<string, unknown>).crmMessages as Array<Record<string, unknown>>;
+      setEmailDetails(prev => ({
+        ...prev,
+        [threadId]: crm.map(m => ({
+          id: m.id as string,
+          threadId,
+          from: (m.sender as string) || "",
+          to: (m.recipient as string) || "",
+          subject: (m.subject as string) || "",
+          body: (m.body as string) || "",
+          date: (m.created_at as string) || "",
+          isRead: true,
+          snippet: ((m.body as string) || "").substring(0, 100),
+        })),
+      }));
+      return;
+    }
+
+    // Gmail threads — fetch from API
     try {
       const res = await fetch(`/api/email/threads/${threadId}`);
       const data = await res.json();
