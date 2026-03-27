@@ -254,7 +254,7 @@ export async function POST(req: Request) {
             const apptEmail = (result as Record<string, unknown>).appointmentEmail as string | null;
             const bizName = agentConfig.businessName || ws.name || "Meeting";
             const leadName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || "Lead";
-            const useMeet = (agentConfig as Record<string, unknown>).autoGoogleMeet || false;
+            const useMeet = (agentConfig as unknown as Record<string, unknown>).autoGoogleMeet || false;
 
             // Save appointment to contact
             await sql`
