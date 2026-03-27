@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -66,30 +66,45 @@ function PhoneMockup() {
 
   const visible = DEMO_MSGS.slice(0, visibleCount);
 
+  const msgEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    msgEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [visibleCount, showTyping]);
+
   return (
     <div className="lp-phone">
       <div className="lp-phone-notch" />
       <div className="lp-phone-header">
+        <div className="lp-phone-avatar">WP</div>
         <div className="lp-phone-name">Wolf Pack AI</div>
-        <div className="lp-phone-sub">AI Sales Agent</div>
+        <div className="lp-phone-sub">iMessage</div>
       </div>
       <div className="lp-phone-msgs">
-        {visible.map((m, i) => {
-          const next = visible[i + 1];
-          const isTail = !next || next.type !== m.type;
-          return (
-            <div key={i} className={`lp-chat-row ${m.type === "in" ? "in" : "out"}${isTail ? " tail" : ""}`} style={{ animationDelay: "0s" }}>
-              <div className={`lp-chat-bubble ${m.type === "in" ? "in" : "out"}`}>{m.text}</div>
-              {isTail && <div className="lp-chat-time">{m.type === "out" ? "AI · " : ""}Just now</div>}
+        <div className="lp-phone-msgs-inner">
+          {visible.map((m, i) => {
+            const next = visible[i + 1];
+            const isTail = !next || next.type !== m.type;
+            return (
+              <div key={i} className={`lp-chat-row ${m.type === "in" ? "in" : "out"}${isTail ? " tail" : ""}`}>
+                <div className={`lp-chat-bubble ${m.type === "in" ? "in" : "out"}`}>{m.text}</div>
+                {isTail && <div className="lp-chat-time">{m.type === "out" ? "AI · " : ""}now</div>}
+              </div>
+            );
+          })}
+          {showTyping && (
+            <div className="lp-chat-row in" style={{ opacity: 1 }}>
+              <div className="lp-chat-typing"><span /><span /><span /></div>
             </div>
-          );
-        })}
-        {showTyping && (
-          <div className="lp-chat-row in" style={{ opacity: 1 }}>
-            <div className="lp-chat-typing"><span /><span /><span /></div>
-          </div>
-        )}
+          )}
+          <div ref={msgEndRef} />
+        </div>
       </div>
+      <div className="lp-phone-input">
+        <div className="lp-phone-input-bar">iMessage</div>
+        <div className="lp-phone-input-send">↑</div>
+      </div>
+      <div className="lp-phone-home" />
     </div>
   );
 }
@@ -123,26 +138,35 @@ export default function Home() {
         .lp-stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #E86A2A; }
         .lp-stat-label { font-size: 13px; color: #b0b4c8; margin-top: 4px; }
 
-        .lp-phone { width: 300px; background: #111827; border-radius: 28px; border: 2px solid rgba(255,255,255,0.1); overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-        .lp-phone-notch { width: 120px; height: 24px; background: #0D1426; border-radius: 0 0 14px 14px; margin: 0 auto; }
-        .lp-phone-header { padding: 12px 16px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
-        .lp-phone-name { font-size: 14px; font-weight: 700; color: #e8eaf0; }
-        .lp-phone-sub { font-size: 10px; color: #b0b4c8; }
-        .lp-phone-msgs { padding: 14px 12px; min-height: 320px; display: flex; flex-direction: column; gap: 3px; justify-content: flex-end; }
-        .lp-chat-row { display: flex; flex-direction: column; margin-bottom: 2px; opacity: 0; animation: lp-msg-in 0.4s ease forwards; }
-        .lp-chat-row.in { align-items: flex-start; padding-right: 40px; }
-        .lp-chat-row.out { align-items: flex-end; padding-left: 40px; }
-        .lp-chat-row.tail { margin-bottom: 6px; }
-        .lp-chat-bubble { width: fit-content; max-width: 90%; padding: 8px 12px; font-size: 13px; line-height: 1.4; }
-        .lp-chat-bubble.in { background: #1E293B; color: #e8eaf0; border-radius: 16px 16px 16px 4px; }
-        .lp-chat-bubble.out { background: #E86A2A; color: #fff; border-radius: 16px 16px 4px 16px; }
-        .lp-chat-time { font-size: 9px; color: #666; margin-top: 2px; padding: 0 4px; }
-        .lp-chat-typing { display: flex; gap: 4px; padding: 10px 14px; background: #1E293B; border-radius: 16px 16px 16px 4px; width: fit-content; }
-        .lp-chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: #666; animation: lp-dot 1.2s ease-in-out infinite; }
+        .lp-phone { width: 300px; background: #000; border-radius: 44px; border: 3px solid #333; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 0 0 2px #1a1a1a; position: relative; }
+        .lp-phone-notch { width: 126px; height: 32px; background: #000; border-radius: 0 0 18px 18px; margin: 0 auto; position: relative; z-index: 2; }
+        .lp-phone-notch::after { content: ""; width: 60px; height: 4px; background: #1a1a1a; border-radius: 2px; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); }
+        .lp-phone-header { padding: 8px 16px 10px; text-align: center; background: #f2f2f7; }
+        .lp-phone-avatar { width: 32px; height: 32px; border-radius: 50%; background: #007AFF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; margin: 0 auto 4px; }
+        .lp-phone-name { font-size: 13px; font-weight: 600; color: #000; }
+        .lp-phone-sub { font-size: 10px; color: #8e8e93; }
+        .lp-phone-msgs { padding: 10px 10px; height: 340px; overflow: hidden; display: flex; flex-direction: column; gap: 2px; background: #fff; }
+        .lp-phone-msgs-inner { display: flex; flex-direction: column; gap: 2px; margin-top: auto; }
+        .lp-chat-row { display: flex; flex-direction: column; margin-bottom: 1px; opacity: 0; animation: lp-msg-in 0.35s ease forwards; }
+        .lp-chat-row.in { align-items: flex-start; padding-left: 4px; padding-right: 50px; }
+        .lp-chat-row.out { align-items: flex-end; padding-right: 4px; padding-left: 50px; }
+        .lp-chat-row.tail { margin-bottom: 4px; }
+        .lp-chat-bubble { width: fit-content; max-width: 100%; padding: 7px 12px; font-size: 13px; line-height: 1.35; }
+        .lp-chat-bubble.in { background: #e9e9eb; color: #000; border-radius: 18px; }
+        .lp-chat-row.tail .lp-chat-bubble.in { border-radius: 18px 18px 18px 4px; }
+        .lp-chat-bubble.out { background: #007AFF; color: #fff; border-radius: 18px; }
+        .lp-chat-row.tail .lp-chat-bubble.out { border-radius: 18px 18px 4px 18px; }
+        .lp-chat-time { font-size: 9px; color: #8e8e93; margin-top: 2px; padding: 0 6px; }
+        .lp-chat-typing { display: flex; gap: 4px; padding: 10px 14px; background: #e9e9eb; border-radius: 18px 18px 18px 4px; width: fit-content; }
+        .lp-chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: #8e8e93; animation: lp-dot 1.2s ease-in-out infinite; }
         .lp-chat-typing span:nth-child(2) { animation-delay: 0.15s; }
         .lp-chat-typing span:nth-child(3) { animation-delay: 0.3s; }
+        .lp-phone-input { background: #f2f2f7; padding: 8px 12px; display: flex; align-items: center; gap: 8px; }
+        .lp-phone-input-bar { flex: 1; background: #fff; border: 1px solid #c7c7cc; border-radius: 18px; padding: 6px 14px; font-size: 12px; color: #8e8e93; }
+        .lp-phone-input-send { width: 28px; height: 28px; border-radius: 50%; background: #007AFF; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+        .lp-phone-home { width: 36px; height: 4px; background: #333; border-radius: 2px; margin: 8px auto; }
 
-        @keyframes lp-msg-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes lp-msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes lp-dot { 0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); } 30% { opacity: 1; transform: scale(1); } }
 
         @media (max-width: 768px) {
