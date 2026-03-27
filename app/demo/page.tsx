@@ -200,63 +200,189 @@ export default function DemoPage() {
           </div>
         )}
 
-        {/* Live View */}
+        {/* Live View — Full CRM experience */}
         {step === "live" && (
-          <>
-            <div className="demo-live">
-              <div className="demo-live-header">
-                <div className="demo-live-dot" />
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#0D1426", zIndex: 1000, display: "flex" }}>
+            {/* Sidebar */}
+            <div style={{ width: 220, background: "#080f1e", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+              <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "#e8eaf0", letterSpacing: 1.5 }}>THE <span style={{ color: "#E86A2A" }}>WOLF</span> PACK AI</div>
+                <div style={{ fontSize: 10, color: "#b0b4c8", marginTop: 2 }}>Live Demo</div>
+              </div>
+              <div style={{ flex: 1, padding: "12px 10px" }}>
+                {["Dashboard", "Pipeline", "Conversations", "Email", "Calendar", "Contacts"].map((item, i) => (
+                  <div key={item} style={{
+                    padding: "10px 12px", borderRadius: 8, fontSize: 13, marginBottom: 2,
+                    color: item === "Conversations" ? "#E86A2A" : "#b0b4c8",
+                    background: item === "Conversations" ? "rgba(232,106,42,0.12)" : "transparent",
+                  }}>
+                    {["▦", "⬡", "💬", "📧", "📅", "👥"][i]} {item}
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "12px 10px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ padding: "10px 12px", borderRadius: 8, fontSize: 13, color: "#2ecc71", background: "rgba(46,204,113,0.08)", border: "1px solid rgba(46,204,113,0.2)" }}>
+                  📞 Dial Out
+                </div>
+              </div>
+            </div>
+
+            {/* Conversation List */}
+            <div style={{ width: 280, borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+              <div style={{ padding: 12, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <input placeholder="Search..." style={{ width: "100%", padding: "8px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, fontSize: 13, color: "#e8eaf0", outline: "none", boxSizing: "border-box" }} readOnly />
+              </div>
+              <div style={{ flex: 1, overflowY: "auto" }}>
+                {/* Active demo conversation */}
+                <div style={{ display: "flex", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(232,106,42,0.08)", borderLeft: "3px solid #E86A2A" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(232,106,42,0.2)", color: "#E86A2A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", flexShrink: 0 }}>
+                    {name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#e8eaf0", display: "flex", justifyContent: "space-between" }}>
+                      <span>{name} <span style={{ fontSize: 10, color: "#2ecc71" }}>AI</span></span>
+                      <span style={{ fontSize: 10, color: "#b0b4c8" }}>Now</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#b0b4c8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
+                      {messages.length > 0 ? messages[messages.length - 1].body?.substring(0, 40) : "Starting conversation..."}
+                    </div>
+                  </div>
+                </div>
+                {/* Fake other conversations */}
+                {[{ name: "Marcus Johnson", preview: "Thursday at 10 works", time: "2h" }, { name: "Tony Russo", preview: "Saturday works great Tony", time: "5h" }, { name: "David Williams", preview: "We have a few different programs", time: "1d" }].map((c, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)", opacity: 0.5 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(232,106,42,0.2)", color: "#E86A2A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", flexShrink: 0 }}>
+                      {c.name.split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#e8eaf0", display: "flex", justifyContent: "space-between" }}>
+                        <span>{c.name}</span><span style={{ fontSize: 10, color: "#b0b4c8" }}>{c.time}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#b0b4c8", marginTop: 2 }}>{c.preview}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Message Thread */}
+            <div style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", borderRight: "1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div className="demo-live-title">Live Demo Active</div>
-                  <div className="demo-live-sub">Check your phone for texts from our AI agent</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#e8eaf0", fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 }}>{name}</div>
+                  <div style={{ fontSize: 11, color: "#b0b4c8" }}>{phone} · SMS</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2ecc71", boxShadow: "0 0 6px #2ecc71" }} />
+                  <div style={{ width: 34, height: 18, borderRadius: 9, background: "#2ecc71", position: "relative", padding: 2 }}>
+                    <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff", transform: "translateX(16px)" }} />
+                  </div>
+                  <span style={{ fontSize: 10, color: "#2ecc71", fontWeight: 600 }}>AI</span>
                 </div>
               </div>
 
-              <div className="demo-phone">
-                <div className="demo-phone-header">
-                  <div className="demo-phone-name">Wolf Pack AI</div>
-                  <div className="demo-phone-number">{phone}</div>
-                </div>
-
-                <div className="demo-phone-msgs">
-                  {messages.length === 0 ? (
-                    <div className="demo-waiting">
-                      <div className="demo-waiting-text">Waiting for first message...</div>
-                      <div className="demo-waiting-sub">The AI is composing your first text right now</div>
-                    </div>
-                  ) : (
-                    <div className="demo-phone-msgs-inner">
-                      {messages.map((m, i) => {
-                        const next = messages[i + 1];
-                        const showTail = !next || next.direction !== m.direction;
-                        return (
-                          <div key={i} className={`demo-msg-row ${m.direction}${showTail ? " tail" : ""}`}>
-                            <div className={`demo-bubble ${m.direction}`}>{m.body}</div>
-                            {showTail && (
-                              <div className="demo-msg-time">
-                                {m.sent_by === "ai" && "AI · "}
-                                {formatTime(m.created_at)}
-                              </div>
-                            )}
+              <div style={{ flex: 1, overflowY: "auto", padding: "14px 10px", display: "flex", flexDirection: "column", minHeight: 0 }}>
+                {messages.length === 0 ? (
+                  <div style={{ textAlign: "center", color: "#b0b4c8", padding: 40, fontSize: 13, margin: "auto 0" }}>
+                    Waiting for first message...<br />
+                    <span style={{ fontSize: 11, color: "#666" }}>Check your phone</span>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: "auto" }}>
+                    {messages.map((m, i) => {
+                      const next = messages[i + 1];
+                      const showTail = !next || next.direction !== m.direction;
+                      return (
+                        <div key={i} style={{
+                          display: "flex", flexDirection: "column", marginBottom: showTail ? 6 : 1,
+                          alignItems: m.direction === "inbound" ? "flex-start" : "flex-end",
+                          paddingLeft: m.direction === "inbound" ? 8 : 40,
+                          paddingRight: m.direction === "outbound" ? 8 : 40,
+                        }}>
+                          <div style={{
+                            width: "fit-content", maxWidth: "85%", padding: "8px 12px", fontSize: 13, lineHeight: 1.4,
+                            wordWrap: "break-word", whiteSpace: "pre-wrap",
+                            background: m.direction === "inbound" ? "#1E293B" : "#E86A2A",
+                            color: m.direction === "inbound" ? "#e8eaf0" : "#fff",
+                            borderRadius: m.direction === "inbound"
+                              ? (showTail ? "16px 16px 16px 4px" : "16px")
+                              : (showTail ? "16px 16px 4px 16px" : "16px"),
+                          }}>
+                            {m.body}
                           </div>
-                        );
-                      })}
-                      <div ref={endRef} />
-                    </div>
-                  )}
-                </div>
+                          {showTail && (
+                            <div style={{ fontSize: 10, color: "#b0b4c8", marginTop: 2, padding: "0 4px" }}>
+                              {m.sent_by === "ai" && <span style={{ color: "#2ecc71" }}>AI · </span>}
+                              {formatTime(m.created_at)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div ref={endRef} />
+                  </div>
+                )}
+              </div>
 
-                <div className="demo-phone-footer">
-                  Conversation updates in real time as you text back
+              <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: 8, flexShrink: 0 }}>
+                <div style={{ flex: 1, padding: "9px 12px", background: "#111827", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, color: "#666", fontSize: 13 }}>
+                  Type a message...
                 </div>
+                <div style={{ padding: "9px 18px", background: "#E86A2A", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>
+                  Send
+                </div>
+              </div>
+              <div style={{ padding: "10px 14px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", fontSize: 11, color: "#b0b4c8" }}>
+                SMS · {phone}
+                <span style={{ marginLeft: "auto", color: "#2ecc71", fontWeight: 600 }}>AI Auto-Reply On</span>
               </div>
             </div>
 
-            <div className="demo-cta">
-              <div className="demo-cta-text">Like what you see? Let's set you up.</div>
-              <a href="/book/default" className="demo-cta-btn">Book a Call</a>
+            {/* Contact Card */}
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "20px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(232,106,42,0.2)", color: "#E86A2A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", margin: "0 auto 10px" }}>
+                  {name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#e8eaf0", fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 }}>{name}</div>
+                {businessType && <div style={{ fontSize: 12, color: "#b0b4c8", marginTop: 2 }}>{businessType}</div>}
+                <div style={{ marginTop: 8 }}>
+                  <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: "rgba(52,152,219,0.2)", color: "#3498db" }}>New Lead</span>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, padding: "8px 10px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#b0b4c8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Phone</div>
+                  <div style={{ fontSize: 12, color: "#e8eaf0" }}>{phone}</div>
+                </div>
+                <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, padding: "8px 10px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#b0b4c8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Source</div>
+                  <div style={{ fontSize: 12, color: "#e8eaf0" }}>Live Demo</div>
+                </div>
+                <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, padding: "8px 10px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#b0b4c8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Deal Value</div>
+                  <div style={{ fontSize: 16, color: "#E86A2A", fontFamily: "'Bebas Neue', sans-serif" }}>$0</div>
+                </div>
+                <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, padding: "8px 10px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#b0b4c8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Added</div>
+                  <div style={{ fontSize: 12, color: "#e8eaf0" }}>Just now</div>
+                </div>
+              </div>
+
+              <div style={{ padding: "14px 18px", flex: 1 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#b0b4c8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>Notes (0)</div>
+                <div style={{ textAlign: "center", color: "#b0b4c8", fontSize: 12, padding: 20 }}>No notes yet</div>
+              </div>
+
+              {/* CTA Banner */}
+              <div style={{ padding: "16px 18px", borderTop: "1px solid rgba(255,255,255,0.07)", textAlign: "center", background: "rgba(232,106,42,0.05)" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#e8eaf0", marginBottom: 6 }}>This is YOUR CRM</div>
+                <div style={{ fontSize: 12, color: "#b0b4c8", marginBottom: 12, lineHeight: 1.5 }}>Every lead gets this experience automatically</div>
+                <a href="/book/default" style={{ display: "inline-block", padding: "10px 28px", background: "#E86A2A", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Book a Call</a>
+              </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
