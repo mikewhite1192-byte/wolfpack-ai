@@ -59,7 +59,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       ORDER BY position ASC
     `;
 
-    // Fetch email threads for this contact (if Gmail connected and contact has email)
+    // Get email messages from CRM database
+    const emailMessages = await sql`
+      SELECT m.* FROM messages m
+      JOIN conversations conv ON conv.id = m.conversation_id
+      WHERE conv.contact_id = ${contactId} AND conv.workspace_id = ${workspace.id} AND m.channel = 'email'
+      ORDER BY m.created_at DESC
+      LIMIT 20
+    `;
+
+    // Also try Gmail API for live threads (if connected)
     let emailThreads: Array<Record<string, unknown>> = [];
     const contactEmail = deal[0].email;
     if (contactEmail) {
@@ -67,10 +76,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         const token = await getGmailToken(workspace.id);
         if (token) {
           const query = `from:${contactEmail} OR to:${contactEmail}`;
-          const threadList = await gmailFetch(token, `threads?q=${encodeURIComponent(query)}&maxResults=15`);
+          const threadList = await gmailFetch(token, `threads?q=${encodeURIComponent(query)}&maxResults=10`);
           if (threadList.threads && threadList.threads.length > 0) {
             emailThreads = await Promise.all(
-              threadList.threads.slice(0, 15).map(async (t: { id: string }) => {
+              threadList.threads.slice(0, 10).map(async (t: { id: string }) => {
                 const thread = await gmailFetch(token, `threads/${t.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`);
                 const msgs = (thread.messages || []) as Array<Record<string, unknown>>;
                 if (msgs.length === 0) return null;
@@ -89,6 +98,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
                   date: getHeader(lastHeaders, "Date"),
                   snippet: (last.snippet as string) || "",
                   messageCount: msgs.length,
+                  source: "gmail",
                 };
               })
             );
@@ -96,8 +106,31 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           }
         }
       } catch {
-        // Gmail not connected or error — skip email threads silently
+        // Gmail not connected — use CRM emails only
       }
+    }
+
+    // If no Gmail threads, build threads from CRM email messages
+    if (emailThreads.length === 0 && emailMessages.length > 0) {
+      // Group by subject
+      const grouped: Record<string, typeof emailMessages> = {};
+      for (const m of emailMessages) {
+        const subj = (m.subject as string) || "(no subject)";
+        const key = subj.replace(/^(Re:|Fwd:)\s*/i, "").trim();
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(m);
+      }
+      emailThreads = Object.entries(grouped).map(([subject, msgs]) => ({
+        id: `crm-${msgs[0].id}`,
+        subject,
+        from: msgs[0].sender || "",
+        to: msgs[0].recipient || "",
+        date: msgs[msgs.length - 1].created_at,
+        snippet: ((msgs[msgs.length - 1].body as string) || "").substring(0, 100),
+        messageCount: msgs.length,
+        source: "crm",
+        crmMessages: msgs,
+      }));
     }
 
     return NextResponse.json({
