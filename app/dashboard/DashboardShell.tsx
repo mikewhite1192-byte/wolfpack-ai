@@ -21,8 +21,8 @@ const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: "▦" },
   { label: "Pipeline", href: "/dashboard/pipeline", icon: "⬡" },
   { label: "Conversations", href: "/dashboard/conversations", icon: "💬" },
+  { label: "Email", href: "/dashboard/email", icon: "📧" },
   { label: "Contacts", href: "/dashboard/contacts", icon: "👥" },
-  { label: "Automations", href: "/dashboard/automations", icon: "⚡" },
   { label: "Settings", href: "/dashboard/settings", icon: "⚙" },
 ];
 
