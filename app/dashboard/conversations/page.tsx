@@ -74,6 +74,7 @@ export default function ConversationsPage() {
   const [note, setNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [notes, setNotes] = useState<{text: string; created_at: string}[]>([]);
+  const [togglingAi, setTogglingAi] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = useCallback(async () => {
@@ -190,6 +191,20 @@ export default function ConversationsPage() {
         created_at: a.created_at,
       }));
     setNotes(noteItems);
+  }
+
+  async function handleToggleAi() {
+    if (!activeConvo || !activeContact || togglingAi) return;
+    setTogglingAi(true);
+    const newVal = !activeContact.ai_enabled;
+    await fetch(`/api/conversations/${activeConvo}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aiEnabled: newVal }),
+    });
+    setActiveContact({ ...activeContact, ai_enabled: newVal });
+    setConversations(prev => prev.map(c => c.id === activeConvo ? { ...c, ai_enabled: newVal } : c));
+    setTogglingAi(false);
   }
 
   function contactName(c: Conversation) {
@@ -324,11 +339,36 @@ export default function ConversationsPage() {
           <div className="cv-empty">Select a conversation to view messages</div>
         ) : (
           <>
-            <div className="cv-thread-header">
-              <div className="cv-thread-name">{activeContact ? contactName(activeContact) : ""}</div>
-              <div className="cv-thread-phone">
-                {activeContact?.phone || ""} · SMS
-                {activeContact?.ai_enabled && <span style={{ color: T.green, marginLeft: 8 }}>AI Active</span>}
+            <div className="cv-thread-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div className="cv-thread-name">{activeContact ? contactName(activeContact) : ""}</div>
+                <div className="cv-thread-phone">
+                  {activeContact?.phone || ""} · SMS
+                </div>
+              </div>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: 6, cursor: togglingAi ? "wait" : "pointer" }}
+                onClick={handleToggleAi}
+                title={activeContact?.ai_enabled ? "AI Auto-Reply is ON — click to disable" : "AI Auto-Reply is OFF — click to enable"}
+              >
+                <div style={{
+                  width: 8, height: 8, borderRadius: "50%",
+                  background: activeContact?.ai_enabled ? T.green : T.muted,
+                  boxShadow: activeContact?.ai_enabled ? `0 0 6px ${T.green}` : "none",
+                  transition: "all 0.2s",
+                }} />
+                <div style={{
+                  width: 34, height: 18, borderRadius: 9, padding: 2,
+                  background: activeContact?.ai_enabled ? T.green : "rgba(255,255,255,0.15)",
+                  transition: "background 0.2s", position: "relative",
+                }}>
+                  <div style={{
+                    width: 14, height: 14, borderRadius: "50%", background: "#fff",
+                    transition: "transform 0.2s",
+                    transform: activeContact?.ai_enabled ? "translateX(16px)" : "translateX(0)",
+                  }} />
+                </div>
+                <span style={{ fontSize: 10, color: activeContact?.ai_enabled ? T.green : T.muted, fontWeight: 600 }}>AI</span>
               </div>
             </div>
             <div className="cv-msgs">
@@ -380,7 +420,10 @@ export default function ConversationsPage() {
               <span style={{ fontSize: 11, color: T.muted }}>
                 {activeContact?.channel === "imessage" ? "iMessage" : "SMS"} · {activeContact?.phone}
               </span>
-              <span style={{ marginLeft: "auto", fontSize: 11, color: activeContact?.ai_enabled ? T.green : T.muted, fontWeight: 600 }}>
+              <span
+                style={{ marginLeft: "auto", fontSize: 11, color: activeContact?.ai_enabled ? T.green : T.muted, fontWeight: 600, cursor: "pointer" }}
+                onClick={handleToggleAi}
+              >
                 {activeContact?.ai_enabled ? "AI Auto-Reply On" : "AI Off"}
               </span>
             </div>

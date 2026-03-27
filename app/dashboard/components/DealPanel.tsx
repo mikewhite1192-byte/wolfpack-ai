@@ -70,6 +70,27 @@ interface Stage {
   color: string;
 }
 
+interface EmailThread {
+  id: string;
+  subject: string;
+  from: string;
+  to: string;
+  lastFrom: string;
+  date: string;
+  snippet: string;
+  messageCount: number;
+}
+
+interface EmailDetail {
+  id: string;
+  from: string;
+  to: string;
+  subject: string;
+  date: string;
+  body: string;
+  snippet: string;
+}
+
 interface DealPanelProps {
   dealId: string;
   onClose: () => void;
@@ -84,12 +105,26 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
   const [calls, setCalls] = useState<Call[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"notes" | "timeline" | "messages" | "calls">("notes");
+  const [tab, setTab] = useState<"notes" | "timeline" | "messages" | "calls" | "emails">("notes");
   const [note, setNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [editingValue, setEditingValue] = useState(false);
   const [showChat, setShowChat] = useState(false);
+
+  // Email state
+  const [emailThreads, setEmailThreads] = useState<EmailThread[]>([]);
+  const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
+  const [emailDetails, setEmailDetails] = useState<Record<string, EmailDetail[]>>({});
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeTo, setComposeTo] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [composeSending, setComposeSending] = useState(false);
+
+  // AI toggle state
+  const [chatAiEnabled, setChatAiEnabled] = useState(true);
+  const [togglingAi, setTogglingAi] = useState(false);
 
   // Chat state
   const [chatConvId, setChatConvId] = useState<string | null>(null);
@@ -107,7 +142,9 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
     setMessages(data.messages || []);
     setCalls(data.calls || []);
     setStages(data.stages || []);
+    setEmailThreads(data.emailThreads || []);
     setEditValue(data.deal?.value || "");
+    if (data.deal?.email) setComposeTo(data.deal.email);
     setLoading(false);
   }, [dealId]);
 
@@ -127,6 +164,7 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
       );
       if (existing) {
         setChatConvId(existing.id);
+        setChatAiEnabled(existing.ai_enabled ?? true);
         const msgRes = await fetch(`/api/conversations/${existing.id}/messages`);
         const msgData = await msgRes.json();
         setChatMessages(msgData.messages || []);
@@ -205,6 +243,50 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
     setEditingValue(false);
     fetchDeal();
     onUpdate?.();
+  }
+
+  async function handleToggleChatAi() {
+    if (!chatConvId || togglingAi) return;
+    setTogglingAi(true);
+    const newVal = !chatAiEnabled;
+    await fetch(`/api/conversations/${chatConvId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aiEnabled: newVal }),
+    });
+    setChatAiEnabled(newVal);
+    setTogglingAi(false);
+  }
+
+  async function handleExpandEmail(threadId: string) {
+    if (expandedEmail === threadId) {
+      setExpandedEmail(null);
+      return;
+    }
+    setExpandedEmail(threadId);
+    if (emailDetails[threadId]) return;
+    try {
+      const res = await fetch(`/api/email/threads/${threadId}`);
+      const data = await res.json();
+      setEmailDetails(prev => ({ ...prev, [threadId]: data.messages || [] }));
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleSendEmail() {
+    if (!composeTo.trim() || !composeBody.trim()) return;
+    setComposeSending(true);
+    await fetch("/api/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: composeTo, subject: composeSubject, body: composeBody }),
+    });
+    setComposeSending(false);
+    setShowCompose(false);
+    setComposeSubject("");
+    setComposeBody("");
+    fetchDeal();
   }
 
   function formatDate(d: string) {
@@ -367,7 +449,33 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
                   <div className="dp-chat-title">{fullName}</div>
                   <div className="dp-chat-sub">{deal.phone} · SMS</div>
                 </div>
-                <button className="dp-chat-close" onClick={() => setShowChat(false)}>×</button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 6, cursor: togglingAi ? "wait" : "pointer" }}
+                    onClick={handleToggleChatAi}
+                    title={chatAiEnabled ? "AI Auto-Reply is ON" : "AI Auto-Reply is OFF"}
+                  >
+                    <div style={{
+                      width: 8, height: 8, borderRadius: "50%",
+                      background: chatAiEnabled ? T.green : T.muted,
+                      boxShadow: chatAiEnabled ? `0 0 6px ${T.green}` : "none",
+                      transition: "all 0.2s",
+                    }} />
+                    <div style={{
+                      width: 34, height: 18, borderRadius: 9, padding: 2,
+                      background: chatAiEnabled ? T.green : "rgba(255,255,255,0.15)",
+                      transition: "background 0.2s", position: "relative",
+                    }}>
+                      <div style={{
+                        width: 14, height: 14, borderRadius: "50%", background: "#fff",
+                        transition: "transform 0.2s",
+                        transform: chatAiEnabled ? "translateX(16px)" : "translateX(0)",
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 10, color: chatAiEnabled ? T.green : T.muted, fontWeight: 600 }}>AI</span>
+                  </div>
+                  <button className="dp-chat-close" onClick={() => setShowChat(false)}>×</button>
+                </div>
               </div>
               <div className="dp-chat-messages">
                 {chatLoading ? (
@@ -417,6 +525,9 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
               </div>
               <div className="dp-chat-footer">
                 <span style={{ fontSize: 11, color: T.muted }}>SMS · {deal.phone}</span>
+                <span style={{ marginLeft: "auto", fontSize: 11, color: chatAiEnabled ? T.green : T.muted, fontWeight: 600 }}>
+                  {chatAiEnabled ? "AI Auto-Reply On" : "AI Off"}
+                </span>
               </div>
             </div>
           )}
@@ -537,6 +648,7 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
               <div className={`dp-tab ${tab === "timeline" ? "active" : ""}`} onClick={() => setTab("timeline")}>Timeline ({timeline.length})</div>
               <div className={`dp-tab ${tab === "messages" ? "active" : ""}`} onClick={() => setTab("messages")}>Msgs ({messages.length})</div>
               <div className={`dp-tab ${tab === "calls" ? "active" : ""}`} onClick={() => setTab("calls")}>Calls ({calls.length})</div>
+              <div className={`dp-tab ${tab === "emails" ? "active" : ""}`} onClick={() => setTab("emails")}>Emails ({emailThreads.length})</div>
             </div>
 
             <div className="dp-timeline">
@@ -642,6 +754,121 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
                     </div>
                   ))
                 )
+              )}
+
+              {tab === "emails" && (
+                <>
+                  <div style={{ marginBottom: 12 }}>
+                    <button
+                      onClick={() => setShowCompose(!showCompose)}
+                      style={{ padding: "8px 16px", background: T.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                    >
+                      {showCompose ? "Cancel" : "Compose Email"}
+                    </button>
+                  </div>
+
+                  {showCompose && (
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>To</div>
+                        <input
+                          value={composeTo}
+                          onChange={e => setComposeTo(e.target.value)}
+                          placeholder="email@example.com"
+                          style={{ width: "100%", padding: "7px 10px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, color: T.text, fontSize: 13, outline: "none", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>Subject</div>
+                        <input
+                          value={composeSubject}
+                          onChange={e => setComposeSubject(e.target.value)}
+                          placeholder="Subject"
+                          style={{ width: "100%", padding: "7px 10px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, color: T.text, fontSize: 13, outline: "none", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>Body</div>
+                        <textarea
+                          value={composeBody}
+                          onChange={e => setComposeBody(e.target.value)}
+                          placeholder="Write your email..."
+                          rows={5}
+                          style={{ width: "100%", padding: "8px 10px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, color: T.text, fontSize: 13, outline: "none", fontFamily: "'Inter', sans-serif", resize: "vertical", boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <button
+                        onClick={handleSendEmail}
+                        disabled={composeSending || !composeTo.trim() || !composeBody.trim()}
+                        style={{ padding: "8px 20px", background: T.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: composeSending || !composeTo.trim() || !composeBody.trim() ? 0.5 : 1 }}
+                      >
+                        {composeSending ? "Sending..." : "Send Email"}
+                      </button>
+                    </div>
+                  )}
+
+                  {emailThreads.length === 0 ? (
+                    <div style={{ textAlign: "center", color: T.muted, padding: 30, fontSize: 13 }}>
+                      {deal?.email ? "No email threads found." : "No email address on file."}
+                    </div>
+                  ) : (
+                    emailThreads.map((et) => (
+                      <div key={et.id} style={{ marginBottom: 8 }}>
+                        <div
+                          onClick={() => handleExpandEmail(et.id)}
+                          style={{
+                            background: T.surface, border: `1px solid ${expandedEmail === et.id ? T.orange + "50" : T.border}`,
+                            borderRadius: 10, padding: 12, cursor: "pointer", transition: "border-color 0.15s",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {et.subject}
+                              </div>
+                              <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>
+                                {et.from?.split("<")[0]?.trim() || et.from} → {et.to?.split("<")[0]?.trim() || et.to}
+                              </div>
+                              <div style={{ fontSize: 12, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {et.snippet}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <div style={{ fontSize: 10, color: T.muted }}>{et.date ? new Date(et.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</div>
+                              {et.messageCount > 1 && (
+                                <span className="dp-badge" style={{ background: `${T.blue}20`, color: T.blue, marginTop: 4 }}>{et.messageCount}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {expandedEmail === et.id && emailDetails[et.id] && (
+                          <div style={{ marginTop: 4, marginLeft: 12, borderLeft: `2px solid ${T.orange}30`, paddingLeft: 12 }}>
+                            {emailDetails[et.id].map((em, i) => (
+                              <div key={i} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 8, padding: 12, marginBottom: 6 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                                  <div>
+                                    <div style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{em.from?.split("<")[0]?.trim()}</div>
+                                    <div style={{ fontSize: 10, color: T.muted }}>To: {em.to?.split("<")[0]?.trim()}</div>
+                                  </div>
+                                  <div style={{ fontSize: 10, color: T.muted }}>{em.date ? new Date(em.date).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}</div>
+                                </div>
+                                {em.subject && <div style={{ fontSize: 11, color: T.muted, marginBottom: 6, fontStyle: "italic" }}>{em.subject}</div>}
+                                <div style={{ fontSize: 12, color: T.text, lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 300, overflowY: "auto" }}>
+                                  {em.body || em.snippet || "(no content)"}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {expandedEmail === et.id && !emailDetails[et.id] && (
+                          <div style={{ textAlign: "center", color: T.muted, padding: 12, fontSize: 12 }}>Loading...</div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </>
               )}
             </div>
 
