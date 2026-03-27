@@ -23,6 +23,7 @@ const NAV = [
   { label: "Conversations", href: "/dashboard/conversations", icon: "💬" },
   { label: "Email", href: "/dashboard/email", icon: "📧" },
   { label: "Calendar", href: "/dashboard/calendar", icon: "📅" },
+  { label: "Analytics", href: "/dashboard/analytics", icon: "📊" },
   { label: "Contacts", href: "/dashboard/contacts", icon: "👥" },
   { label: "Settings", href: "/dashboard/settings", icon: "⚙" },
 ];

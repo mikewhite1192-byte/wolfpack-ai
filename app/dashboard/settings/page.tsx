@@ -54,6 +54,15 @@ export default function SettingsPage() {
   // Account
   const [account, setAccount] = useState({ name: "", ownerName: "", phone: "", email: "" });
 
+  // Gmail integration
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailEmail, setGmailEmail] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  // Daily Reports
+  const [reports, setReports] = useState<{ id: string; type: string; content: string; created_at: string }[]>([]);
+  const [generatingReport, setGeneratingReport] = useState(false);
+
   // AI Agent
   const [aiConfig, setAiConfig] = useState({
     enabled: true,
@@ -117,11 +126,21 @@ export default function SettingsPage() {
         phone: b.phone || "",
         email: b.email || "",
       });
+      // Gmail
+      setGmailConnected(!!data.workspace.gmail_connected);
+      setGmailEmail(data.workspace.gmail_email || null);
       // AI Config
       if (data.workspace.ai_config) {
         setAiConfig(prev => ({ ...prev, ...data.workspace.ai_config }));
       }
     }
+
+    // Fetch daily reports
+    try {
+      const rRes = await fetch("/api/ai-agent/daily-report");
+      const rData = await rRes.json();
+      if (rData.reports) setReports(rData.reports);
+    } catch { /* ignore */ }
 
     setLoading(false);
   }, []);
@@ -145,6 +164,32 @@ export default function SettingsPage() {
       setStages(s => [...s, { name: newStage.trim(), color: STAGE_COLORS[s.length % STAGE_COLORS.length], isWon: false, isLost: false }]);
       setNewStage("");
     }
+  }
+
+  async function disconnectGmail() {
+    setDisconnecting(true);
+    await fetch("/api/email/disconnect", { method: "POST" });
+    setGmailConnected(false);
+    setGmailEmail(null);
+    setDisconnecting(false);
+  }
+
+  async function generateReport(type: "morning" | "eod") {
+    setGeneratingReport(true);
+    try {
+      const res = await fetch("/api/ai-agent/daily-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      const data = await res.json();
+      if (data.report) {
+        setReports(prev => [{ id: Date.now().toString(), type, content: data.report, created_at: new Date().toISOString() }, ...prev]);
+      }
+    } catch (e) {
+      console.error("[settings] report error:", e);
+    }
+    setGeneratingReport(false);
   }
 
   if (loading) return <div style={{ color: T.muted, padding: 40, textAlign: "center" }}>Loading settings...</div>;
@@ -482,29 +527,137 @@ What's the property address?`} />
       )}
 
       {settingsTab === "account" && (
-        <div className="settings-card">
-          <div className="settings-section-title">Account Info</div>
-          <div className="settings-field">
-            <div className="settings-label">Business Name</div>
-            <input className="settings-input" value={account.name} onChange={e => setAccount(a => ({ ...a, name: e.target.value }))} placeholder="Your business name" />
+        <div>
+          <div className="settings-card">
+            <div className="settings-section-title">Account Info</div>
+            <div className="settings-field">
+              <div className="settings-label">Business Name</div>
+              <input className="settings-input" value={account.name} onChange={e => setAccount(a => ({ ...a, name: e.target.value }))} placeholder="Your business name" />
+            </div>
+            <div className="settings-field">
+              <div className="settings-label">Your Name</div>
+              <input className="settings-input" value={account.ownerName} onChange={e => setAccount(a => ({ ...a, ownerName: e.target.value }))} placeholder="Your full name" />
+            </div>
+            <div className="settings-field">
+              <div className="settings-label">Phone Number</div>
+              <input className="settings-input" type="tel" value={account.phone} onChange={e => setAccount(a => ({ ...a, phone: e.target.value }))} placeholder="(000) 000-0000" />
+            </div>
+            <div className="settings-field">
+              <div className="settings-label">Email</div>
+              <input className="settings-input" type="email" value={account.email} onChange={e => setAccount(a => ({ ...a, email: e.target.value }))} placeholder="you@yourbusiness.com" />
+            </div>
+            <div className="settings-save">
+              {saved === "account" && <span className="settings-saved">✓ Saved</span>}
+              <button className="settings-btn" disabled={saving} onClick={() => saveSection("account", account)}>
+                {saving ? "Saving..." : "Save Account →"}
+              </button>
+            </div>
           </div>
-          <div className="settings-field">
-            <div className="settings-label">Your Name</div>
-            <input className="settings-input" value={account.ownerName} onChange={e => setAccount(a => ({ ...a, ownerName: e.target.value }))} placeholder="Your full name" />
+
+          {/* Gmail Integration */}
+          <div className="settings-card">
+            <div className="settings-section-title">Integrations</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 20 }}>📧</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Gmail</div>
+                  {gmailConnected ? (
+                    <div style={{ fontSize: 12, color: T.green }}>{gmailEmail || "Connected"}</div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: T.muted }}>Not connected</div>
+                  )}
+                </div>
+              </div>
+              {gmailConnected ? (
+                <button
+                  onClick={disconnectGmail}
+                  disabled={disconnecting}
+                  style={{
+                    padding: "8px 16px",
+                    background: "rgba(231,76,60,0.1)",
+                    border: "1px solid rgba(231,76,60,0.3)",
+                    borderRadius: 8,
+                    color: "#e74c3c",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  {disconnecting ? "Disconnecting..." : "Disconnect Gmail"}
+                </button>
+              ) : (
+                <a
+                  href="/api/email/connect"
+                  style={{
+                    padding: "8px 16px",
+                    background: T.orange,
+                    borderRadius: 8,
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    display: "inline-block",
+                  }}
+                >
+                  Connect Gmail
+                </a>
+              )}
+            </div>
           </div>
-          <div className="settings-field">
-            <div className="settings-label">Phone Number</div>
-            <input className="settings-input" type="tel" value={account.phone} onChange={e => setAccount(a => ({ ...a, phone: e.target.value }))} placeholder="(000) 000-0000" />
-          </div>
-          <div className="settings-field">
-            <div className="settings-label">Email</div>
-            <input className="settings-input" type="email" value={account.email} onChange={e => setAccount(a => ({ ...a, email: e.target.value }))} placeholder="you@yourbusiness.com" />
-          </div>
-          <div className="settings-save">
-            {saved === "account" && <span className="settings-saved">✓ Saved</span>}
-            <button className="settings-btn" disabled={saving} onClick={() => saveSection("account", account)}>
-              {saving ? "Saving..." : "Save Account →"}
-            </button>
+
+          {/* Daily Reports */}
+          <div className="settings-card">
+            <div className="settings-section-title">Daily Reports</div>
+            <p style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>
+              Generate an AI-powered morning briefing or end-of-day summary based on your live CRM data.
+            </p>
+            <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+              <button
+                className="settings-btn"
+                disabled={generatingReport}
+                onClick={() => generateReport("morning")}
+                style={{ background: T.orange }}
+              >
+                {generatingReport ? "Generating..." : "Generate Morning Briefing"}
+              </button>
+              <button
+                className="settings-btn"
+                disabled={generatingReport}
+                onClick={() => generateReport("eod")}
+                style={{ background: "rgba(255,255,255,0.08)", border: `1px solid ${T.border}` }}
+              >
+                {generatingReport ? "Generating..." : "Generate EOD Report"}
+              </button>
+            </div>
+            {reports.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {reports.slice(0, 5).map(r => (
+                  <div key={r.id} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 8, padding: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                        color: r.type === "morning" ? T.orange : "#9b59b6",
+                        background: r.type === "morning" ? `${T.orange}15` : "rgba(155,89,182,0.15)",
+                        padding: "3px 8px",
+                        borderRadius: 6,
+                      }}>
+                        {r.type === "morning" ? "Morning Briefing" : "EOD Report"}
+                      </span>
+                      <span style={{ fontSize: 11, color: T.muted }}>
+                        {new Date(r.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: T.text, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                      {r.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
