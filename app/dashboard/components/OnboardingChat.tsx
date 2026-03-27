@@ -80,7 +80,33 @@ export default function OnboardingChat({ onComplete }: { onComplete: () => void 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMsg }),
       });
-      const data = await res.json();
+
+      if (!res.ok) {
+        await delay(600);
+        setTyping(false);
+        setMessages(prev => [...prev, { role: "bot", text: "Something went wrong on my end. Please try sending that again." }]);
+        setSending(false);
+        return;
+      }
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        await delay(600);
+        setTyping(false);
+        setMessages(prev => [...prev, { role: "bot", text: "Got an unexpected response. Please try again." }]);
+        setSending(false);
+        return;
+      }
+
+      if (data.error) {
+        await delay(600);
+        setTyping(false);
+        setMessages(prev => [...prev, { role: "bot", text: "Something went wrong. Please try sending that again." }]);
+        setSending(false);
+        return;
+      }
 
       // Simulate typing delay
       await delay(600 + Math.random() * 800);

@@ -1,4 +1,5 @@
 {
+  "alias": ["thewolfpack.ai", "thewolfpack-ai.vercel.app"],
   "crons": [
     {
       "path": "/api/ai-agent/follow-up",

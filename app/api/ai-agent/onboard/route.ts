@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
     // Handle skip
     if (skip) {
-      await sql`UPDATE workspaces SET onboarding_complete = true WHERE id = ${workspace.id}`;
+      await sql`UPDATE workspaces SET onboarding_complete = true, onboarding_step = ${ONBOARDING_QUESTIONS.length} WHERE id = ${workspace.id}`;
       return NextResponse.json({ done: true, botMessage: "Skipped! You can set up your AI agent in Settings." });
     }
 
