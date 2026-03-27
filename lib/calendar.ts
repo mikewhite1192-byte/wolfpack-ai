@@ -100,6 +100,7 @@ export async function createCalendarEvent(
   startTime: string,
   endTime: string,
   attendeeEmail?: string,
+  addGoogleMeet?: boolean,
 ): Promise<CalendarEvent> {
   const event: Record<string, unknown> = {
     summary,
@@ -120,9 +121,20 @@ export async function createCalendarEvent(
     event.sendUpdates = "all";
   }
 
-  const res = await fetch(
-    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-    {
+  if (addGoogleMeet) {
+    event.conferenceData = {
+      createRequest: {
+        requestId: `meet-${Date.now()}`,
+        conferenceSolutionKey: { type: "hangoutsMeet" },
+      },
+    };
+  }
+
+  const calUrl = addGoogleMeet
+    ? "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1"
+    : "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+
+  const res = await fetch(calUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

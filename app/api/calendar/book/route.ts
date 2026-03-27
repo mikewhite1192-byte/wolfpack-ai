@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Calendar not connected" }, { status: 401 });
     }
 
-    const { name, email, phone, startTime, endTime, notes, duration } = await req.json();
+    const { name, email, phone, startTime, endTime, notes, duration, addGoogleMeet } = await req.json();
 
     if (!name || !startTime) {
       return NextResponse.json({ error: "name and startTime required" }, { status: 400 });
@@ -36,6 +36,7 @@ export async function POST(req: Request) {
       start.toISOString(),
       end.toISOString(),
       email || undefined,
+      addGoogleMeet || false,
     );
 
     // Find or create contact in CRM

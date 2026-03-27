@@ -54,6 +54,7 @@ export default function CalendarPage() {
   const [addDuration, setAddDuration] = useState("30");
   const [addAttendee, setAddAttendee] = useState("");
   const [addNotes, setAddNotes] = useState("");
+  const [addMeet, setAddMeet] = useState(false);
   const [saving, setSaving] = useState(false);
   const [bookingLink, setBookingLink] = useState("");
 
@@ -93,6 +94,7 @@ export default function CalendarPage() {
         endTime: end.toISOString(),
         notes: addNotes,
         duration: parseInt(addDuration),
+        addGoogleMeet: addMeet,
       }),
     });
 
@@ -180,7 +182,7 @@ export default function CalendarPage() {
         .cal-cell.empty { cursor: default; background: rgba(0,0,0,0.1); }
         .cal-cell-day { font-size: 12px; font-weight: 600; color: ${T.text}; margin-bottom: 4px; }
         .cal-cell-day.today { color: ${T.orange}; font-weight: 800; }
-        .cal-cell-event { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; cursor: pointer; }
+        .cal-cell-event { font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; cursor: pointer; max-width: 100%; display: block; }
         .cal-cell-more { font-size: 10px; color: ${T.muted}; margin-top: 2px; }
 
         .cal-side-header { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: ${T.text}; letter-spacing: 0.5px; margin-bottom: 4px; }
@@ -248,12 +250,13 @@ export default function CalendarPage() {
                     onClick={() => setSelectedDate(new Date(year, month, day))}
                   >
                     <div className={`cal-cell-day ${isToday(day) ? "today" : ""}`}>{day}</div>
-                    {dayEvents.slice(0, 2).map((e, ei) => (
+                    {dayEvents.slice(0, 1).map((e, ei) => (
                       <div key={e.id} className="cal-cell-event" style={{ background: eventColor(ei) }}>
-                        {formatTime(e.start)} {e.summary}
+                        {formatTime(e.start)}
                       </div>
                     ))}
-                    {dayEvents.length > 2 && <div className="cal-cell-more">+{dayEvents.length - 2} more</div>}
+                    {dayEvents.length > 1 && <div className="cal-cell-more">+{dayEvents.length - 1} more</div>}
+                    {dayEvents.length === 1 && <div className="cal-cell-more">{dayEvents[0].summary.substring(0, 12)}</div>}
                   </div>
                 );
               })}
@@ -338,6 +341,19 @@ export default function CalendarPage() {
             <div className="cal-modal-field">
               <div className="cal-modal-label">Notes (optional)</div>
               <textarea className="cal-modal-input" value={addNotes} onChange={e => setAddNotes(e.target.value)} placeholder="Any details..." rows={2} style={{ resize: "none" }} />
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", cursor: "pointer" }} onClick={() => setAddMeet(!addMeet)}>
+              <div style={{
+                width: 36, height: 20, borderRadius: 10, background: addMeet ? T.green : "rgba(255,255,255,0.1)",
+                position: "relative", transition: "background 0.2s",
+              }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#fff", position: "absolute", top: 2, left: addMeet ? 18 : 2, transition: "left 0.2s" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Add Google Meet</div>
+                <div style={{ fontSize: 11, color: T.muted }}>Auto-generate a video call link</div>
+              </div>
             </div>
 
             <div className="cal-modal-actions">
