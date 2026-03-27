@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/ai-agent/follow-up",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/ai-agent/reminders",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/ai-agent/learn",
+      "schedule": "0 22 * * *"
+    }
+  ]
+}
