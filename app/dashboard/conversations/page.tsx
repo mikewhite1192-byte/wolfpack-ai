@@ -244,8 +244,8 @@ export default function ConversationsPage() {
         .cv-thread-header { padding: 12px 16px; border-bottom: 1px solid ${T.border}; flex-shrink: 0; }
         .cv-thread-name { font-size: 15px; font-weight: 700; color: ${T.text}; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.5px; }
         .cv-thread-phone { font-size: 11px; color: ${T.muted}; }
-        .cv-msgs { flex: 1; overflow-y: auto; padding: 14px 10px; display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; min-height: 0; }
-        .cv-msgs-inner { display: flex; flex-direction: column; gap: 1px; }
+        .cv-msgs { flex: 1; overflow-y: auto; padding: 14px 10px; display: flex; flex-direction: column; gap: 1px; min-height: 0; }
+        .cv-msgs-inner { display: flex; flex-direction: column; gap: 1px; margin-top: auto; }
         .cv-msg-row { display: flex; flex-direction: column; margin-bottom: 1px; }
         .cv-msg-row.inbound { align-items: flex-start; padding-left: 8px; padding-right: 40px; }
         .cv-msg-row.outbound { align-items: flex-end; padding-right: 8px; padding-left: 40px; }

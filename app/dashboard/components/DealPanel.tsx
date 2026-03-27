@@ -290,8 +290,8 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
         .dp-chat-sub { font-size: 11px; color: ${T.muted}; }
         .dp-chat-close { background: none; border: none; color: ${T.muted}; font-size: 18px; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
         .dp-chat-close:hover { color: ${T.text}; background: rgba(255,255,255,0.05); }
-        .dp-chat-messages { flex: 1; overflow-y: auto; padding: 14px 10px; display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; min-height: 0; }
-        .dp-chat-msgs-inner { display: flex; flex-direction: column; gap: 1px; }
+        .dp-chat-messages { flex: 1; overflow-y: auto; padding: 14px 10px; display: flex; flex-direction: column; gap: 1px; min-height: 0; }
+        .dp-chat-msgs-inner { display: flex; flex-direction: column; gap: 1px; margin-top: auto; }
         .dp-cm-row { display: flex; flex-direction: column; margin-bottom: 1px; }
         .dp-cm-row.inbound { align-items: flex-start; padding-left: 8px; padding-right: 40px; }
         .dp-cm-row.outbound { align-items: flex-end; padding-right: 8px; padding-left: 40px; }
