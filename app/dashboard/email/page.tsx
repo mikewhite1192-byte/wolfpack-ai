@@ -211,7 +211,7 @@ export default function EmailPage() {
         .em-time { font-size: 10px; color: ${T.muted}; flex-shrink: 0; }
         .em-count { font-size: 10px; color: ${T.muted}; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
 
-        .em-main { flex: 1; display: flex; flex-direction: column; background: ${T.bg}; min-width: 0; overflow: hidden; }
+        .em-main { flex: 1; display: flex; flex-direction: column; background: ${T.bg}; min-width: 0; overflow: hidden; width: 0; }
         .em-thread-header { padding: 16px 20px; border-bottom: 1px solid ${T.border}; flex-shrink: 0; }
         .em-thread-subject { font-size: 18px; font-weight: 700; color: ${T.text}; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.5px; }
         .em-msgs { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px; }
@@ -220,7 +220,7 @@ export default function EmailPage() {
         .em-msg-from { font-size: 13px; font-weight: 700; color: ${T.text}; }
         .em-msg-to { font-size: 11px; color: ${T.muted}; margin-top: 2px; }
         .em-msg-date { font-size: 11px; color: ${T.muted}; flex-shrink: 0; }
-        .em-msg-body { font-size: 13px; color: ${T.text}; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; max-width: 100%; overflow: hidden; }
+        .em-msg-body { font-size: 13px; color: ${T.text}; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%; overflow: hidden; }
         .em-msg-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid ${T.border}; }
         .em-action-btn { padding: 6px 14px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 6px; color: ${T.muted}; font-size: 11px; cursor: pointer; }
         .em-action-btn:hover { border-color: ${T.orange}; color: ${T.orange}; }
@@ -308,8 +308,9 @@ export default function EmailPage() {
           <div className="em-empty">Select an email to read</div>
         ) : (
           <>
-            <div className="em-thread-header">
-              <div className="em-thread-subject">
+            <div className="em-thread-header" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <button onClick={() => { setActiveThread(null); setReplyTo(null); }} style={{ background: "none", border: "none", color: T.muted, fontSize: 16, cursor: "pointer", padding: "4px 8px", borderRadius: 4, flexShrink: 0 }}>←</button>
+              <div className="em-thread-subject" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {messages[0]?.subject || "Loading..."}
               </div>
             </div>
