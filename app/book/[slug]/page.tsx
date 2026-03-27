@@ -9,6 +9,7 @@ const T = {
   surface: "#111827",
   border: "rgba(255,255,255,0.07)",
   green: "#2ecc71",
+  red: "#e74c3c",
   bg: "#0D1426",
 };
 
