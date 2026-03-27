@@ -25,10 +25,21 @@ export async function analyzeConversation(data: ConversationData) {
     max_tokens: 800,
     system: `You are analyzing a sales conversation to extract learnings. The outcome was: ${data.outcome}.
 
-Analyze the conversation and return JSON:
+This conversation used the NEPQ (Neuro-Emotional Persuasion Questions) framework.
+Analyze which NEPQ question types were used and how effective each was.
+
+Return JSON:
 {
-  "techniques_worked": ["specific techniques/phrases that moved the conversation forward"],
+  "techniques_worked": ["specific NEPQ techniques/phrases that moved the conversation forward"],
   "techniques_failed": ["things that didn't work or caused disengagement"],
+  "nepq_analysis": {
+    "connection_questions_used": true/false,
+    "situation_questions_used": true/false,
+    "problem_awareness_effective": true/false,
+    "solution_awareness_effective": true/false,
+    "best_question_asked": "the single most effective question in the conversation",
+    "stage_where_it_stalled": "which NEPQ stage the conversation got stuck at, if applicable"
+  },
   "objections_encountered": ["objections the lead raised"],
   "objections_overcome": ["objections that were successfully handled and how"],
   "booking_triggers": ["what specifically led to the booking/win, if applicable"],
