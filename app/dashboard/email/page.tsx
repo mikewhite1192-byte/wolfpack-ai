@@ -214,8 +214,8 @@ export default function EmailPage() {
         .em-main { flex: 1; display: flex; flex-direction: column; background: ${T.bg}; min-width: 0; overflow: hidden; }
         .em-thread-header { padding: 16px 20px; border-bottom: 1px solid ${T.border}; flex-shrink: 0; }
         .em-thread-subject { font-size: 18px; font-weight: 700; color: ${T.text}; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.5px; }
-        .em-msgs { flex: 1; overflow-y: auto; padding: 16px 20px; }
-        .em-msg-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+        .em-msgs { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px; }
+        .em-msg-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 16px; margin-bottom: 12px; overflow: hidden; max-width: 100%; }
         .em-msg-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .em-msg-from { font-size: 13px; font-weight: 700; color: ${T.text}; }
         .em-msg-to { font-size: 11px; color: ${T.muted}; margin-top: 2px; }
