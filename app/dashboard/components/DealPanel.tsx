@@ -607,9 +607,9 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
                   </button>
                 )}
                 {deal.email && (
-                  <a href={`mailto:${deal.email}`} className="dp-action-btn" style={{ textDecoration: "none" }}>
+                  <button className="dp-action-btn" onClick={() => setTab("emails")}>
                     📧 Email
-                  </a>
+                  </button>
                 )}
               </div>
 
