@@ -110,12 +110,45 @@ function AnimatedCounter({ target, suffix = "" }: { target: string; suffix?: str
   return <div ref={ref} style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 56, color: "#E86A2A", opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: "all 0.6s ease" }}>{target}{suffix}</div>;
 }
 
+function ScrambleText({ text, delay = 0 }: { text: string; delay?: number }) {
+  const [display, setDisplay] = useState(text.replace(/[A-Za-z]/g, " "));
+  const [started, setStarted] = useState(false);
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&";
+
+  useEffect(() => {
+    const startTimer = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(startTimer);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!started) return;
+    let iteration = 0;
+    const maxIterations = text.length * 3;
+    const interval = setInterval(() => {
+      setDisplay(
+        text.split("").map((char, i) => {
+          if (char === " " || char === "." || char === "'") return char;
+          if (i < iteration / 3) return text[i];
+          return chars[Math.floor(Math.random() * chars.length)];
+        }).join("")
+      );
+      iteration++;
+      if (iteration > maxIterations) clearInterval(interval);
+    }, 30);
+    return () => clearInterval(interval);
+  }, [started, text]);
+
+  return <>{display}</>;
+}
+
 export default function Home() {
   return (
     <div style={{ background: "#000", color: "#f5f3f0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden" }}>
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes phoneDrop { 0% { opacity: 0; transform: translateY(-120px) rotate(-3deg); } 60% { opacity: 1; transform: translateY(8px) rotate(1deg); } 80% { transform: translateY(-4px) rotate(0deg); } 100% { opacity: 1; transform: translateY(0) rotate(0deg); } }
+        @keyframes heroFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes glow { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,106,42,0.4); } 50% { box-shadow: 0 0 40px 10px rgba(232,106,42,0.1); } }
@@ -176,19 +209,21 @@ export default function Home() {
       {/* Hero */}
       <div className="lp-hero-flex" style={{ display: "flex", alignItems: "center", gap: 50, padding: "80px 40px 60px", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ flex: 1 }}>
-          <div className="lp-eyebrow">The Future of Sales</div>
+          <div className="lp-eyebrow" style={{ animation: "heroFadeIn 0.6s ease 0.2s both" }}>The Future of Sales</div>
           <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 76, lineHeight: 0.92, margin: "0 0 24px", letterSpacing: 1 }}>
-            Your <span className="lp-gradient-text">AI Sales Agent</span> That Never Sleeps
+            <ScrambleText text="YOUR AI SALES AGENT." delay={400} />
+            <br />
+            <span className="lp-gradient-text"><ScrambleText text="THAT NEVER SLEEPS." delay={1200} /></span>
           </h1>
-          <p style={{ fontSize: 18, color: "rgba(245,243,240,0.6)", lineHeight: 1.7, margin: "0 0 36px", maxWidth: 500 }}>
+          <p style={{ fontSize: 18, color: "rgba(245,243,240,0.6)", lineHeight: 1.7, margin: "0 0 36px", maxWidth: 500, animation: "heroFadeIn 0.8s ease 2s both" }}>
             Responds in seconds. Qualifies leads. Handles objections. Books appointments. All while you sleep.
           </p>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", animation: "heroFadeIn 0.8s ease 2.4s both" }}>
             <Link href="/demo" className="lp-cta-btn">See It In Action →</Link>
             <Link href="/book/default" className="lp-ghost-btn">Book a Demo</Link>
           </div>
         </div>
-        <div style={{ flexShrink: 0, animation: "float 6s ease-in-out infinite" }}>
+        <div style={{ flexShrink: 0, animation: "phoneDrop 1s cubic-bezier(0.34, 1.56, 0.64, 1) 1.8s both" }}>
           <PhoneMockup />
         </div>
       </div>
