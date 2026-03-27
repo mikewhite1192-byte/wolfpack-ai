@@ -30,21 +30,29 @@ export default function OnboardingChat({ onComplete }: { onComplete: () => void 
   // Load initial state
   useEffect(() => {
     async function init() {
-      const res = await fetch("/api/ai-agent/onboard");
-      const data = await res.json();
-      if (data.done) {
-        onComplete();
-        return;
-      }
-      setStep(data.step);
-      setTotalSteps(data.totalSteps);
-      if (data.firstMessage) {
-        setTyping(true);
-        await delay(800);
-        setMessages([{ role: "bot", text: data.firstMessage }]);
-        setTyping(false);
-      } else if (data.currentQuestion) {
-        setMessages([{ role: "bot", text: data.currentQuestion }]);
+      try {
+        const res = await fetch("/api/ai-agent/onboard");
+        const data = await res.json();
+        if (data.error) {
+          setMessages([{ role: "bot", text: "Something went wrong loading onboarding. Try refreshing the page." }]);
+          return;
+        }
+        if (data.done) {
+          onComplete();
+          return;
+        }
+        setStep(typeof data.step === "number" ? data.step : 0);
+        setTotalSteps(typeof data.totalSteps === "number" && data.totalSteps > 0 ? data.totalSteps : 9);
+        if (data.firstMessage) {
+          setTyping(true);
+          await delay(800);
+          setMessages([{ role: "bot", text: data.firstMessage }]);
+          setTyping(false);
+        } else if (data.currentQuestion) {
+          setMessages([{ role: "bot", text: data.currentQuestion }]);
+        }
+      } catch {
+        setMessages([{ role: "bot", text: "Connection error. Please refresh the page." }]);
       }
     }
     init();
@@ -66,29 +74,36 @@ export default function OnboardingChat({ onComplete }: { onComplete: () => void 
     setSending(true);
     setTyping(true);
 
-    const res = await fetch("/api/ai-agent/onboard", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userMsg }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/ai-agent/onboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg }),
+      });
+      const data = await res.json();
 
-    // Simulate typing delay
-    await delay(600 + Math.random() * 800);
-    setTyping(false);
+      // Simulate typing delay
+      await delay(600 + Math.random() * 800);
+      setTyping(false);
 
-    setMessages(prev => [...prev, { role: "bot", text: data.botMessage }]);
-    setStep(data.step);
-    setSending(false);
+      setMessages(prev => [...prev, { role: "bot", text: data.botMessage || "Sorry, I didn't catch that. Could you try again?" }]);
+      if (typeof data.step === "number") setStep(data.step);
+      if (typeof data.totalSteps === "number" && data.totalSteps > 0) setTotalSteps(data.totalSteps);
+      setSending(false);
 
-    if (data.done) {
-      setDone(true);
-      await delay(2000);
-      onComplete();
+      if (data.done) {
+        setDone(true);
+        await delay(2000);
+        onComplete();
+      }
+    } catch {
+      setTyping(false);
+      setMessages(prev => [...prev, { role: "bot", text: "Connection error. Please try again." }]);
+      setSending(false);
     }
   }
 
-  const progress = Math.round((step / totalSteps) * 100);
+  const progress = totalSteps > 0 ? Math.round((step / totalSteps) * 100) : 0;
 
   return (
     <div style={{

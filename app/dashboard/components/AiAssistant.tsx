@@ -67,7 +67,7 @@ export default function AiAssistant() {
       <style>{`
         @keyframes ai-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,106,42,0.4); } 50% { box-shadow: 0 0 0 8px rgba(232,106,42,0); } }
         @keyframes ai-dot-pulse { 0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); } 30% { opacity: 1; transform: scale(1); } }
-        .ai-fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: ${T.orange}; border: none; cursor: pointer; z-index: 400; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; animation: ai-pulse 2s infinite; transition: transform 0.2s; }
+        .ai-fab { position: fixed; bottom: 24px; right: 24px; width: 20px; height: 20px; border-radius: 50%; background: ${T.orange}; border: none; cursor: pointer; z-index: 400; display: flex; align-items: center; justify-content: center; font-size: 0; color: transparent; animation: ai-pulse 2s infinite; transition: transform 0.2s; padding: 0; }
         .ai-fab:hover { transform: scale(1.1); }
         .ai-panel { position: fixed; bottom: 90px; right: 24px; width: 400px; max-width: calc(100vw - 48px); height: 520px; max-height: calc(100vh - 120px); background: ${T.bg}; border: 1px solid ${T.border}; border-radius: 14px; z-index: 400; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
         .ai-header { padding: 14px 18px; border-bottom: 1px solid ${T.border}; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
@@ -94,8 +94,13 @@ export default function AiAssistant() {
       `}</style>
 
       {/* Floating Button */}
-      <button className="ai-fab" onClick={() => setOpen(!open)} title="AI Assistant">
-        {open ? "×" : "🐺"}
+      <button
+        className="ai-fab"
+        onClick={() => setOpen(!open)}
+        title="AI Assistant"
+        style={open ? { width: 40, height: 40, fontSize: 18, color: "#fff", animation: "none" } : {}}
+      >
+        {open ? "\u00D7" : ""}
       </button>
 
       {/* Chat Panel */}
