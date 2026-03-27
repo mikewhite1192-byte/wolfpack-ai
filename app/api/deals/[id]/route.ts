@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { getOrCreateWorkspace } from "@/lib/workspace";
+import { sendMessage } from "@/lib/linq/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -62,6 +63,47 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ conversationId: conv[0].id, outcome }),
           }).catch(() => {});
+
+          // If WON → send review request after 24 hours
+          if (newStage[0].is_won) {
+            const contact = await sql`SELECT * FROM contacts WHERE id = ${current[0].contact_id}`;
+            if (contact.length > 0 && contact[0].phone) {
+              // Schedule review request (set followup for 24h from now)
+              await sql`
+                UPDATE contacts SET
+                  ai_next_followup = NOW() + INTERVAL '24 hours',
+                  ai_followup_count = 0,
+                  ai_qualification = jsonb_set(
+                    COALESCE(ai_qualification, '{}'::jsonb),
+                    '{reviewRequested}',
+                    'true'::jsonb
+                  )
+                WHERE id = ${contact[0].id}
+              `;
+              // Update conversation stage so AI knows to ask for review
+              await sql`UPDATE conversations SET ai_stage = 'booked' WHERE id = ${conv[0].id}`;
+
+              // Send immediate thank you
+              const chatId = conv[0].assigned_to;
+              const name = contact[0].first_name || "there";
+              const wsData = await sql`SELECT name, ai_config FROM workspaces WHERE id = ${workspace.id}`;
+              const bizName = wsData[0]?.name || "us";
+              const googleLink = (wsData[0]?.ai_config as Record<string, string>)?.googleReviewLink || "";
+
+              const thankYou = `Hey ${name}! Thank you so much for choosing ${bizName}. We really appreciate your business! How was your experience with us?`;
+
+              if (chatId) {
+                try {
+                  const result = await sendMessage(chatId, thankYou);
+                  await sql`
+                    INSERT INTO messages (conversation_id, workspace_id, direction, channel, sender, recipient, body, status, sent_by, twilio_sid)
+                    VALUES (${conv[0].id}, ${workspace.id}, 'outbound', 'sms', '', ${contact[0].phone}, ${thankYou}, 'sent', 'ai', ${result.message.id})
+                  `;
+                  await sql`UPDATE conversations SET last_message_at = NOW() WHERE id = ${conv[0].id}`;
+                } catch { /* silent */ }
+              }
+            }
+          }
         }
       }
     }

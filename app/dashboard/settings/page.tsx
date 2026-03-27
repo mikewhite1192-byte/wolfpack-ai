@@ -70,6 +70,7 @@ export default function SettingsPage() {
     ownerName: "",
     commonObjections: "",
     qualifyingQuestions: "",
+    googleReviewLink: "",
     followUpEnabled: true,
     followUpHours: [24, 72, 168, 336] as number[],
   });
@@ -362,6 +363,11 @@ export default function SettingsPage() {
               <div className="settings-field">
                 <div className="settings-label">Booking Instructions</div>
                 <input className="settings-input" value={aiConfig.bookingInstructions || ""} onChange={e => setAiConfig(c => ({ ...c, bookingInstructions: e.target.value }))} placeholder="We offer free in-home estimates" />
+              </div>
+              <div className="settings-field" style={{ gridColumn: "1 / -1" }}>
+                <div className="settings-label">Google Review Link</div>
+                <input className="settings-input" value={aiConfig.googleReviewLink || ""} onChange={e => setAiConfig(c => ({ ...c, googleReviewLink: e.target.value }))} placeholder="https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID" />
+                <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>When a deal closes won, the AI will ask how their experience was. Positive responses get sent this link to leave a Google review.</div>
               </div>
             </div>
 

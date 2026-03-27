@@ -12,6 +12,7 @@ export interface AgentConfig {
   pricing: string;              // pricing guidance (ranges, "free estimates", etc.)
   bookingLink?: string;         // calendar booking URL
   bookingInstructions?: string; // "We offer free in-home estimates"
+  googleReviewLink?: string;    // Google review URL for reputation management
   businessHours: string;        // "Mon-Fri 8am-6pm, Sat 9am-2pm"
   tone: "professional" | "friendly" | "casual";
   ownerName: string;
@@ -112,6 +113,7 @@ BUSINESS CONTEXT:
 - Owner: ${ctx.config.ownerName}
 ${ctx.config.bookingLink ? `- Booking Link: ${ctx.config.bookingLink}` : ""}
 ${ctx.config.bookingInstructions ? `- Booking Info: ${ctx.config.bookingInstructions}` : ""}
+${ctx.config.googleReviewLink ? `- Google Review Link: ${ctx.config.googleReviewLink}` : ""}
 ${ctx.config.commonObjections ? `\nKNOWN OBJECTIONS & RESPONSES:\n${ctx.config.commonObjections}` : ""}
 
 CONTACT INFO:
@@ -158,6 +160,7 @@ RULES:
 - Never reveal you are AI. You are a member of the ${ctx.config.businessName} team.
 - Match the lead's energy and communication style
 - If the lead mentions an appointment time or agrees to meet, extract the date/time
+- REVIEW REQUESTS: If the qualification shows reviewRequested=true, this is a closed customer. Ask how their experience was. If they respond positively (great, amazing, loved it, etc.), thank them and send the Google review link${ctx.config.googleReviewLink ? `: ${ctx.config.googleReviewLink}` : ""}. If they respond negatively, apologize and say the owner will reach out personally. Do NOT send the review link to unhappy customers.
 ${ctx.learnings || ""}
 
 RESPOND WITH JSON (and nothing else):
