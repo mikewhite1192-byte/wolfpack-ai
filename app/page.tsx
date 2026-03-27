@@ -16,30 +16,25 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+// AI texts shown as blue bubbles with gray typing dots before each
 const DEMO_MSGS = [
-  { type: "in", text: "Hey I saw your ad about roof inspections. My roof has been leaking", delay: 0 },
-  { type: "out", text: "Hey Mike! That sounds stressful. How long has that been going on?", delay: 2000 },
-  { type: "in", text: "Probably 3-4 months now. Gets worse every storm", delay: 4500 },
-  { type: "out", text: "Wow 3-4 months... what have you tried so far to fix it?", delay: 6500 },
-  { type: "in", text: "Had a handyman put some tar on it but it didnt help", delay: 9000 },
-  { type: "out", text: "Yeah that usually doesn't hold up. How has the leak been affecting things inside?", delay: 11000 },
-  { type: "in", text: "My ceiling has a water stain thats getting bigger. Wife is worried about mold", delay: 13500 },
-  { type: "out", text: "That's a real concern. What would it mean for you if that was completely taken care of?", delay: 15500 },
-  { type: "in", text: "Honestly that would be a huge relief", delay: 18000 },
-  { type: "out", text: "We do free inspections. Would it make sense to set one up? I have Thursday at 10am or Friday at 2pm", delay: 20000 },
-  { type: "in", text: "Thursday at 10 works!", delay: 22500 },
-  { type: "out", text: "Perfect, you're all set! Calendar invite heading to your email right now", delay: 24000 },
+  { text: "Hey Mike! Saw you were looking into roof inspections. How long has the leak been going on?", delay: 0 },
+  { text: "3-4 months is a while. What have you tried so far?", delay: 4000 },
+  { text: "Yeah that usually doesn't hold. How has it been affecting things inside?", delay: 8000 },
+  { text: "That's a real concern. What would it mean if that was taken care of?", delay: 12000 },
+  { text: "We do free inspections. Thursday at 10 or Friday at 2?", delay: 16000 },
+  { text: "You're all set for Thursday! Calendar invite heading to your email 👍", delay: 20000 },
 ];
 
 function PhoneMockup() {
   const [visibleCount, setVisibleCount] = useState(0);
-  const [showTyping, setShowTyping] = useState(false);
+  const [showTyping, setShowTyping] = useState(true);
 
   useEffect(() => {
     if (visibleCount >= DEMO_MSGS.length) {
-      // Reset after a pause
       const timer = setTimeout(() => {
         setVisibleCount(0);
+        setShowTyping(true);
       }, 5000);
       return () => clearTimeout(timer);
     }
@@ -48,20 +43,16 @@ function PhoneMockup() {
     const prevDelay = visibleCount > 0 ? DEMO_MSGS[visibleCount - 1].delay : 0;
     const wait = nextMsg.delay - prevDelay;
 
-    // Show typing indicator before AI messages
-    if (nextMsg.type === "out" && visibleCount > 0) {
-      const typingTimer = setTimeout(() => setShowTyping(true), wait - 1200);
-      const msgTimer = setTimeout(() => {
-        setShowTyping(false);
-        setVisibleCount(c => c + 1);
-      }, wait);
-      return () => { clearTimeout(typingTimer); clearTimeout(msgTimer); };
-    }
-
-    const timer = setTimeout(() => {
+    // Show typing dots, then show the blue message
+    setShowTyping(true);
+    const msgTimer = setTimeout(() => {
+      setShowTyping(false);
       setVisibleCount(c => c + 1);
-    }, wait);
-    return () => clearTimeout(timer);
+      // Show typing again after a brief pause for next message
+      setTimeout(() => setShowTyping(true), 300);
+    }, Math.max(wait, 1500));
+
+    return () => clearTimeout(msgTimer);
   }, [visibleCount]);
 
   const visible = DEMO_MSGS.slice(0, visibleCount);
@@ -94,17 +85,12 @@ function PhoneMockup() {
       </div>
       <div className="lp-phone-msgs" ref={msgsContainerRef} style={{ overflowY: "auto" }}>
         <div className="lp-phone-msgs-inner">
-          {visible.map((m, i) => {
-            const next = visible[i + 1];
-            const isTail = !next || next.type !== m.type;
-            return (
-              <div key={i} className={`lp-chat-row ${m.type === "in" ? "in" : "out"}${isTail ? " tail" : ""}`}>
-                <div className={`lp-chat-bubble ${m.type === "in" ? "in" : "out"}`}>{m.text}</div>
-                {isTail && <div className="lp-chat-time">{m.type === "out" ? "AI · " : ""}now</div>}
-              </div>
-            );
-          })}
-          {showTyping && (
+          {visible.map((m, i) => (
+            <div key={i} className="lp-chat-row in tail">
+              <div className="lp-chat-bubble in">{m.text}</div>
+            </div>
+          ))}
+          {showTyping && visibleCount < DEMO_MSGS.length && (
             <div className="lp-chat-row in" style={{ opacity: 1 }}>
               <div className="lp-chat-typing"><span /><span /><span /></div>
             </div>
@@ -166,7 +152,7 @@ export default function Home() {
         .lp-chat-row.in { align-items: flex-start; padding-left: 6px; padding-right: 44px; }
         .lp-chat-row.out { align-items: flex-end; padding-right: 6px; padding-left: 44px; }
         .lp-chat-row.tail { margin-bottom: 4px; }
-        .lp-chat-bubble { width: fit-content; max-width: 100%; padding: 6px 11px; font-size: 12.5px; line-height: 1.35; -webkit-font-smoothing: antialiased; }
+        .lp-chat-bubble { width: fit-content; max-width: 85%; padding: 6px 11px; font-size: 12px; line-height: 1.35; -webkit-font-smoothing: antialiased; }
         .lp-chat-bubble.in { background: #e9e9eb; color: #000; border-radius: 16px; }
         .lp-chat-row.tail .lp-chat-bubble.in { border-radius: 16px 16px 16px 4px; }
         .lp-chat-bubble.out { background: #007AFF; color: #fff; border-radius: 16px; }
