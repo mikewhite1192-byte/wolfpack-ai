@@ -26,7 +26,9 @@ export async function POST(req: Request) {
     const start = new Date(startTime);
     const end = endTime ? new Date(endTime) : new Date(start.getTime() + (duration || 30) * 60000);
 
-    const bizName = (workspace.ai_config as Record<string, string>)?.businessName || workspace.name || "Meeting";
+    const aiConfig = (workspace.ai_config || {}) as Record<string, unknown>;
+    const bizName = (aiConfig.businessName as string) || workspace.name || "Meeting";
+    const useMeet = addGoogleMeet !== undefined ? addGoogleMeet : (aiConfig.autoGoogleMeet || false);
 
     // Create Google Calendar event
     const event = await createCalendarEvent(
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
       start.toISOString(),
       end.toISOString(),
       email || undefined,
-      addGoogleMeet || false,
+      useMeet as boolean,
     );
 
     // Find or create contact in CRM

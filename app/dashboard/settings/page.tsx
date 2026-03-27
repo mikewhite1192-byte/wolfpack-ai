@@ -71,6 +71,7 @@ export default function SettingsPage() {
     commonObjections: "",
     qualifyingQuestions: "",
     googleReviewLink: "",
+    autoGoogleMeet: false,
     followUpEnabled: true,
     followUpHours: [24, 72, 168, 336] as number[],
   });
@@ -368,6 +369,26 @@ export default function SettingsPage() {
                 <div className="settings-label">Google Review Link</div>
                 <input className="settings-input" value={aiConfig.googleReviewLink || ""} onChange={e => setAiConfig(c => ({ ...c, googleReviewLink: e.target.value }))} placeholder="https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID" />
                 <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>When a deal closes won, the AI will ask how their experience was. Positive responses get sent this link to leave a Google review.</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderTop: `1px solid ${T.border}`, marginTop: 8 }}>
+              <div
+                onClick={() => setAiConfig(c => ({ ...c, autoGoogleMeet: !c.autoGoogleMeet }))}
+                style={{
+                  width: 40, height: 22, borderRadius: 11, cursor: "pointer", transition: "background 0.2s",
+                  background: aiConfig.autoGoogleMeet ? T.green : "rgba(255,255,255,0.1)",
+                  position: "relative", flexShrink: 0,
+                }}
+              >
+                <div style={{
+                  width: 18, height: 18, borderRadius: "50%", background: "#fff",
+                  position: "absolute", top: 2, left: aiConfig.autoGoogleMeet ? 20 : 2, transition: "left 0.2s",
+                }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Auto-Add Google Meet to All Appointments</div>
+                <div style={{ fontSize: 11, color: T.muted }}>Every booking automatically includes a Google Meet video call link. The link is sent in the calendar invite.</div>
               </div>
             </div>
 
