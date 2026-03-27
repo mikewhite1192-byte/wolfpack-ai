@@ -77,6 +77,7 @@ function PhoneMockup() {
 
   return (
     <div className="lp-phone">
+      <div className="lp-phone-inner">
       <div className="lp-phone-notch" />
       <div className="lp-phone-header">
         <div className="lp-phone-avatar">WP</div>
@@ -107,6 +108,7 @@ function PhoneMockup() {
         <div className="lp-phone-input-bar">iMessage</div>
         <div className="lp-phone-input-send">↑</div>
       </div>
+      </div>
       <div className="lp-phone-home" />
     </div>
   );
@@ -126,29 +128,29 @@ export default function Home() {
 
         .lp-section { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
 
-        .lp-hero { display: flex; align-items: center; gap: 60px; padding: 80px 40px 60px; max-width: 1100px; margin: 0 auto; }
+        .lp-hero { display: flex; align-items: center; gap: 50px; padding: 60px 40px 40px; max-width: 1100px; margin: 0 auto; }
         .lp-hero-left { flex: 1; }
-        .lp-hero-right { flex-shrink: 0; width: 320px; }
-        .lp-hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1.05; letter-spacing: 1px; margin: 0 0 20px; }
+        .lp-hero-right { flex-shrink: 0; width: 280px; }
+        .lp-hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 72px; line-height: 0.95; letter-spacing: 1px; margin: 0 0 20px; }
         .lp-hero h1 span { color: #E86A2A; }
-        .lp-hero p { font-size: 17px; color: #b0b4c8; line-height: 1.7; margin: 0 0 32px; }
+        .lp-hero p { font-size: 17px; color: #b0b4c8; line-height: 1.7; margin: 0 0 28px; }
         .lp-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
         .lp-btn-primary { padding: 16px 36px; background: #E86A2A; color: #fff; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 700; }
         .lp-btn-primary:hover { background: #d45a1a; }
         .lp-btn-secondary { padding: 16px 36px; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #e8eaf0; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 600; }
         .lp-btn-secondary:hover { border-color: #E86A2A; color: #E86A2A; }
-        .lp-hero-stat { display: flex; gap: 40px; margin-top: 48px; }
+        .lp-hero-stat { display: flex; gap: 40px; margin-top: 36px; }
         .lp-stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #E86A2A; }
         .lp-stat-label { font-size: 13px; color: #b0b4c8; margin-top: 4px; }
 
-        .lp-phone { width: 300px; background: #000; border-radius: 44px; border: 3px solid #333; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 0 0 2px #1a1a1a; position: relative; }
-        .lp-phone-notch { width: 126px; height: 32px; background: #000; border-radius: 0 0 18px 18px; margin: 0 auto; position: relative; z-index: 2; }
-        .lp-phone-notch::after { content: ""; width: 60px; height: 4px; background: #1a1a1a; border-radius: 2px; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); }
-        .lp-phone-header { padding: 8px 16px 10px; text-align: center; background: #f2f2f7; }
-        .lp-phone-avatar { width: 32px; height: 32px; border-radius: 50%; background: #007AFF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; margin: 0 auto 4px; }
-        .lp-phone-name { font-size: 13px; font-weight: 600; color: #000; }
-        .lp-phone-sub { font-size: 10px; color: #8e8e93; }
-        .lp-phone-msgs { padding: 10px 10px; height: 340px; overflow: hidden; display: flex; flex-direction: column; gap: 2px; background: #fff; }
+        .lp-phone { width: 280px; background: #000; border-radius: 40px; padding: 8px; box-shadow: 0 24px 80px rgba(0,0,0,0.6); position: relative; }
+        .lp-phone-inner { background: #fff; border-radius: 32px; overflow: hidden; }
+        .lp-phone-notch { width: 90px; height: 24px; background: #000; border-radius: 0 0 16px 16px; margin: 0 auto; }
+        .lp-phone-header { padding: 6px 14px 8px; text-align: center; background: #f2f2f7; }
+        .lp-phone-avatar { width: 28px; height: 28px; border-radius: 50%; background: #007AFF; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin: 0 auto 3px; }
+        .lp-phone-name { font-size: 12px; font-weight: 600; color: #000; }
+        .lp-phone-sub { font-size: 9px; color: #8e8e93; }
+        .lp-phone-msgs { padding: 8px 8px; height: 300px; overflow: hidden; display: flex; flex-direction: column; gap: 2px; background: #fff; }
         .lp-phone-msgs-inner { display: flex; flex-direction: column; gap: 2px; margin-top: auto; }
         .lp-chat-row { display: flex; flex-direction: column; margin-bottom: 1px; opacity: 0; animation: lp-msg-in 0.35s ease forwards; }
         .lp-chat-row.in { align-items: flex-start; padding-left: 4px; padding-right: 50px; }
@@ -164,10 +166,10 @@ export default function Home() {
         .lp-chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: #8e8e93; animation: lp-dot 1.2s ease-in-out infinite; }
         .lp-chat-typing span:nth-child(2) { animation-delay: 0.15s; }
         .lp-chat-typing span:nth-child(3) { animation-delay: 0.3s; }
-        .lp-phone-input { background: #f2f2f7; padding: 8px 12px; display: flex; align-items: center; gap: 8px; }
-        .lp-phone-input-bar { flex: 1; background: #fff; border: 1px solid #c7c7cc; border-radius: 18px; padding: 6px 14px; font-size: 12px; color: #8e8e93; }
-        .lp-phone-input-send { width: 28px; height: 28px; border-radius: 50%; background: #007AFF; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
-        .lp-phone-home { width: 36px; height: 4px; background: #333; border-radius: 2px; margin: 8px auto; }
+        .lp-phone-input { background: #f2f2f7; padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
+        .lp-phone-input-bar { flex: 1; background: #fff; border: 1px solid #c7c7cc; border-radius: 16px; padding: 5px 12px; font-size: 11px; color: #8e8e93; }
+        .lp-phone-input-send { width: 24px; height: 24px; border-radius: 50%; background: #007AFF; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
+        .lp-phone-home { width: 100px; height: 4px; background: #000; border-radius: 2px; margin: 6px auto; }
 
         @keyframes lp-msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes lp-dot { 0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); } 30% { opacity: 1; transform: scale(1); } }
@@ -180,7 +182,7 @@ export default function Home() {
           .lp-hero-right { width: 280px; }
         }
 
-        .lp-problem { padding: 80px 40px; text-align: center; max-width: 800px; margin: 0 auto; }
+        .lp-problem { padding: 40px 40px; text-align: center; max-width: 800px; margin: 0 auto; }
         .lp-problem h2 { font-family: 'Bebas Neue', sans-serif; font-size: 40px; margin: 0 0 20px; }
         .lp-problem p { font-size: 16px; color: #b0b4c8; line-height: 1.7; }
         .lp-problem-stats { display: flex; gap: 24px; justify-content: center; margin-top: 40px; flex-wrap: wrap; }
@@ -188,7 +190,7 @@ export default function Home() {
         .lp-problem-card-num { font-family: 'Bebas Neue', sans-serif; font-size: 42px; color: #E86A2A; }
         .lp-problem-card-text { font-size: 13px; color: #b0b4c8; margin-top: 6px; line-height: 1.5; }
 
-        .lp-how { padding: 80px 40px; max-width: 1000px; margin: 0 auto; }
+        .lp-how { padding: 50px 40px; max-width: 1000px; margin: 0 auto; }
         .lp-how h2 { font-family: 'Bebas Neue', sans-serif; font-size: 40px; text-align: center; margin: 0 0 48px; }
         .lp-how-steps { display: flex; gap: 24px; flex-wrap: wrap; }
         .lp-how-step { flex: 1; min-width: 250px; background: #111827; border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 28px; text-align: center; }
@@ -196,7 +198,7 @@ export default function Home() {
         .lp-how-title { font-size: 16px; font-weight: 700; color: #e8eaf0; margin-bottom: 8px; }
         .lp-how-text { font-size: 13px; color: #b0b4c8; line-height: 1.6; }
 
-        .lp-features { padding: 80px 40px; max-width: 1000px; margin: 0 auto; }
+        .lp-features { padding: 50px 40px; max-width: 1000px; margin: 0 auto; }
         .lp-features h2 { font-family: 'Bebas Neue', sans-serif; font-size: 40px; text-align: center; margin: 0 0 48px; }
         .lp-features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         .lp-feature { background: #111827; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 24px; }
@@ -204,12 +206,12 @@ export default function Home() {
         .lp-feature-title { font-size: 15px; font-weight: 700; color: #e8eaf0; margin-bottom: 6px; }
         .lp-feature-text { font-size: 13px; color: #b0b4c8; line-height: 1.6; }
 
-        .lp-demo-cta { padding: 80px 40px; text-align: center; }
+        .lp-demo-cta { padding: 50px 40px; text-align: center; }
         .lp-demo-cta-box { background: linear-gradient(135deg, rgba(232,106,42,0.1), rgba(232,106,42,0.02)); border: 1px solid rgba(232,106,42,0.2); border-radius: 20px; padding: 60px 40px; max-width: 700px; margin: 0 auto; }
         .lp-demo-cta h2 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; margin: 0 0 12px; }
         .lp-demo-cta p { font-size: 15px; color: #b0b4c8; margin: 0 0 28px; line-height: 1.6; }
 
-        .lp-pricing { padding: 80px 40px; max-width: 1000px; margin: 0 auto; }
+        .lp-pricing { padding: 50px 40px; max-width: 1000px; margin: 0 auto; }
         .lp-pricing h2 { font-family: 'Bebas Neue', sans-serif; font-size: 40px; text-align: center; margin: 0 0 12px; }
         .lp-pricing-sub { font-size: 15px; color: #b0b4c8; text-align: center; margin-bottom: 48px; }
         .lp-pricing-cards { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
@@ -227,13 +229,13 @@ export default function Home() {
         .lp-price-btn-primary { background: #E86A2A; color: #fff; border: none; }
         .lp-price-btn-secondary { background: transparent; color: #e8eaf0; border: 1px solid rgba(255,255,255,0.15); }
 
-        .lp-faq { padding: 80px 40px; max-width: 700px; margin: 0 auto; }
+        .lp-faq { padding: 50px 40px; max-width: 700px; margin: 0 auto; }
         .lp-faq h2 { font-family: 'Bebas Neue', sans-serif; font-size: 40px; text-align: center; margin: 0 0 40px; }
         .lp-faq-item { border-bottom: 1px solid rgba(255,255,255,0.07); padding: 20px 0; }
         .lp-faq-q { font-size: 15px; font-weight: 600; color: #e8eaf0; margin-bottom: 8px; }
         .lp-faq-a { font-size: 14px; color: #b0b4c8; line-height: 1.7; }
 
-        .lp-final-cta { padding: 80px 40px 100px; text-align: center; }
+        .lp-final-cta { padding: 50px 40px 60px; text-align: center; }
         .lp-final-cta h2 { font-family: 'Bebas Neue', sans-serif; font-size: 44px; margin: 0 0 16px; }
         .lp-final-cta p { font-size: 16px; color: #b0b4c8; margin: 0 0 32px; }
 
