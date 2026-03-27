@@ -240,7 +240,7 @@ export default function Home() {
         <div className="lp-pricing-cards">
           <div className="lp-price-card">
             <div className="lp-price-name">Starter</div>
-            <div className="lp-price-amount">$99<span>/mo</span></div>
+            <div className="lp-price-amount">$49<span>/mo</span></div>
             <div className="lp-price-desc">Everything you need to start closing more leads with AI.</div>
             <ul className="lp-price-features">
               <li>AI Sales Agent</li>
