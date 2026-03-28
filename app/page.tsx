@@ -229,7 +229,7 @@ export default function Home() {
       </div>
 
       {/* Stats */}
-      <div className="lp-stat-grid" style={{ display: "flex", gap: 40, justifyContent: "center", padding: "40px 40px 60px", maxWidth: 800, margin: "0 auto" }}>
+      <div className="lp-stat-grid" style={{ display: "flex", gap: 40, justifyContent: "center", padding: "30px 40px 40px", maxWidth: 800, margin: "0 auto" }}>
         {[{ num: "3", suf: " SEC", label: "Response time" }, { num: "24/7", suf: "", label: "Never misses a lead" }, { num: "10X", suf: "", label: "More appointments" }].map((s, i) => (
           <div key={i} style={{ textAlign: "center" }}>
             <AnimatedCounter target={s.num} suffix={s.suf} />
@@ -239,7 +239,8 @@ export default function Home() {
       </div>
 
       {/* Problem */}
-      <div style={{ padding: "60px 40px", maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
+      <div style={{ background: "rgba(255,255,255,0.02)", padding: "50px 0" }}>
+      <div style={{ padding: "0 40px", maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
         <div className="lp-eyebrow" style={{ justifyContent: "center" }}>The Problem</div>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 16px" }}>Every Minute You Wait, Your Lead Goes Cold</h2>
         <p style={{ fontSize: 16, color: "rgba(245,243,240,0.5)", lineHeight: 1.7, maxWidth: 600, margin: "0 auto 40px" }}>78% of customers buy from whoever responds first. Are you first?</p>
@@ -252,9 +253,10 @@ export default function Home() {
           ))}
         </div>
       </div>
+      </div>
 
       {/* How It Works */}
-      <div style={{ padding: "60px 40px", maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ padding: "50px 40px", maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <div className="lp-eyebrow" style={{ justifyContent: "center" }}>How It Works</div>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 48px" }}>Three Steps. Zero Effort.</h2>
@@ -275,7 +277,8 @@ export default function Home() {
       </div>
 
       {/* Features */}
-      <div id="features" style={{ padding: "60px 40px", maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ background: "rgba(255,255,255,0.02)" }}>
+      <div id="features" style={{ padding: "50px 40px", maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <div className="lp-eyebrow" style={{ justifyContent: "center" }}>Features</div>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 48px" }}>Everything You Need. Nothing You Don't.</h2>
@@ -300,9 +303,10 @@ export default function Home() {
           ))}
         </div>
       </div>
+      </div>
 
       {/* Demo CTA */}
-      <div style={{ padding: "60px 40px" }}>
+      <div style={{ padding: "50px 40px" }}>
         <div style={{ maxWidth: 700, margin: "0 auto", background: "linear-gradient(135deg, rgba(232,106,42,0.08), rgba(232,106,42,0.02))", border: "1px solid rgba(232,106,42,0.15)", borderRadius: 24, padding: "60px 40px", textAlign: "center", animation: "pulse 4s ease-in-out infinite" }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, margin: "0 0 12px" }}>See It Work On <span className="lp-gradient-text">You</span></h2>
           <p style={{ fontSize: 16, color: "rgba(245,243,240,0.5)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your phone number. Our AI will text you, qualify you, and book an appointment. Experience it firsthand.</p>
@@ -311,7 +315,8 @@ export default function Home() {
       </div>
 
       {/* Pricing */}
-      <div id="pricing" style={{ padding: "60px 40px", maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ background: "rgba(255,255,255,0.015)" }}>
+      <div id="pricing" style={{ padding: "50px 40px", maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <div className="lp-eyebrow" style={{ justifyContent: "center" }}>Pricing</div>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 8px" }}>Simple. Transparent.</h2>
@@ -343,8 +348,10 @@ export default function Home() {
         </div>
       </div>
 
+      </div>
+
       {/* FAQ */}
-      <div id="faq" style={{ padding: "60px 40px", maxWidth: 700, margin: "0 auto" }}>
+      <div id="faq" style={{ padding: "50px 40px", maxWidth: 700, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <div className="lp-eyebrow" style={{ justifyContent: "center" }}>FAQ</div>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: 0 }}>Questions? We Got You.</h2>
@@ -359,7 +366,7 @@ export default function Home() {
       </div>
 
       {/* Final CTA */}
-      <div style={{ padding: "60px 40px 80px", textAlign: "center" }}>
+      <div style={{ background: "rgba(255,255,255,0.02)", padding: "50px 40px 60px", textAlign: "center" }}>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 16px" }}>Stop Losing Leads. <span className="lp-gradient-text">Start Today.</span></h2>
         <p style={{ fontSize: 17, color: "rgba(245,243,240,0.4)", margin: "0 0 36px" }}>Your competitors are already following up faster than you.</p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
