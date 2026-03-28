@@ -239,14 +239,14 @@ export default function Home() {
       </div>
 
       {/* Problem */}
-      <div style={{ background: "#0a0a0f", padding: "50px 0" }}>
+      <div style={{ background: "#0d0d14", padding: "50px 0" }}>
       <div style={{ padding: "0 40px", maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
         <div className="lp-eyebrow" style={{ justifyContent: "center" }}>The Problem</div>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 16px" }}>Every Minute You Wait, Your Lead Goes Cold</h2>
         <p style={{ fontSize: 16, color: "rgba(245,243,240,0.5)", lineHeight: 1.7, maxWidth: 600, margin: "0 auto 40px" }}>78% of customers buy from whoever responds first. Are you first?</p>
         <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
           {[{ num: "78%", text: "buy from first responder" }, { num: "5 MIN", text: "and your odds drop 80%" }, { num: "48%", text: "never follow up at all" }].map((s, i) => (
-            <div key={i} style={{ background: "#0a0a0f", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "28px 32px", flex: 1, minWidth: 180 }}>
+            <div key={i} style={{ background: "#0d0d14", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "28px 32px", flex: 1, minWidth: 180 }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: "#E86A2A" }}>{s.num}</div>
               <div style={{ fontSize: 13, color: "rgba(245,243,240,0.5)", marginTop: 4 }}>{s.text}</div>
             </div>
@@ -267,7 +267,7 @@ export default function Home() {
             { num: "02", title: "AI Starts Selling", desc: "Texts within seconds. Qualifies. Handles objections. Builds trust." },
             { num: "03", title: "Appointment Booked", desc: "Calendar invite sent. Google Meet link. You just show up and close." },
           ].map((s, i) => (
-            <div key={i} style={{ flex: 1, minWidth: 250, background: "#0a0a0f", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "32px", transition: "all 0.3s" }}>
+            <div key={i} style={{ flex: 1, minWidth: 250, background: "#0d0d14", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "32px", transition: "all 0.3s" }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, color: "rgba(232,106,42,0.2)", marginBottom: 12 }}>{s.num}</div>
               <div style={{ fontSize: 17, fontWeight: 700, color: "#f5f3f0", marginBottom: 8 }}>{s.title}</div>
               <div style={{ fontSize: 14, color: "rgba(245,243,240,0.5)", lineHeight: 1.6 }}>{s.desc}</div>
@@ -315,7 +315,7 @@ export default function Home() {
       </div>
 
       {/* Pricing */}
-      <div style={{ background: "#060610" }}>
+      <div style={{ background: "#101018" }}>
       <div id="pricing" style={{ padding: "50px 40px", maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <div className="lp-eyebrow" style={{ justifyContent: "center" }}>Pricing</div>
@@ -366,7 +366,7 @@ export default function Home() {
       </div>
 
       {/* Final CTA */}
-      <div style={{ background: "#0a0a0f", padding: "50px 40px 60px", textAlign: "center" }}>
+      <div style={{ background: "#0d0d14", padding: "50px 40px 60px", textAlign: "center" }}>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 16px" }}>Stop Losing Leads. <span className="lp-gradient-text">Start Today.</span></h2>
         <p style={{ fontSize: 17, color: "rgba(245,243,240,0.4)", margin: "0 0 36px" }}>Your competitors are already following up faster than you.</p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
@@ -377,16 +377,13 @@ export default function Home() {
 
       {/* Footer */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "40px 40px 24px", overflow: "hidden" }}>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(80px, 15vw, 200px)", letterSpacing: 6, textAlign: "center", lineHeight: 0.9, marginBottom: 24, whiteSpace: "nowrap", color: "rgba(255,255,255,0.07)", userSelect: "none" }}>
-          THE WOLF PACK AI
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(80px, 15vw, 200px)", letterSpacing: 6, textAlign: "center", lineHeight: 0.9, marginBottom: 24, whiteSpace: "nowrap", color: "rgba(255,255,255,0.2)", userSelect: "none" }}>
+          THE <span style={{ color: "rgba(232,106,42,0.25)" }}>WOLF</span> PACK AI
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto", flexWrap: "wrap", gap: 12 }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1.5 }}>THE <span style={{ color: "#E86A2A" }}>WOLF</span> PACK AI</div>
-          <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-            <Link href="/privacy" style={{ color: "rgba(245,243,240,0.3)", textDecoration: "none", fontSize: 13 }}>Privacy</Link>
-            <Link href="/terms" style={{ color: "rgba(245,243,240,0.3)", textDecoration: "none", fontSize: 13 }}>Terms</Link>
-            <span style={{ fontSize: 12, color: "rgba(245,243,240,0.2)" }}>© {new Date().getFullYear()}</span>
-          </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 24, alignItems: "center" }}>
+          <Link href="/privacy" style={{ color: "rgba(245,243,240,0.3)", textDecoration: "none", fontSize: 13 }}>Privacy</Link>
+          <Link href="/terms" style={{ color: "rgba(245,243,240,0.3)", textDecoration: "none", fontSize: 13 }}>Terms</Link>
+          <span style={{ fontSize: 12, color: "rgba(245,243,240,0.2)" }}>© {new Date().getFullYear()}</span>
         </div>
       </div>
     </div>
