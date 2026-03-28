@@ -369,13 +369,18 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "32px 40px", textAlign: "center" }}>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1.5, marginBottom: 8 }}>THE <span style={{ color: "#E86A2A" }}>WOLF</span> PACK AI</div>
-        <div style={{ fontSize: 13, color: "rgba(245,243,240,0.3)" }}>
-          <Link href="/privacy" style={{ color: "rgba(245,243,240,0.3)", marginRight: 16, textDecoration: "none" }}>Privacy</Link>
-          <Link href="/terms" style={{ color: "rgba(245,243,240,0.3)", textDecoration: "none" }}>Terms</Link>
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "40px 40px 24px", overflow: "hidden" }}>
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(80px, 15vw, 200px)", letterSpacing: 6, textAlign: "center", lineHeight: 0.9, marginBottom: 24, whiteSpace: "nowrap", color: "rgba(255,255,255,0.03)", userSelect: "none" }}>
+          THE WOLF PACK AI
         </div>
-        <div style={{ fontSize: 12, color: "rgba(245,243,240,0.2)", marginTop: 8 }}>© {new Date().getFullYear()} The Wolf Pack AI. All rights reserved.</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1.5 }}>THE <span style={{ color: "#E86A2A" }}>WOLF</span> PACK AI</div>
+          <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+            <Link href="/privacy" style={{ color: "rgba(245,243,240,0.3)", textDecoration: "none", fontSize: 13 }}>Privacy</Link>
+            <Link href="/terms" style={{ color: "rgba(245,243,240,0.3)", textDecoration: "none", fontSize: 13 }}>Terms</Link>
+            <span style={{ fontSize: 12, color: "rgba(245,243,240,0.2)" }}>© {new Date().getFullYear()}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
