@@ -143,7 +143,7 @@ function ScrambleText({ text, delay = 0 }: { text: string; delay?: number }) {
 
 export default function Home() {
   return (
-    <div style={{ background: "#000", color: "#f5f3f0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden" }}>
+    <div style={{ background: "#0D1426", color: "#f5f3f0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden" }}>
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -239,14 +239,14 @@ export default function Home() {
       </div>
 
       {/* Problem */}
-      <div style={{ background: "#141420", padding: "50px 0" }}>
+      <div style={{ background: "#111827", padding: "50px 0" }}>
       <div style={{ padding: "0 40px", maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
         <div className="lp-eyebrow" style={{ justifyContent: "center" }}>The Problem</div>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 16px" }}>Every Minute You Wait, Your Lead Goes Cold</h2>
         <p style={{ fontSize: 16, color: "rgba(245,243,240,0.5)", lineHeight: 1.7, maxWidth: 600, margin: "0 auto 40px" }}>78% of customers buy from whoever responds first. Are you first?</p>
         <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
           {[{ num: "78%", text: "buy from first responder" }, { num: "5 MIN", text: "and your odds drop 80%" }, { num: "48%", text: "never follow up at all" }].map((s, i) => (
-            <div key={i} style={{ background: "#141420", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "28px 32px", flex: 1, minWidth: 180 }}>
+            <div key={i} style={{ background: "#111827", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "28px 32px", flex: 1, minWidth: 180 }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: "#E86A2A" }}>{s.num}</div>
               <div style={{ fontSize: 13, color: "rgba(245,243,240,0.5)", marginTop: 4 }}>{s.text}</div>
             </div>
@@ -267,7 +267,7 @@ export default function Home() {
             { num: "02", title: "AI Starts Selling", desc: "Texts within seconds. Qualifies. Handles objections. Builds trust." },
             { num: "03", title: "Appointment Booked", desc: "Calendar invite sent. Google Meet link. You just show up and close." },
           ].map((s, i) => (
-            <div key={i} style={{ flex: 1, minWidth: 250, background: "#141420", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "32px", transition: "all 0.3s" }}>
+            <div key={i} style={{ flex: 1, minWidth: 250, background: "#111827", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "32px", transition: "all 0.3s" }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, color: "rgba(232,106,42,0.2)", marginBottom: 12 }}>{s.num}</div>
               <div style={{ fontSize: 17, fontWeight: 700, color: "#f5f3f0", marginBottom: 8 }}>{s.title}</div>
               <div style={{ fontSize: 14, color: "rgba(245,243,240,0.5)", lineHeight: 1.6 }}>{s.desc}</div>
@@ -315,7 +315,7 @@ export default function Home() {
       </div>
 
       {/* Pricing */}
-      <div style={{ background: "#181824" }}>
+      <div style={{ background: "#0a1020" }}>
       <div id="pricing" style={{ padding: "50px 40px", maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ textAlign: "center" }}>
           <div className="lp-eyebrow" style={{ justifyContent: "center" }}>Pricing</div>
@@ -366,7 +366,7 @@ export default function Home() {
       </div>
 
       {/* Final CTA */}
-      <div style={{ background: "#141420", padding: "50px 40px 60px", textAlign: "center" }}>
+      <div style={{ background: "#111827", padding: "50px 40px 60px", textAlign: "center" }}>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 16px" }}>Stop Losing Leads. <span className="lp-gradient-text">Start Today.</span></h2>
         <p style={{ fontSize: 17, color: "rgba(245,243,240,0.4)", margin: "0 0 36px" }}>Your competitors are already following up faster than you.</p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
