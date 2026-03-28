@@ -377,7 +377,7 @@ export default function Home() {
 
       {/* Footer */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "40px 40px 24px", overflow: "hidden" }}>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(80px, 15vw, 200px)", letterSpacing: 6, textAlign: "center", lineHeight: 0.9, marginBottom: 24, whiteSpace: "nowrap", color: "rgba(255,255,255,0.35)", userSelect: "none" }}>
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(36px, 12vw, 200px)", letterSpacing: "clamp(2px, 0.5vw, 6px)", textAlign: "center", lineHeight: 0.9, marginBottom: 24, color: "rgba(255,255,255,0.35)", userSelect: "none" }}>
           THE <span style={{ color: "rgba(232,106,42,0.45)" }}>WOLF</span> PACK AI
         </div>
         <div style={{ display: "flex", justifyContent: "center", gap: 24, alignItems: "center" }}>
