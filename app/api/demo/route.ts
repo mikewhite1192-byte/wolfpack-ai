@@ -14,7 +14,7 @@ function toE164(phone: string): string {
 // POST /api/demo — start a live demo for a prospect
 export async function POST(req: Request) {
   try {
-    const { name, phone, businessType } = await req.json();
+    const { name, phone, businessType, source } = await req.json();
 
     if (!name || !phone) {
       return NextResponse.json({ error: "Name and phone required" }, { status: 400 });
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
     const contact = await sql`
       INSERT INTO contacts (workspace_id, first_name, last_name, phone, source, source_detail)
-      VALUES (${ws.id}, ${firstName}, ${lastName}, ${formattedPhone}, 'demo', ${businessType || 'live demo'})
+      VALUES (${ws.id}, ${firstName}, ${lastName}, ${formattedPhone}, ${source || 'demo'}, ${businessType || 'live demo'})
       RETURNING *
     `;
 

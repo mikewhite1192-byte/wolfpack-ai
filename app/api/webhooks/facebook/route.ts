@@ -21,8 +21,16 @@ export async function GET(req: Request) {
 }
 
 // POST — Receive Facebook Lead Ad webhooks
+// URL per client: https://thewolfpack.ai/api/webhooks/facebook?ws=WORKSPACE_ID
 export async function POST(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const workspaceId = searchParams.get("ws");
+    if (!workspaceId) {
+      console.error("[fb-webhook] No workspace ID provided");
+      return NextResponse.json({ error: "Missing ws parameter" }, { status: 400 });
+    }
+
     const body = await req.json();
     console.log("[fb-webhook] Received:", JSON.stringify(body, null, 2));
 
@@ -47,7 +55,7 @@ export async function POST(req: Request) {
           if (!accessToken) {
             console.error("[fb-webhook] No FB_PAGE_ACCESS_TOKEN set — can't fetch lead data");
             // Still store what we have
-            await createLeadFromWebhook({
+            await createLeadFromWebhook(workspaceId, {
               source: "facebook",
               sourceDetail: `form:${formId} ad:${adId}`,
               fbLeadgenId: leadgenId,
@@ -65,7 +73,7 @@ export async function POST(req: Request) {
 
             if (leadData.error) {
               console.error("[fb-webhook] Graph API error:", leadData.error);
-              await createLeadFromWebhook({
+              await createLeadFromWebhook(workspaceId, {
                 source: "facebook",
                 sourceDetail: `form:${formId} ad:${adId}`,
                 fbLeadgenId: leadgenId,
@@ -88,7 +96,7 @@ export async function POST(req: Request) {
             const email = fields.email || "";
             const phone = fields.phone_number || fields.phone || "";
 
-            await createLeadFromWebhook({
+            await createLeadFromWebhook(workspaceId, {
               firstName,
               lastName,
               email,
@@ -100,7 +108,7 @@ export async function POST(req: Request) {
             });
           } catch (err) {
             console.error("[fb-webhook] Failed to fetch lead from Graph API:", err);
-            await createLeadFromWebhook({
+            await createLeadFromWebhook(workspaceId, {
               source: "facebook",
               sourceDetail: `form:${formId} ad:${adId}`,
               fbLeadgenId: leadgenId,
@@ -139,14 +147,13 @@ interface LeadInput {
   createdTime?: number;
 }
 
-async function createLeadFromWebhook(lead: LeadInput) {
+async function createLeadFromWebhook(workspaceId: string, lead: LeadInput) {
   try {
-    // Get workspace
     const workspace = await sql`
-      SELECT * FROM workspaces WHERE status = 'active' ORDER BY created_at ASC LIMIT 1
+      SELECT * FROM workspaces WHERE id = ${workspaceId} AND status = 'active' LIMIT 1
     `;
     if (workspace.length === 0) {
-      console.error("[fb-webhook] No workspace found");
+      console.error(`[fb-webhook] Workspace ${workspaceId} not found`);
       return;
     }
     const ws = workspace[0];

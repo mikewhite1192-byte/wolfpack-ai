@@ -324,9 +324,9 @@ export default function Home() {
         </div>
         <div className="lp-price-grid" style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
           {[
-            { name: "STARTER", price: "$49", period: "/mo", desc: "Everything you need to start.", featured: false, features: ["AI Sales Agent", "1 Phone Number (SMS + Voice)", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Analytics"], cta: "Get Started", href: "/sign-up" },
-            { name: "PRO", price: "$289", period: "/mo", desc: "Blue texts. Maximum deliverability.", featured: true, badge: "MOST POPULAR", features: ["Everything in Starter", "iMessage (Blue Texts)", "RCS Messaging", "No A2P Registration", "Higher Deliverability", "Priority Support", "Self-Learning AI", "Google Review Automation", "CSV Import"], cta: "Get Started", href: "/sign-up" },
-            { name: "AGENCY", price: "Custom", period: "", desc: "For agencies managing clients.", featured: false, features: ["Everything in Pro", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"], cta: "Contact Us", href: "/book/default" },
+            { name: "STARTER", price: "$49", period: "/mo", desc: "Everything you need to start.", featured: false, plan: "starter", features: ["AI Sales Agent", "1 Phone Number (SMS + Voice)", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Analytics"], cta: "Get Started" },
+            { name: "PRO", price: "$289", period: "/mo", desc: "Blue texts. Maximum deliverability.", featured: true, badge: "MOST POPULAR", plan: "pro", features: ["Everything in Starter", "iMessage (Blue Texts)", "RCS Messaging", "No A2P Registration", "Higher Deliverability", "Priority Support", "Self-Learning AI", "Google Review Automation", "CSV Import"], cta: "Get Started" },
+            { name: "AGENCY", price: "Custom", period: "", desc: "For agencies managing clients.", featured: false, plan: null, features: ["Everything in Pro", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"], cta: "Contact Us" },
           ].map((p, i) => (
             <div key={i} className={`lp-price-card ${p.featured ? "featured" : ""}`} style={{ flex: 1, minWidth: 260, maxWidth: 320, position: "relative" }}>
               {p.badge && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#E86A2A", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20 }}>{p.badge}</div>}
@@ -340,9 +340,27 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Link href={p.href} className={p.featured ? "lp-cta-btn" : "lp-ghost-btn"} style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
-                {p.cta}
-              </Link>
+              {p.plan ? (
+                <button
+                  onClick={async () => {
+                    const res = await fetch("/api/stripe/checkout", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ plan: p.plan }),
+                    });
+                    const data = await res.json();
+                    if (data.url) window.location.href = data.url;
+                  }}
+                  className={p.featured ? "lp-cta-btn" : "lp-ghost-btn"}
+                  style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex", cursor: "pointer", border: "none", fontFamily: "inherit", fontSize: "inherit" }}
+                >
+                  {p.cta}
+                </button>
+              ) : (
+                <Link href="/book/default" className="lp-ghost-btn" style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
+                  {p.cta}
+                </Link>
+              )}
             </div>
           ))}
         </div>

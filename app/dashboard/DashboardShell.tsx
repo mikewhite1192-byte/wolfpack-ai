@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import AiAssistant from "./components/AiAssistant";
 
 const T = {
@@ -196,9 +196,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const router = useRouter();
   const { isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
   const [dialOpen, setDialOpen] = useState(false);
   const [dialNumber, setDialNumber] = useState("");
   const [notifications] = useState(3);
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleDemoSignOut() {
+    setSigningOut(true);
+    try {
+      await fetch("/api/demo/reset", { method: "POST" });
+    } catch (err) {
+      console.error("Demo reset failed:", err);
+    }
+    await signOut({ redirectUrl: "/" });
+  }
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -292,6 +304,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <div className="db-bottom">
           <button className="db-phone-btn" onClick={() => setDialOpen(d => !d)}>
             <span>📞</span> Dial Out
+          </button>
+          <button
+            onClick={handleDemoSignOut}
+            disabled={signingOut}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: T.muted, background: "none", border: "none", cursor: "pointer", width: "100%", marginTop: 6, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.color = T.red; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; }}
+          >
+            <span style={{ fontSize: 14, width: 18, textAlign: "center" }}>↪</span>
+            {signingOut ? "Resetting..." : "Sign Out"}
           </button>
         </div>
       </aside>

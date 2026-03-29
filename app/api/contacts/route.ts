@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { getOrCreateWorkspace } from "@/lib/workspace";
+import { generateFirstTouch, DEFAULT_CONFIG, type AgentConfig } from "@/lib/ai-agent";
+import { createChat } from "@/lib/linq/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -142,6 +144,43 @@ export async function POST(req: Request) {
         INSERT INTO deals (workspace_id, contact_id, stage_id, title)
         VALUES (${workspace.id}, ${contact[0].id}, ${firstStage[0].id}, ${(firstName || "") + " " + (lastName || "") + " Deal"})
       `;
+    }
+
+    // Instant AI first-touch — text them immediately if workspace is onboarded and contact has a phone
+    if (phone && workspace.onboarding_complete && workspace.ai_config?.enabled) {
+      try {
+        const config: AgentConfig = { ...DEFAULT_CONFIG, ...workspace.ai_config };
+        const contactName = [firstName, lastName].filter(Boolean).join(" ") || "there";
+        const firstMessage = await generateFirstTouch(config, contactName, source || "manual");
+
+        // Send via messaging provider
+        const fromNumber = workspace.twilio_phone || process.env.LINQ_PHONE_NUMBER || "";
+        const chatResult = await createChat(fromNumber, phone, firstMessage);
+
+        // Create conversation + store the message
+        const conv = await sql`
+          INSERT INTO conversations (workspace_id, contact_id, channel, status, ai_enabled, ai_stage, assigned_to)
+          VALUES (${workspace.id}, ${contact[0].id}, 'sms', 'open', TRUE, 'connection', ${chatResult.chat_id})
+          RETURNING *
+        `;
+
+        await sql`
+          INSERT INTO messages (conversation_id, direction, body, status)
+          VALUES (${conv[0].id}, 'outbound', ${firstMessage}, 'sent')
+        `;
+
+        // Schedule follow-up
+        await sql`
+          UPDATE contacts SET
+            ai_next_followup = NOW() + INTERVAL '24 hours',
+            ai_followup_count = 0
+          WHERE id = ${contact[0].id}
+        `;
+
+        console.log(`[contacts] Instant first-touch sent to ${phone}: "${firstMessage.substring(0, 50)}..."`);
+      } catch (err) {
+        console.error("[contacts] First-touch failed (contact still created):", err);
+      }
     }
 
     return NextResponse.json({ contact: contact[0] }, { status: 201 });
