@@ -9,8 +9,7 @@ export async function GET() {
   try {
     const workspace = await getOrCreateWorkspace();
     const pipelines = await sql`
-      SELECT p.*,
-        (SELECT COUNT(*) FROM deals d JOIN pipeline_stages ps ON ps.id = d.stage_id WHERE ps.pipeline_id = p.id) as deal_count
+      SELECT p.*
       FROM pipelines p
       WHERE p.workspace_id = ${workspace.id}
       ORDER BY p.is_default DESC, p.created_at ASC

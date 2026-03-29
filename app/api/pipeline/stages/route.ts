@@ -4,7 +4,7 @@ import { getOrCreateWorkspace } from "@/lib/workspace";
 
 const sql = neon(process.env.DATABASE_URL!);
 
-// GET /api/pipeline/stages?pipelineId=xxx — get stages with deals for a specific pipeline
+// GET /api/pipeline/stages?pipelineId=xxx
 export async function GET(req: Request) {
   try {
     const workspace = await getOrCreateWorkspace();
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         ORDER BY position ASC
       `;
     } else {
-      // Default: get stages from the default pipeline, or all if no pipeline_id set
+      // Fallback: try default pipeline, then all stages
       const defaultPipeline = await sql`
         SELECT id FROM pipelines WHERE workspace_id = ${workspace.id} AND is_default = TRUE LIMIT 1
       `;
@@ -38,26 +38,23 @@ export async function GET(req: Request) {
       }
     }
 
-    const stageIds = stages.map((s: Record<string, unknown>) => s.id);
-    let deals: Record<string, unknown>[] = [];
-    if (stageIds.length > 0) {
-      deals = await sql`
+    // Get deals for these stages individually (avoid ANY array issues)
+    const stagesWithDeals = [];
+    for (const stage of stages) {
+      const deals = await sql`
         SELECT d.*, c.first_name, c.last_name, c.company, c.phone, c.email, c.lead_score
         FROM deals d
         JOIN contacts c ON c.id = d.contact_id
-        WHERE d.workspace_id = ${workspace.id} AND d.stage_id = ANY(${stageIds})
+        WHERE d.workspace_id = ${workspace.id} AND d.stage_id = ${stage.id}
         ORDER BY d.created_at DESC
       `;
+      stagesWithDeals.push({ ...stage, deals });
     }
-
-    const stagesWithDeals = stages.map((stage: Record<string, unknown>) => ({
-      ...stage,
-      deals: deals.filter((d: Record<string, unknown>) => d.stage_id === stage.id),
-    }));
 
     return NextResponse.json({ stages: stagesWithDeals });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";
+    console.error("[pipeline/stages]", msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

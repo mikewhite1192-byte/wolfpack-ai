@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const T = {
   orange: "#E86A2A",
@@ -27,6 +27,8 @@ interface CsvImportModalProps {
   onComplete: () => void;
 }
 
+interface ContactList { id: string; name: string; }
+
 export default function CsvImportModal({ onClose, onComplete }: CsvImportModalProps) {
   const [step, setStep] = useState<"upload" | "map" | "importing" | "done">("upload");
   const [headers, setHeaders] = useState<string[]>([]);
@@ -40,6 +42,17 @@ export default function CsvImportModal({ onClose, onComplete }: CsvImportModalPr
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [rawText, setRawText] = useState("");
+  const [lists, setLists] = useState<ContactList[]>([]);
+  const [selectedListId, setSelectedListId] = useState<string>("");
+  const [newListName, setNewListName] = useState("");
+  const [listMode, setListMode] = useState<"existing" | "new">("existing");
+
+  // Load lists on mount
+  useEffect(() => {
+    fetch("/api/contact-lists").then(r => r.json()).then(data => {
+      setLists(data.lists || []);
+    }).catch(() => {});
+  }, []);
 
   async function handleFileUpload(file: File) {
     setUploading(true);
@@ -109,10 +122,22 @@ export default function CsvImportModal({ onClose, onComplete }: CsvImportModalPr
   async function handleImport() {
     setStep("importing");
 
+    // Create new list if needed
+    let listId = selectedListId || null;
+    if (listMode === "new" && newListName.trim()) {
+      const listRes = await fetch("/api/contact-lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newListName.trim() }),
+      });
+      const listData = await listRes.json();
+      if (listData.list) listId = listData.list.id;
+    }
+
     const res = await fetch("/api/contacts/import?action=execute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rows: allRows, mapping, aiEnabled }),
+      body: JSON.stringify({ rows: allRows, mapping, aiEnabled, listId }),
     });
     const data = await res.json();
 
@@ -241,6 +266,33 @@ export default function CsvImportModal({ onClose, onComplete }: CsvImportModalPr
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* List Assignment */}
+              <div style={{ marginTop: 16, padding: "12px 14px", background: T.surface, borderRadius: 8, border: `1px solid ${T.border}` }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 8 }}>Add to List</div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <select
+                    value={listMode === "existing" ? selectedListId : "__new__"}
+                    onChange={e => {
+                      if (e.target.value === "__new__") { setListMode("new"); }
+                      else { setListMode("existing"); setSelectedListId(e.target.value); }
+                    }}
+                    style={{ flex: 1, padding: "8px 12px", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: 13, fontFamily: "'Inter', sans-serif" }}
+                  >
+                    <option value="">No list (general contacts)</option>
+                    {lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    <option value="__new__">+ Create new list</option>
+                  </select>
+                  {listMode === "new" && (
+                    <input
+                      value={newListName}
+                      onChange={e => setNewListName(e.target.value)}
+                      placeholder="New list name..."
+                      style={{ flex: 1, padding: "8px 12px", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: 13, outline: "none" }}
+                    />
+                  )}
+                </div>
               </div>
 
               {/* AI Toggle */}

@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
     if (action === "execute") {
       // Execute import with field mapping
-      const { rows, mapping, aiEnabled } = await req.json();
+      const { rows, mapping, aiEnabled, listId } = await req.json();
       // mapping: { firstName: 0, lastName: 1, email: 2, phone: 3, company: 4, source: 5 }
       // rows: string[][]
 
@@ -97,8 +97,8 @@ export async function POST(req: Request) {
           }
 
           const contact = await sql`
-            INSERT INTO contacts (workspace_id, first_name, last_name, email, phone, company, source)
-            VALUES (${workspace.id}, ${firstName}, ${lastName}, ${email}, ${phone}, ${company}, ${source || "import"})
+            INSERT INTO contacts (workspace_id, first_name, last_name, email, phone, company, source, list_id)
+            VALUES (${workspace.id}, ${firstName}, ${lastName}, ${email}, ${phone}, ${company}, ${source || "import"}, ${listId || null})
             RETURNING *
           `;
 
