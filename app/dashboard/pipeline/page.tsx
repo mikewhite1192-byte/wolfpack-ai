@@ -154,8 +154,8 @@ export default function PipelinePage() {
       <style>{`
         .pipe-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .pipe-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: ${T.text}; letter-spacing: 1px; }
-        .pipe-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; max-width: calc(100vw - 260px); }
-        .pipe-col { width: 260px; min-width: 260px; flex-shrink: 0; }
+        .pipe-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; }
+        .pipe-col { flex: 1; min-width: 200px; }
         .pipe-col-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px 8px 0 0; margin-bottom: 8px; }
         .pipe-col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .pipe-col-name { font-size: 12px; font-weight: 700; color: ${T.text}; }
@@ -172,7 +172,7 @@ export default function PipelinePage() {
         .pipe-card-meta { font-size: 11px; color: ${T.muted}; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
         .pipe-card-score { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; }
         .pipe-total { font-size: 11px; color: ${T.muted}; margin-top: 4px; padding: 0 12px; }
-        .pipe-dead-zone { position: fixed; bottom: 0; left: 220px; right: 0; height: 70px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(231,76,60,0.08); border-top: 2px dashed rgba(231,76,60,0.3); z-index: 50; transition: all 0.2s; font-size: 14px; font-weight: 700; color: ${T.red}; }
+        .pipe-dead-zone { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(231,76,60,0.08); border-top: 2px dashed rgba(231,76,60,0.3); z-index: 50; transition: all 0.2s; font-size: 14px; font-weight: 700; color: ${T.red}; }
         .pipe-dead-zone.drag-over { background: rgba(231,76,60,0.2); border-top-color: ${T.red}; }
         .pipe-dead-zone.hidden { display: none; }
       `}</style>

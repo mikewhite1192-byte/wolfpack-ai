@@ -69,6 +69,12 @@ export async function GET() {
       ORDER BY ps.position ASC
     `;
 
+    // Open conversations
+    const openConvos = await sql`
+      SELECT COUNT(*) as total FROM conversations
+      WHERE workspace_id = ${wid} AND status = 'open'
+    `;
+
     // Recent activity (last 15)
     const recentActivity = await sql`
       SELECT da.action, da.details, da.created_at,
@@ -90,6 +96,7 @@ export async function GET() {
         avgDealSize: parseFloat(parseFloat(wonDeals[0].avg_value).toFixed(0)),
         totalLeads: parseInt(totalLeads[0].total),
         activeLeads: parseInt(activeLeads[0].total),
+        openConversations: parseInt(openConvos[0].total),
       },
       stages: stageBreakdown,
       activity: recentActivity,
