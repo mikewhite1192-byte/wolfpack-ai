@@ -92,7 +92,12 @@ export async function createChat(from: string, to: string, text: string): Promis
     throw new Error(`Linq API error: ${response.status} ${truncateError(errorText)}`);
   }
 
-  const data = await response.json() as SendMessageResponse;
+  const raw = await response.json();
+  // Linq V3 returns { chat: { id: "...", message: { ... } } } not { chat_id: "..." }
+  const data: SendMessageResponse = {
+    chat_id: raw.chat_id || raw.chat?.id || "",
+    message: raw.message || raw.chat?.message || { id: "", parts: [], sent_at: "", delivery_status: "pending", is_read: false },
+  };
   console.log(`[linq] Chat created: ${data.chat_id}`);
   return data;
 }

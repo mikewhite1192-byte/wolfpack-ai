@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     let chatId: string | null = null;
     try {
       const chatResult = await createChat(FROM_NUMBER, e164, msg1);
-      chatId = chatResult?.chat_id || null;
+      chatId = chatResult?.chat_id || (chatResult as unknown as Record<string, Record<string, string>>)?.chat?.id || null;
       console.log(`[try] Chat created, chat_id: ${chatId}, full result:`, JSON.stringify(chatResult));
     } catch (err) {
       console.error(`[try] createChat failed but continuing:`, err);
