@@ -5,13 +5,24 @@ import { createChat } from "@/lib/linq/client";
 const sql = neon(process.env.DATABASE_URL!);
 const FROM_NUMBER = process.env.LINQ_PHONE_NUMBER || "";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+// OPTIONS — CORS preflight
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 // POST /api/try-agency — start Maya as agency sales rep
 export async function POST(req: NextRequest) {
   try {
     const { name, phone, businessType } = await req.json();
 
     if (!name?.trim() || !phone?.trim()) {
-      return NextResponse.json({ error: "Name and phone required" }, { status: 400 });
+      return NextResponse.json({ error: "Name and phone required" }, { status: 400, headers: corsHeaders });
     }
 
     const firstName = name.trim();
@@ -54,9 +65,9 @@ export async function POST(req: NextRequest) {
       UPDATE maya_demos SET followup_at = NOW() + INTERVAL '10 minutes' WHERE phone = ${e164} AND step = 1
     `;
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (err) {
     console.error("[try-agency]", err);
-    return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500 });
+    return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500, headers: corsHeaders });
   }
 }
