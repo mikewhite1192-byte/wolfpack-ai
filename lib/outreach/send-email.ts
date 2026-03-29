@@ -96,58 +96,75 @@ export async function getTemplate(step: number, contact: Record<string, unknown>
 
 function getDefaultTemplate(step: number, contact: Record<string, unknown>): { subject: string; body: string } {
   const firstName = (contact.first_name as string) || "there";
-  const company = (contact.company as string) || "";
   const unsubUrl = `https://thewolfpack.ai/api/outreach/unsubscribe?email=${encodeURIComponent(contact.email as string)}`;
-  const companyLine = company ? ` over at ${company}` : "";
+
+  const signature = `
+    <table cellpadding="0" cellspacing="0" style="margin-top: 28px; border-top: 1px solid #eee; padding-top: 16px;">
+      <tr>
+        <td style="padding-right: 14px; vertical-align: top;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #F97316, #E86A2A); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 18px; font-family: Arial, sans-serif; text-align: center; line-height: 48px;">M</div>
+        </td>
+        <td style="vertical-align: top;">
+          <div style="font-weight: 700; color: #222; font-size: 14px; font-family: Arial, sans-serif;">Michael White</div>
+          <div style="color: #888; font-size: 12px; font-family: Arial, sans-serif;">Founder, Wolf Pack AI</div>
+          <div style="margin-top: 4px;">
+            <a href="https://thewolfpack.ai" style="color: #E86A2A; font-size: 12px; font-family: Arial, sans-serif; text-decoration: none;">thewolfpack.ai</a>
+          </div>
+        </td>
+      </tr>
+    </table>`;
+
+  const footer = `
+    <p style="color: #bbb; font-size: 10px; margin-top: 32px; line-height: 1.5; font-family: Arial, sans-serif;">
+      Wolf Pack AI, Warren MI 48088<br>
+      <a href="${unsubUrl}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a>
+    </p>`;
+
+  const wrap = (content: string) => `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.7; font-size: 14px;">
+      ${content}
+      ${signature}
+      ${footer}
+    </div>`;
 
   const templates: Record<number, { subject: string; body: string }> = {
     1: {
-      subject: `${firstName}, quick question about your leads`,
-      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
+      subject: `can I show you something weird ${firstName}?`,
+      body: wrap(`
         <p>Hey ${firstName},</p>
-        <p>I saw you're a licensed agent${companyLine} and wanted to ask you something real quick.</p>
-        <p>When a lead comes in from one of your campaigns or your website, how fast does someone on your team respond? Most agents I talk to say 30 minutes to a few hours. Some are honest and say next day.</p>
-        <p>The problem is 78% of people buy from whoever responds first. So if you're not first, you're losing most of them before the conversation even starts.</p>
-        <p>We built something that fixes this. It's an AI that texts your leads back in 3 seconds, qualifies them, handles their objections, and books appointments on your calendar. It runs 24/7 through iMessage so the texts actually get delivered.</p>
-        <p>Starts at $49/month. No contracts.</p>
-        <p><a href="https://thewolfpack.ai" style="color: #E86A2A; font-weight: bold;">See how it works</a></p>
-        <p style="color: #999; font-size: 11px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 12px;">
-          Wolf Pack AI, Warren MI 48088<br>
-          <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
-        </p>
-      </div>`,
+        <p>I want to show you something weird.</p>
+        <p>Go to this link and enter your phone number:</p>
+        <p><a href="https://thewolfpack.ai/try" style="color: #E86A2A; font-weight: bold; font-size: 15px;">thewolfpack.ai/try</a></p>
+        <p>An AI is going to text you pretending to be an insurance agent. Play along for 60 seconds.</p>
+        <p>I promise it's worth it.</p>
+      `),
     },
     2: {
-      subject: `The numbers on speed to lead`,
-      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
+      subject: `did you try it ${firstName}?`,
+      body: wrap(`
         <p>Hey ${firstName},</p>
-        <p>Wanted to share something I thought you'd find interesting.</p>
-        <p>We looked at the data across agents using our system and the ones who respond to leads in under 5 minutes convert at 3x the rate of everyone else. Not 10% better. Three times.</p>
-        <p>The problem is no human can respond in under 5 minutes consistently. Especially at 2am when someone's browsing insurance quotes on their phone.</p>
-        <p>That's why we built an AI sales agent specifically for insurance. It responds in seconds. It asks the right questions. It handles "I need to think about it" and "what's the price" without getting flustered. And it books the appointment right on your calendar.</p>
-        <p>You can try it right now. Enter your phone number on the demo page and the AI will text you. Takes 60 seconds.</p>
-        <p><a href="https://thewolfpack.ai/demo" style="color: #E86A2A; font-weight: bold;">Try the live demo</a></p>
-        <p style="color: #999; font-size: 11px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 12px;">
-          Wolf Pack AI, Warren MI 48088<br>
-          <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
-        </p>
-      </div>`,
+        <p>Following up. Did you get a chance to try it?</p>
+        <p>Here's what happens when you enter your number at <a href="https://thewolfpack.ai/try" style="color: #E86A2A; font-weight: bold;">thewolfpack.ai/try</a>:</p>
+        <p>An AI texts you back in 3 seconds pretending to be an insurance agent. It qualifies you, handles your responses, and feels completely real.</p>
+        <p>Then it reveals itself.</p>
+        <p>That reveal moment is what your leads would experience. Except instead of selling them on Wolf Pack AI, it's selling them on your business. 24/7. Without you lifting a finger.</p>
+        <p>Insurance agents, mortgage brokers, and real estate agents are using it right now to never miss a lead again.</p>
+        <p><a href="https://thewolfpack.ai/try" style="color: #E86A2A; font-weight: bold;">30 seconds to see it</a></p>
+      `),
     },
     3: {
-      subject: `Last thing from me, ${firstName}`,
-      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
+      subject: `closing your file ${firstName}`,
+      body: wrap(`
         <p>Hey ${firstName},</p>
-        <p>Last email from me. I know you're busy selling policies, not reading emails from strangers.</p>
-        <p>Here's the short version. If you've ever lost a deal because you didn't follow up fast enough, or had a lead go cold because life got in the way, this fixes that.</p>
-        <p>An AI that texts every lead in seconds, follows up on day 1, 3, 7, and 14 with a different approach each time, and books appointments on your calendar. Through iMessage so it doesn't get filtered like green texts.</p>
-        <p>$49/month. Cancel anytime. No setup fee. The AI asks you 9 questions about your business and it's live in minutes.</p>
-        <p>If the timing isn't right, no hard feelings. But if you're curious what it looks like when no lead gets left behind, take a look.</p>
-        <p><a href="https://thewolfpack.ai" style="color: #E86A2A; font-weight: bold;">Check it out</a></p>
-        <p style="color: #999; font-size: 11px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 12px;">
-          Wolf Pack AI, Warren MI 48088<br>
-          <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
-        </p>
-      </div>`,
+        <p>Last one from me.</p>
+        <p>I'll be straight with you. I built an AI that texts your leads in 3 seconds, qualifies them like a real agent would, and books appointments on your calendar while you sleep.</p>
+        <p>The best way to understand it isn't to read about it.</p>
+        <p>It's to experience it yourself.</p>
+        <p>Enter your number, play along for 60 seconds, and see exactly what your leads would feel the moment they reach out to you.</p>
+        <p><a href="https://thewolfpack.ai/try" style="color: #E86A2A; font-weight: bold; font-size: 15px;">thewolfpack.ai/try</a></p>
+        <p>No signup. No credit card. Just your phone number.</p>
+        <p>Either way, good luck out there ${firstName}.</p>
+      `),
     },
   };
 
