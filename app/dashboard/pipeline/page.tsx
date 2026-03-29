@@ -96,6 +96,16 @@ export default function PipelinePage() {
     }
   }
 
+  async function deletePipeline(pipeId: string) {
+    if (!confirm("Delete this pipeline? Deals will be moved to the default pipeline.")) return;
+    const res = await fetch(`/api/pipelines/${pipeId}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
+    setPipelines(prev => prev.filter(p => p.id !== pipeId));
+    const defaultPipe = pipelines.find(p => p.is_default);
+    if (defaultPipe) setActivePipeline(defaultPipe.id);
+  }
+
   async function moveDeal(dealId: string, newStageId: string) {
     // Optimistic update
     setStages(prev => {
@@ -221,18 +231,30 @@ export default function PipelinePage() {
       <div className="pipe-header">
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {pipelines.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setActivePipeline(p.id)}
-              style={{
-                padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
-                background: activePipeline === p.id ? "rgba(232,106,42,0.12)" : "transparent",
-                color: activePipeline === p.id ? T.orange : T.muted,
-                transition: "all 0.15s",
-              }}
-            >
-              {p.name}
-            </button>
+            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <button
+                onClick={() => setActivePipeline(p.id)}
+                style={{
+                  padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+                  background: activePipeline === p.id ? "rgba(232,106,42,0.12)" : "transparent",
+                  color: activePipeline === p.id ? T.orange : T.muted,
+                  transition: "all 0.15s",
+                }}
+              >
+                {p.name}
+              </button>
+              {!p.is_default && (
+                <button
+                  onClick={() => deletePipeline(p.id)}
+                  style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 12, padding: "4px 6px", borderRadius: 4, opacity: 0.5, transition: "opacity 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = T.red; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = "0.5"; e.currentTarget.style.color = T.muted; }}
+                  title="Delete pipeline"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           ))}
           {showNewPipeline ? (
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
