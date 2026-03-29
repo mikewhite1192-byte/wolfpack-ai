@@ -68,7 +68,8 @@ export async function handleMayaReply(chatId: string, from: string, text: string
 
       // Book on Google Calendar
       try {
-        const { getGmailToken, createCalendarEvent } = await import("@/lib/calendar");
+        const { getGmailToken } = await import("@/lib/gmail");
+        const { createCalendarEvent } = await import("@/lib/calendar");
         const ws = await sql`SELECT * FROM workspaces WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`;
         if (ws.length > 0) {
           const calToken = await getGmailToken(ws[0].id);
