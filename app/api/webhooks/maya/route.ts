@@ -96,6 +96,43 @@ export async function handleMayaReply(chatId: string, from: string, text: string
         console.error("[maya-agency] Calendar booking failed:", calErr);
       }
 
+      // Create CRM contact + deal
+      try {
+        const ws = await sql`SELECT * FROM workspaces WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`;
+        if (ws.length > 0) {
+          const wsId = ws[0].id;
+          // Check if contact already exists
+          const existing = await sql`SELECT id FROM contacts WHERE workspace_id = ${wsId} AND phone = ${demo.phone} LIMIT 1`;
+          let contactId: string;
+          if (existing.length > 0) {
+            contactId = existing[0].id;
+            await sql`UPDATE contacts SET email = ${email} WHERE id = ${contactId} AND email IS NULL`;
+          } else {
+            const contact = await sql`
+              INSERT INTO contacts (workspace_id, first_name, email, phone, source, source_detail)
+              VALUES (${wsId}, ${firstName}, ${email}, ${demo.phone}, 'maya_agency', ${actualIndustry})
+              RETURNING id
+            `;
+            contactId = contact[0].id;
+          }
+
+          // Create deal in first stage
+          const firstStage = await sql`SELECT id FROM pipeline_stages WHERE workspace_id = ${wsId} ORDER BY position ASC LIMIT 1`;
+          if (firstStage.length > 0) {
+            const existingDeal = await sql`SELECT id FROM deals WHERE contact_id = ${contactId} AND workspace_id = ${wsId} LIMIT 1`;
+            if (existingDeal.length === 0) {
+              await sql`
+                INSERT INTO deals (workspace_id, contact_id, stage_id, title)
+                VALUES (${wsId}, ${contactId}, ${firstStage[0].id}, ${firstName + ' — Agency Lead'})
+              `;
+            }
+          }
+          console.log(`[maya-agency] CRM contact + deal created for ${firstName}`);
+        }
+      } catch (crmErr) {
+        console.error("[maya-agency] CRM creation failed:", crmErr);
+      }
+
       const reply = `You're all set ${firstName}! Calendar invite with a Google Meet link is heading to ${email} right now. Looking forward to showing you what we can do for your ${actualIndustry} business. Talk soon!`;
       await sendMessage(chatId, reply);
       conversation.push({ role: "assistant", content: reply });
