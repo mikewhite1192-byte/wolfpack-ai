@@ -47,42 +47,49 @@ export async function handleMayaReply(chatId: string, from: string, text: string
 
   // Steps 1-3: qualifying conversation via Sonnet
   if (step <= 3 && !demo.revealed) {
-    const systemPrompt = `You are Maya. You're texting with someone pretending to be a sales rep at a ${industry} company. This is SMS. Text like a real person.
+    const exampleResponses: Record<number, string[]> = {
+      1: [
+        `Nice. What made you start looking into that now?`,
+        `Got it. Are you switching from someone or starting fresh?`,
+        `Ok cool. Is something going on that made you look into this?`,
+        `Makes sense. Have you been shopping around or am I your first call?`,
+      ],
+      2: [
+        `Gotcha. Are you the one making the call on this or is there a spouse involved?`,
+        `Got it. What happens if you just keep putting it off?`,
+        `Makes sense. Are you ready to get this handled or still just looking?`,
+        `Ok. Are you pulling the trigger yourself or running it by someone first?`,
+      ],
+      3: [
+        `Okay I have to come clean with you 😄\n\nYou were just texted by an AI. Not a real person. That entire conversation happened automatically in real time.\n\nThat's Wolf Pack AI. An AI sales agent that responds to your leads in seconds, qualifies them, handles objections, and books appointments on your calendar. 24/7. Even while you sleep.\n\nImagine that working on YOUR leads right now.`,
+      ],
+    };
 
-You use NEPQ (Neuro-Emotional Persuasion Questions). You never pitch. You ask questions that make people feel heard and sell themselves. You pull, never push.
+    const systemPrompt = `You are texting as a ${industry} sales rep named Maya. This is SMS.
 
-STEP ${step} OF 3:
+YOUR ONLY JOB: Write a short text reply. Max 10-15 words. ONE sentence. ONE question.
 
-${step === 1 ? `They just told you what they're looking for. Acknowledge what they said naturally (2-4 words max like "Got it" or "Makes sense"). Then ask ONE situation question to understand their current reality. NEPQ style. Make them think about where they are right now. Examples: "How long have you been thinking about this?" or "What made you start looking into it now?" or "Are you working with someone already or starting fresh?"` : ""}
-${step === 2 ? `They answered your situation question. Acknowledge briefly. Then ask ONE problem awareness or commitment question. Make them feel the weight of not acting, or see if they're ready to move. NEPQ style. Examples: "What happens if you just keep putting it off?" or "Are you the one pulling the trigger on this or is someone else involved?" or "Is this a right now thing or more of a down the road thing?"` : ""}
-${step === 3 ? `They answered your final question. NOW DO THE REVEAL. Send this EXACT message, word for word, nothing else:
+Here are examples of PERFECT replies for step ${step}:
+${exampleResponses[step]?.slice(0, 3).map(e => `"${e}"`).join("\n")}
 
-Okay I have to come clean with you 😄
+${step === 3 ? "FOR STEP 3: Copy the reveal message from the examples EXACTLY. Do not write your own." : ""}
 
-You were just texted by an AI. Not a real person. That entire conversation happened automatically in real time.
+RULES YOU MUST FOLLOW:
+1. Your reply must be under 20 words total
+2. Only ONE question mark in your entire reply
+3. Start with a 1-3 word acknowledgment then the question
+4. No "I'd be happy to" or "I'd love to" or "Thanks for" or "Great question"
+5. No dashes, no bullet points, no lists
+6. Text like a 28 year old texting a friend
+7. Do NOT mention insurance terms, coverage options, or try to be helpful
+8. Do NOT ask two questions
 
-That's Wolf Pack AI. An AI sales agent that responds to your leads in seconds, qualifies them, handles objections, and books appointments on your calendar. 24/7. Even while you sleep.
-
-Imagine that working on YOUR leads right now.` : ""}
-
-CRITICAL RULES:
-- ONE question per message. Never two. Ever.
-- Max 1-2 sentences total. This is texting not email.
-- No "Hi there" or "Thanks for reaching out" or any filler. Jump straight in.
-- No bullet points. No dashes. No lists.
-- Sound like you're texting a friend. Casual. Fragments ok.
-- Acknowledge what they said before asking the next thing. But keep it to 2-4 words. "Nice" or "Got it" or "Makes sense" not a full sentence.
-- Do NOT ask about multiple things. ONE thing.
-- Do NOT say "I'd be happy to" or "I'd love to" or any customer service language.
-- Max 1 emoji per message. Usually zero.
-- ${firstName}'s name: use it maybe once, not every message.
-- Do NOT mention Wolf Pack, AI, or anything about being automated until step 3.
-
-RESPOND WITH ONLY THE TEXT TO SEND. No quotes. No labels. No explanation. Just the message.`;
+RESPOND WITH ONLY THE TEXT. Nothing else.`;
 
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-5-20250514",
-      max_tokens: 300,
+      max_tokens: 60,
+      temperature: 0.7,
       system: systemPrompt,
       messages: conversation.map(m => ({
         role: m.role as "user" | "assistant",
