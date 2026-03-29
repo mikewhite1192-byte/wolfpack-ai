@@ -94,21 +94,28 @@ export async function POST(req: Request) {
     markAsRead(chat_id).catch(() => {});
 
     // --- Check if this is a Maya demo conversation ---
-    try {
-      const { handleMayaReply } = await import("@/app/api/webhooks/maya/route");
-      const isMaya = await handleMayaReply(chat_id, from, text);
-      if (isMaya) {
+    // Normalize phone for lookup (try multiple formats)
+    const fromDigits = from.replace(/\D/g, "");
+    const fromE164 = fromDigits.startsWith("1") && fromDigits.length === 11 ? "+" + fromDigits : fromDigits.length === 10 ? "+1" + fromDigits : from;
+
+    // Quick DB check first — if this phone has an active Maya demo, skip CRM entirely
+    const mayaQuickCheck = await sql`
+      SELECT id FROM maya_demos
+      WHERE (phone = ${from} OR phone = ${fromE164} OR chat_id = ${chat_id})
+        AND step < 99
+        AND created_at > NOW() - INTERVAL '24 hours'
+      LIMIT 1
+    `;
+
+    if (mayaQuickCheck.length > 0) {
+      try {
+        const { handleMayaReply } = await import("@/app/api/webhooks/maya/route");
+        await handleMayaReply(chat_id, fromE164, text);
         console.log(`[webhook] Handled by Maya demo bot`);
-        return NextResponse.json({ received: true });
+      } catch (mayaErr) {
+        console.error("[webhook] Maya handler error (still skipping CRM):", mayaErr);
       }
-    } catch (mayaErr) {
-      console.error("[webhook] Maya handler error:", mayaErr);
-      // Also check by phone number as fallback
-      const mayaCheck = await sql`SELECT id FROM maya_demos WHERE phone = ${from} AND step < 99 AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`;
-      if (mayaCheck.length > 0) {
-        console.log(`[webhook] Maya demo found by phone but handler failed, skipping CRM`);
-        return NextResponse.json({ received: true });
-      }
+      return NextResponse.json({ received: true });
     }
 
     // --- CRM Integration starts here ---
