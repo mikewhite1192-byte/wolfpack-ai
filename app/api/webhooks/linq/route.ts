@@ -93,6 +93,14 @@ export async function POST(req: Request) {
     // Mark as read immediately
     markAsRead(chat_id).catch(() => {});
 
+    // --- Check if this is a Maya demo conversation ---
+    const { handleMayaReply } = await import("@/app/api/webhooks/maya/route");
+    const isMaya = await handleMayaReply(chat_id, from, text);
+    if (isMaya) {
+      console.log(`[webhook] Handled by Maya demo bot`);
+      return NextResponse.json({ received: true });
+    }
+
     // --- CRM Integration starts here ---
 
     // Find workspace
