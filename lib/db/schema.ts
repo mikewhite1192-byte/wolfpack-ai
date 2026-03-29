@@ -43,6 +43,7 @@ export const contacts = pgTable("contacts", {
   company: text("company"),
   source: text("source"), // 'manual', 'landing_page', 'import', 'api', 'facebook', 'google'
   sourceDetail: text("source_detail"),
+  listId: uuid("list_id").references(() => contactLists.id),
   tags: text("tags").array(),
   customFields: jsonb("custom_fields"),
   leadScore: integer("lead_score").default(0),
@@ -54,16 +55,39 @@ export const contacts = pgTable("contacts", {
 });
 
 // ============================================
+// PIPELINES
+// ============================================
+export const pipelines = pgTable("pipelines", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+  name: text("name").notNull(),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// ============================================
 // PIPELINE STAGES
 // ============================================
 export const pipelineStages = pgTable("pipeline_stages", {
   id: uuid("id").defaultRandom().primaryKey(),
   workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+  pipelineId: uuid("pipeline_id").references(() => pipelines.id),
   name: text("name").notNull(),
   position: integer("position").notNull(),
   color: text("color"),
   isWon: boolean("is_won").default(false),
   isLost: boolean("is_lost").default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// ============================================
+// CONTACT LISTS
+// ============================================
+export const contactLists = pgTable("contact_lists", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+  name: text("name").notNull(),
+  color: text("color").default("#E86A2A"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 

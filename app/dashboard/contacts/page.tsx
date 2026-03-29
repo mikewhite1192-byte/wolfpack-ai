@@ -34,6 +34,8 @@ interface Contact {
 
 const COLS = ["Name", "Phone", "Email", "Stage", "Value", "Last Contact", "Actions"];
 
+interface ContactList { id: string; name: string; color: string; contact_count: string; }
+
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [counts, setCounts] = useState({ active: 0, won: 0, lost: 0 });
@@ -45,18 +47,46 @@ export default function ContactsPage() {
   const [saving, setSaving] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [lists, setLists] = useState<ContactList[]>([]);
+  const [activeList, setActiveList] = useState<string | null>(null);
+  const [showNewList, setShowNewList] = useState(false);
+  const [newListName, setNewListName] = useState("");
+
+  // Load lists
+  useEffect(() => {
+    fetch("/api/contact-lists").then(r => r.json()).then(data => {
+      setLists(data.lists || []);
+    }).catch(() => {});
+  }, []);
+
+  async function createList() {
+    if (!newListName.trim()) return;
+    const res = await fetch("/api/contact-lists", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newListName.trim() }),
+    });
+    const data = await res.json();
+    if (data.list) {
+      setLists(prev => [...prev, { ...data.list, contact_count: "0" }]);
+      setActiveList(data.list.id);
+      setShowNewList(false);
+      setNewListName("");
+    }
+  }
 
   const fetchContacts = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     params.set("status", statusTab);
+    if (activeList) params.set("listId", activeList);
     const res = await fetch(`/api/contacts?${params}`);
     const data = await res.json();
     setContacts(data.contacts || []);
     setCounts(data.counts || { active: 0, won: 0, lost: 0 });
     setLoading(false);
-  }, [search, statusTab]);
+  }, [search, statusTab, activeList]);
 
   useEffect(() => {
     fetchContacts();
@@ -147,6 +177,57 @@ export default function ContactsPage() {
         </div>
       </div>
 
+      {/* List tabs */}
+      {lists.length > 0 && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            onClick={() => setActiveList(null)}
+            style={{
+              padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+              background: !activeList ? "rgba(232,106,42,0.12)" : "rgba(255,255,255,0.04)",
+              color: !activeList ? T.orange : T.muted,
+            }}
+          >
+            All Contacts
+          </button>
+          {lists.map(list => (
+            <button
+              key={list.id}
+              onClick={() => setActiveList(list.id)}
+              style={{
+                padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                background: activeList === list.id ? `${list.color}20` : "rgba(255,255,255,0.04)",
+                color: activeList === list.id ? list.color : T.muted,
+              }}
+            >
+              {list.name} <span style={{ fontSize: 10, opacity: 0.6 }}>{list.contact_count}</span>
+            </button>
+          ))}
+          {showNewList ? (
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <input
+                value={newListName}
+                onChange={e => setNewListName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && createList()}
+                placeholder="List name..."
+                autoFocus
+                style={{ padding: "5px 10px", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 11, color: T.text, outline: "none", width: 120 }}
+              />
+              <button onClick={createList} style={{ padding: "5px 10px", background: T.orange, color: "#fff", border: "none", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Add</button>
+              <button onClick={() => { setShowNewList(false); setNewListName(""); }} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 14 }}>×</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewList(true)}
+              style={{ padding: "5px 10px", background: "none", border: `1px dashed ${T.border}`, borderRadius: 6, fontSize: 11, color: T.muted, cursor: "pointer" }}
+            >
+              + New List
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Status tabs */}
       <div className="contacts-tabs">
         <div className={`contacts-tab ${statusTab === "active" ? "active" : ""}`} onClick={() => setStatusTab("active")}>
           Active <span className="contacts-tab-count">{counts.active}</span>

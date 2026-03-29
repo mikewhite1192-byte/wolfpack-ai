@@ -36,24 +36,59 @@ interface Stage {
   deals: Deal[];
 }
 
+interface Pipeline { id: string; name: string; is_default: boolean; deal_count: string; }
+
 export default function PipelinePage() {
   const [stages, setStages] = useState<Stage[]>([]);
+  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [activePipeline, setActivePipeline] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [dragDealId, setDragDealId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [selectedDeal, setSelectedDeal] = useState<string | null>(null);
   const [dragOverDead, setDragOverDead] = useState(false);
+  const [showNewPipeline, setShowNewPipeline] = useState(false);
+  const [newPipelineName, setNewPipelineName] = useState("");
+
+  // Load pipelines
+  useEffect(() => {
+    fetch("/api/pipelines").then(r => r.json()).then(data => {
+      const pipes = data.pipelines || [];
+      setPipelines(pipes);
+      if (pipes.length > 0 && !activePipeline) {
+        const defaultPipe = pipes.find((p: Pipeline) => p.is_default) || pipes[0];
+        setActivePipeline(defaultPipe.id);
+      }
+    }).catch(() => {});
+  }, [activePipeline]);
 
   const fetchPipeline = useCallback(async () => {
-    const res = await fetch("/api/pipeline/stages");
+    const params = activePipeline ? `?pipelineId=${activePipeline}` : "";
+    const res = await fetch(`/api/pipeline/stages${params}`);
     const data = await res.json();
     setStages(data.stages || []);
     setLoading(false);
-  }, []);
+  }, [activePipeline]);
 
   useEffect(() => {
-    fetchPipeline();
-  }, [fetchPipeline]);
+    if (activePipeline) fetchPipeline();
+  }, [activePipeline, fetchPipeline]);
+
+  async function createPipeline() {
+    if (!newPipelineName.trim()) return;
+    const res = await fetch("/api/pipelines", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newPipelineName.trim() }),
+    });
+    const data = await res.json();
+    if (data.pipeline) {
+      setPipelines(prev => [...prev, data.pipeline]);
+      setActivePipeline(data.pipeline.id);
+      setShowNewPipeline(false);
+      setNewPipelineName("");
+    }
+  }
 
   async function moveDeal(dealId: string, newStageId: string) {
     // Optimistic update
@@ -178,7 +213,43 @@ export default function PipelinePage() {
       `}</style>
 
       <div className="pipe-header">
-        <div className="pipe-title">PIPELINE</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {pipelines.map(p => (
+            <button
+              key={p.id}
+              onClick={() => setActivePipeline(p.id)}
+              style={{
+                padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
+                background: activePipeline === p.id ? "rgba(232,106,42,0.12)" : "transparent",
+                color: activePipeline === p.id ? T.orange : T.muted,
+                transition: "all 0.15s",
+              }}
+            >
+              {p.name}
+            </button>
+          ))}
+          {showNewPipeline ? (
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                value={newPipelineName}
+                onChange={e => setNewPipelineName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && createPipeline()}
+                placeholder="Pipeline name..."
+                autoFocus
+                style={{ padding: "6px 12px", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 12, color: T.text, outline: "none", width: 150 }}
+              />
+              <button onClick={createPipeline} style={{ padding: "6px 12px", background: T.orange, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Add</button>
+              <button onClick={() => { setShowNewPipeline(false); setNewPipelineName(""); }} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 14 }}>×</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewPipeline(true)}
+              style={{ padding: "6px 12px", background: "none", border: `1px dashed ${T.border}`, borderRadius: 6, fontSize: 12, color: T.muted, cursor: "pointer" }}
+            >
+              + New Pipeline
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="pipe-board">

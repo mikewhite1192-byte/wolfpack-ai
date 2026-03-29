@@ -12,58 +12,30 @@ export async function GET(req: Request) {
     const workspace = await getOrCreateWorkspace();
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
-    const status = searchParams.get("status") || "active"; // 'active', 'won', 'lost'
+    const status = searchParams.get("status") || "active";
+    const listId = searchParams.get("listId") || null;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = 50;
     const offset = (page - 1) * limit;
 
-    // Status filter maps to pipeline stage properties
-    let statusFilter = "";
-    if (status === "active") {
-      statusFilter = "AND (ps.is_won IS NOT TRUE AND ps.is_lost IS NOT TRUE)";
-    } else if (status === "won") {
-      statusFilter = "AND ps.is_won = TRUE";
-    } else if (status === "lost") {
-      statusFilter = "AND ps.is_lost = TRUE";
-    }
+    const contacts = await sql`
+      SELECT c.*, ps.name as stage_name, ps.color as stage_color, d.value as deal_value, d.id as deal_id, ps.is_won, ps.is_lost
+      FROM contacts c
+      LEFT JOIN deals d ON d.contact_id = c.id AND d.workspace_id = c.workspace_id
+      LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
+      WHERE c.workspace_id = ${workspace.id}
+        AND (${!search} OR c.first_name ILIKE ${"%" + search + "%"} OR c.last_name ILIKE ${"%" + search + "%"} OR c.email ILIKE ${"%" + search + "%"} OR c.phone ILIKE ${"%" + search + "%"})
+        AND CASE
+          WHEN ${status} = 'active' THEN (ps.is_won IS NOT TRUE AND ps.is_lost IS NOT TRUE)
+          WHEN ${status} = 'won' THEN ps.is_won = TRUE
+          WHEN ${status} = 'lost' THEN ps.is_lost = TRUE
+          ELSE TRUE
+        END
+        AND (${listId}::uuid IS NULL OR c.list_id = ${listId}::uuid)
+      ORDER BY c.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
-    let contacts;
-    if (search) {
-      contacts = await sql`
-        SELECT c.*, ps.name as stage_name, ps.color as stage_color, d.value as deal_value, d.id as deal_id, ps.is_won, ps.is_lost
-        FROM contacts c
-        LEFT JOIN deals d ON d.contact_id = c.id AND d.workspace_id = c.workspace_id
-        LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
-        WHERE c.workspace_id = ${workspace.id}
-          AND (c.first_name ILIKE ${"%" + search + "%"} OR c.last_name ILIKE ${"%" + search + "%"} OR c.email ILIKE ${"%" + search + "%"} OR c.phone ILIKE ${"%" + search + "%"})
-          AND CASE
-            WHEN ${status} = 'active' THEN (ps.is_won IS NOT TRUE AND ps.is_lost IS NOT TRUE)
-            WHEN ${status} = 'won' THEN ps.is_won = TRUE
-            WHEN ${status} = 'lost' THEN ps.is_lost = TRUE
-            ELSE TRUE
-          END
-        ORDER BY c.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `;
-    } else {
-      contacts = await sql`
-        SELECT c.*, ps.name as stage_name, ps.color as stage_color, d.value as deal_value, d.id as deal_id, ps.is_won, ps.is_lost
-        FROM contacts c
-        LEFT JOIN deals d ON d.contact_id = c.id AND d.workspace_id = c.workspace_id
-        LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
-        WHERE c.workspace_id = ${workspace.id}
-          AND CASE
-            WHEN ${status} = 'active' THEN (ps.is_won IS NOT TRUE AND ps.is_lost IS NOT TRUE)
-            WHEN ${status} = 'won' THEN ps.is_won = TRUE
-            WHEN ${status} = 'lost' THEN ps.is_lost = TRUE
-            ELSE TRUE
-          END
-        ORDER BY c.created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `;
-    }
-
-    // Count per status for tab badges
     const counts = await sql`
       SELECT
         COUNT(*) FILTER (WHERE ps.is_won IS NOT TRUE AND ps.is_lost IS NOT TRUE) as active_count,
@@ -73,6 +45,7 @@ export async function GET(req: Request) {
       LEFT JOIN deals d ON d.contact_id = c.id AND d.workspace_id = c.workspace_id
       LEFT JOIN pipeline_stages ps ON ps.id = d.stage_id
       WHERE c.workspace_id = ${workspace.id}
+        AND (${listId}::uuid IS NULL OR c.list_id = ${listId}::uuid)
     `;
 
     return NextResponse.json({
@@ -103,7 +76,7 @@ export async function POST(req: Request) {
   try {
     const workspace = await getOrCreateWorkspace();
     const body = await req.json();
-    const { firstName, lastName, email, company, source, tags } = body;
+    const { firstName, lastName, email, company, source, tags, listId } = body;
     const phone = body.phone ? toE164(body.phone) : null;
 
     if (!firstName && !lastName && !email && !phone) {
@@ -127,8 +100,8 @@ export async function POST(req: Request) {
     }
 
     const contact = await sql`
-      INSERT INTO contacts (workspace_id, first_name, last_name, email, phone, company, source, tags)
-      VALUES (${workspace.id}, ${firstName || null}, ${lastName || null}, ${email || null}, ${phone || null}, ${company || null}, ${source || "manual"}, ${tags || null})
+      INSERT INTO contacts (workspace_id, first_name, last_name, email, phone, company, source, tags, list_id)
+      VALUES (${workspace.id}, ${firstName || null}, ${lastName || null}, ${email || null}, ${phone || null}, ${company || null}, ${source || "manual"}, ${tags || null}, ${listId || null})
       RETURNING *
     `;
 
