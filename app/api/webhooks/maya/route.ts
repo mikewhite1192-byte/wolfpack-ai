@@ -45,58 +45,70 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     return true;
   }
 
-  // Steps 1-3: Full Sonnet conversation
-  if (step <= 3 && !demo.revealed) {
+  // Steps 1-4: Full Sonnet conversation, reveal after 3 real answers
+  if (step <= 4 && !demo.revealed) {
     console.log(`[maya] Processing step ${step} for ${firstName}, industry: ${industry}`);
 
     const reveal = `Okay I have to come clean with you 😄\n\nYou were just texted by an AI. Not a real person. That entire conversation happened automatically in real time.\n\nThat's Wolf Pack AI. An AI sales agent that responds to your leads in seconds, qualifies them, handles objections, and books appointments on your calendar. 24/7. Even while you sleep.\n\nImagine that working on YOUR leads right now.`;
 
-    let reply: string;
+    // Check if their message is a question/objection vs a real answer
+    const isQuestion = /\?|how much|what are|cost|price|when|where|who are you|what do you/i.test(text);
 
-    if (step === 3) {
+    let reply: string;
+    let shouldReveal = false;
+
+    // If step 3+ and they gave a real answer (not a question), do the reveal
+    if (step >= 3 && !isQuestion) {
       reply = reveal;
+      shouldReveal = true;
     } else {
-      console.log(`[maya] Calling Sonnet with ${conversation.length} messages`);
+      // Determine what to ask based on step
+      let stepInstruction = "";
+      if (step === 1) {
+        stepInstruction = "They just answered your opening question. Now ask about their SITUATION. Why now? What's going on? What triggered this?";
+      } else if (step === 2) {
+        stepInstruction = "They've answered two questions. Ask about COMMITMENT. Are they the decision maker? Are they ready to act?";
+      } else {
+        // Step 3+ but they asked a question. Handle it briefly then ask your next qualifying question.
+        stepInstruction = "They asked you a question or raised an objection. Deflect it naturally in a few words (don't give real info, you're a demo), then ask your next qualifying question. Example: if they ask about price, say something like 'Depends on a few things. Quick question though...' then ask about decision making or timeline.";
+      }
+
+      console.log(`[maya] Calling Sonnet with ${conversation.length} messages, isQuestion: ${isQuestion}`);
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-5",
-        max_tokens: 40,
+        max_tokens: 50,
         temperature: 0.8,
         system: `You are Maya, texting a lead as a ${industry} sales rep. This is SMS on an iPhone.
 
-CONVERSATION SO FAR: You're on message ${step + 1} of a qualifying conversation.
+${stepInstruction}
 
-${step === 1 ? "They just answered your opening question. Now ask about their SITUATION. Why now? What's going on? What triggered this?" : ""}
-${step === 2 ? "They've answered two questions. Ask about COMMITMENT. Are they the decision maker? Are they ready to act? What's holding them back?" : ""}
-
-YOU MUST FOLLOW THESE RULES:
-- Your ENTIRE response must be under 15 words
-- Exactly ONE question mark in your response
-- Start with 1-3 word reaction to what they said, then your question
-- Text like a 28 year old would. Casual. Fragments ok.
-- NEVER say "I'd be happy to" or "thanks for sharing" or any corporate speak
+RULES:
+- Your ENTIRE response must be under 20 words
+- ONE question mark max
+- Start with 1-3 word reaction, then your question
+- Casual. Fragments ok. Text like a real person.
+- NEVER say "I'd be happy to" or "thanks for sharing" or corporate speak
 - NEVER ask two questions
-- NEVER offer help or information. You are ASKING not TELLING.
 - NEVER use dashes
-- Use NEPQ style questions that make them think and feel
+- If they asked about pricing, deflect naturally then redirect to a qualifying question
+- NEPQ style: make them think and feel
 
-EXAMPLES OF PERFECT RESPONSES:
+EXAMPLES:
 "Got it. What made you start looking into this now?"
 "Nice. Are you switching from someone or starting fresh?"
-"Makes sense. Are you the one pulling the trigger on this?"
-"Oh wow. What happens if you keep putting it off?"
+"Depends on a few things. Are you looking to cover just yourself?"
+"Makes sense. Are you pulling the trigger yourself or running it by someone?"
 
-Write ONLY the text message. Nothing else.`,
+Write ONLY the text message.`,
         messages: conversation.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
       });
 
       reply = (response.content[0] as { type: string; text: string }).text.trim();
       console.log(`[maya] Sonnet raw reply: "${reply}"`);
-      // Safety: if Sonnet went long, truncate to first sentence with a question mark
-      if (reply.length > 100) {
+      if (reply.length > 120) {
         const qIdx = reply.indexOf("?");
         if (qIdx > 0) reply = reply.substring(0, qIdx + 1);
       }
-      // Strip any quotes Sonnet might wrap it in
       reply = reply.replace(/^["']|["']$/g, "");
     }
 
@@ -105,12 +117,11 @@ Write ONLY the text message. Nothing else.`,
     console.log(`[maya] Reply sent successfully`);
     conversation.push({ role: "assistant", content: reply });
 
-    const isReveal = step === 3;
-    const nextStep = isReveal ? 4 : step + 1;
+    const nextStep = shouldReveal ? 5 : (isQuestion ? step : step + 1);
 
-    await sql`UPDATE maya_demos SET step = ${nextStep}, responded = TRUE, revealed = ${isReveal}, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
+    await sql`UPDATE maya_demos SET step = ${nextStep}, responded = TRUE, revealed = ${shouldReveal}, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
 
-    if (isReveal) {
+    if (shouldReveal) {
       setTimeout(async () => {
         try {
           const pitch = `Agents using Wolf Pack AI never miss a lead again. First to respond wins and your AI never sleeps.\n\nStart free for 14 days → thewolfpack.ai\n\nNo credit card needed. Takes 10 minutes to set up.`;
