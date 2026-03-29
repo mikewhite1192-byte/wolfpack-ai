@@ -116,7 +116,7 @@ function getDefaultTemplate(step: number, contact: Record<string, unknown>): { s
 
   const footer = `
     <p style="color: #bbb; font-size: 10px; margin-top: 32px; line-height: 1.5; font-family: Arial, sans-serif;">
-      Wolf Pack AI, Warren MI 48088<br>
+      Wolf Pack AI, 1950 S Rochester Rd #1217, Rochester Hills MI 48307<br>
       <a href="${unsubUrl}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a>
     </p>`;
 
