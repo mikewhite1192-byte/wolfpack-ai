@@ -96,48 +96,56 @@ export async function getTemplate(step: number, contact: Record<string, unknown>
 
 function getDefaultTemplate(step: number, contact: Record<string, unknown>): { subject: string; body: string } {
   const firstName = (contact.first_name as string) || "there";
+  const company = (contact.company as string) || "";
   const unsubUrl = `https://thewolfpack.ai/api/outreach/unsubscribe?email=${encodeURIComponent(contact.email as string)}`;
+  const companyLine = company ? ` over at ${company}` : "";
 
   const templates: Record<number, { subject: string; body: string }> = {
     1: {
-      subject: "Your leads are texting back in 3 seconds",
-      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333;">
+      subject: `${firstName}, quick question about your leads`,
+      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
         <p>Hey ${firstName},</p>
-        <p>Quick question. When a lead comes in from one of your campaigns, how long does it take someone on your team to respond?</p>
-        <p>Most agents I talk to say anywhere from 30 minutes to a few hours. Some are honest and say "next day."</p>
-        <p>We built an AI sales agent that texts your leads back in 3 seconds. It qualifies them, handles objections, and books appointments on your calendar. All through iMessage so it actually gets delivered.</p>
-        <p>It runs 24/7. It never forgets a follow-up. And it costs less than a part-time assistant.</p>
-        <p><a href="https://thewolfpack.ai" style="color: #E86A2A; font-weight: bold;">See how it works →</a></p>
-        <p style="color: #999; font-size: 12px; margin-top: 40px;">
-          Wolf Pack AI | <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
+        <p>I saw you're a licensed agent${companyLine} and wanted to ask you something real quick.</p>
+        <p>When a lead comes in from one of your campaigns or your website, how fast does someone on your team respond? Most agents I talk to say 30 minutes to a few hours. Some are honest and say next day.</p>
+        <p>The problem is 78% of people buy from whoever responds first. So if you're not first, you're losing most of them before the conversation even starts.</p>
+        <p>We built something that fixes this. It's an AI that texts your leads back in 3 seconds, qualifies them, handles their objections, and books appointments on your calendar. It runs 24/7 through iMessage so the texts actually get delivered.</p>
+        <p>Starts at $49/month. No contracts.</p>
+        <p><a href="https://thewolfpack.ai" style="color: #E86A2A; font-weight: bold;">See how it works</a></p>
+        <p style="color: #999; font-size: 11px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 12px;">
+          Wolf Pack AI, Warren MI 48088<br>
+          <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
         </p>
       </div>`,
     },
     2: {
-      subject: "The math on missed leads",
-      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333;">
+      subject: `The numbers on speed to lead`,
+      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
         <p>Hey ${firstName},</p>
-        <p>78% of customers buy from whoever responds first.</p>
-        <p>If you're responding to leads in 30+ minutes, you're losing 4 out of 5 before you even start the conversation.</p>
-        <p>Our AI responds in seconds. Not minutes. Seconds. And it doesn't just say "thanks for reaching out." It runs a full sales conversation, qualifies the lead, handles their objections, and books them on your calendar.</p>
-        <p>Insurance agents using it are booking 3x more appointments without hiring anyone.</p>
-        <p><a href="https://thewolfpack.ai/demo" style="color: #E86A2A; font-weight: bold;">Try the live demo (it'll text you) →</a></p>
-        <p style="color: #999; font-size: 12px; margin-top: 40px;">
-          Wolf Pack AI | <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
+        <p>Wanted to share something I thought you'd find interesting.</p>
+        <p>We looked at the data across agents using our system and the ones who respond to leads in under 5 minutes convert at 3x the rate of everyone else. Not 10% better. Three times.</p>
+        <p>The problem is no human can respond in under 5 minutes consistently. Especially at 2am when someone's browsing insurance quotes on their phone.</p>
+        <p>That's why we built an AI sales agent specifically for insurance. It responds in seconds. It asks the right questions. It handles "I need to think about it" and "what's the price" without getting flustered. And it books the appointment right on your calendar.</p>
+        <p>You can try it right now. Enter your phone number on the demo page and the AI will text you. Takes 60 seconds.</p>
+        <p><a href="https://thewolfpack.ai/demo" style="color: #E86A2A; font-weight: bold;">Try the live demo</a></p>
+        <p style="color: #999; font-size: 11px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 12px;">
+          Wolf Pack AI, Warren MI 48088<br>
+          <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
         </p>
       </div>`,
     },
     3: {
-      subject: "Last one from me",
-      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333;">
+      subject: `Last thing from me, ${firstName}`,
+      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
         <p>Hey ${firstName},</p>
-        <p>I know you're busy so I'll keep this short. This is my last email.</p>
-        <p>If you've ever lost a lead because you didn't respond fast enough, or had a prospect go cold because nobody followed up, Wolf Pack AI fixes that.</p>
-        <p>It starts at $49/month. No contracts. Cancel anytime.</p>
-        <p>If the timing isn't right, no hard feelings. But if you want to see what it looks like when every lead gets a response in 3 seconds, the demo takes 60 seconds.</p>
-        <p><a href="https://thewolfpack.ai" style="color: #E86A2A; font-weight: bold;">Check it out →</a></p>
-        <p style="color: #999; font-size: 12px; margin-top: 40px;">
-          Wolf Pack AI | <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
+        <p>Last email from me. I know you're busy selling policies, not reading emails from strangers.</p>
+        <p>Here's the short version. If you've ever lost a deal because you didn't follow up fast enough, or had a lead go cold because life got in the way, this fixes that.</p>
+        <p>An AI that texts every lead in seconds, follows up on day 1, 3, 7, and 14 with a different approach each time, and books appointments on your calendar. Through iMessage so it doesn't get filtered like green texts.</p>
+        <p>$49/month. Cancel anytime. No setup fee. The AI asks you 9 questions about your business and it's live in minutes.</p>
+        <p>If the timing isn't right, no hard feelings. But if you're curious what it looks like when no lead gets left behind, take a look.</p>
+        <p><a href="https://thewolfpack.ai" style="color: #E86A2A; font-weight: bold;">Check it out</a></p>
+        <p style="color: #999; font-size: 11px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 12px;">
+          Wolf Pack AI, Warren MI 48088<br>
+          <a href="${unsubUrl}" style="color: #999;">Unsubscribe</a>
         </p>
       </div>`,
     },
