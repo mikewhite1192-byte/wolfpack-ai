@@ -45,63 +45,38 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     return true;
   }
 
-  // Steps 1-3: qualifying conversation via Sonnet
+  // Steps 1-3: hardcoded conversational responses (Sonnet was too verbose)
   if (step <= 3 && !demo.revealed) {
-    const exampleResponses: Record<number, string[]> = {
-      1: [
-        `Nice. What made you start looking into that now?`,
-        `Got it. Are you switching from someone or starting fresh?`,
-        `Ok cool. Is something going on that made you look into this?`,
-        `Makes sense. Have you been shopping around or am I your first call?`,
-      ],
-      2: [
-        `Gotcha. Are you the one making the call on this or is there a spouse involved?`,
-        `Got it. What happens if you just keep putting it off?`,
-        `Makes sense. Are you ready to get this handled or still just looking?`,
-        `Ok. Are you pulling the trigger yourself or running it by someone first?`,
-      ],
-      3: [
-        `Okay I have to come clean with you 😄\n\nYou were just texted by an AI. Not a real person. That entire conversation happened automatically in real time.\n\nThat's Wolf Pack AI. An AI sales agent that responds to your leads in seconds, qualifies them, handles objections, and books appointments on your calendar. 24/7. Even while you sleep.\n\nImagine that working on YOUR leads right now.`,
-      ],
-    };
+    const step1Responses = [
+      `Nice. What made you start looking into that now?`,
+      `Got it. Are you switching from someone or starting fresh?`,
+      `Ok cool. Is something going on that made you look into this?`,
+      `Makes sense. Have you been shopping around or am I your first call?`,
+    ];
 
-    const systemPrompt = `You are texting as a ${industry} sales rep named Maya. This is SMS.
+    const step2Responses = [
+      `Gotcha. Are you the one making the call on this or is there a spouse involved?`,
+      `Got it. What happens if you just keep putting it off?`,
+      `Makes sense. Are you ready to get this handled or still just looking?`,
+      `Ok. Are you pulling the trigger yourself or running it by someone first?`,
+    ];
 
-YOUR ONLY JOB: Write a short text reply. Max 10-15 words. ONE sentence. ONE question.
+    const reveal = `Okay I have to come clean with you 😄\n\nYou were just texted by an AI. Not a real person. That entire conversation happened automatically in real time.\n\nThat's Wolf Pack AI. An AI sales agent that responds to your leads in seconds, qualifies them, handles objections, and books appointments on your calendar. 24/7. Even while you sleep.\n\nImagine that working on YOUR leads right now.`;
 
-Here are examples of PERFECT replies for step ${step}:
-${exampleResponses[step]?.slice(0, 3).map(e => `"${e}"`).join("\n")}
+    let reply: string;
 
-${step === 3 ? "FOR STEP 3: Copy the reveal message from the examples EXACTLY. Do not write your own." : ""}
+    if (step === 1) {
+      reply = step1Responses[Math.floor(Math.random() * step1Responses.length)];
+    } else if (step === 2) {
+      reply = step2Responses[Math.floor(Math.random() * step2Responses.length)];
+    } else {
+      reply = reveal;
+    }
 
-RULES YOU MUST FOLLOW:
-1. Your reply must be under 20 words total
-2. Only ONE question mark in your entire reply
-3. Start with a 1-3 word acknowledgment then the question
-4. No "I'd be happy to" or "I'd love to" or "Thanks for" or "Great question"
-5. No dashes, no bullet points, no lists
-6. Text like a 28 year old texting a friend
-7. Do NOT mention insurance terms, coverage options, or try to be helpful
-8. Do NOT ask two questions
-
-RESPOND WITH ONLY THE TEXT. Nothing else.`;
-
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250514",
-      max_tokens: 60,
-      temperature: 0.7,
-      system: systemPrompt,
-      messages: conversation.map(m => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
-    });
-
-    const reply = (response.content[0] as { type: string; text: string }).text.trim();
     await sendMessage(chatId, reply);
     conversation.push({ role: "assistant", content: reply });
 
-    const isReveal = reply.includes("come clean") || reply.includes("You were just texted by an AI");
+    const isReveal = step === 3;
     const nextStep = isReveal ? 4 : step + 1;
 
     await sql`UPDATE maya_demos SET step = ${nextStep}, responded = TRUE, revealed = ${isReveal}, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
