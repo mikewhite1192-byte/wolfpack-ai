@@ -4,7 +4,7 @@ const T = {
   orange: "#E86A2A",
   text: "#e8eaf0",
   muted: "#b0b4c8",
-  surface: "#111827",
+  surface: "#111111",
   border: "rgba(255,255,255,0.07)",
 };
 

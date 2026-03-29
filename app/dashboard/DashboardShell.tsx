@@ -6,12 +6,12 @@ import { useUser, useClerk } from "@clerk/nextjs";
 import AiAssistant from "./components/AiAssistant";
 
 const T = {
-  bg: "#0D1426",
-  navy: "#080f1e",
+  bg: "#0a0a0a",
+  navy: "#0a0a0a",
   orange: "#E86A2A",
   text: "#e8eaf0",
   muted: "#b0b4c8",
-  surface: "#111827",
+  surface: "#111111",
   border: "rgba(255,255,255,0.07)",
   green: "#2ecc71",
   red: "#e74c3c",
@@ -230,11 +230,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   }, []);
 
   if (!isLoaded) {
-    return <div style={{ minHeight: "100vh", background: "#0D1426", display: "flex", alignItems: "center", justifyContent: "center", color: "#b0b4c8" }}>Loading...</div>;
+    return <div style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", color: "#b0b4c8" }}>Loading...</div>;
   }
 
   if (!isSignedIn) {
-    return <div style={{ minHeight: "100vh", background: "#0D1426" }} />;
+    return <div style={{ minHeight: "100vh", background: "#0a0a0a" }} />;
   }
 
   return (
