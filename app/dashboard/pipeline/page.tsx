@@ -50,21 +50,27 @@ export default function PipelinePage() {
   const [showNewPipeline, setShowNewPipeline] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState("");
 
-  // Load pipelines
+  // Load pipelines, then fetch stages for the default one
   useEffect(() => {
     fetch("/api/pipelines").then(r => r.json()).then(data => {
       const pipes = data.pipelines || [];
       setPipelines(pipes);
-      if (pipes.length > 0 && !activePipeline) {
-        const defaultPipe = pipes.find((p: Pipeline) => p.is_default) || pipes[0];
+      const defaultPipe = pipes.find((p: Pipeline) => p.is_default) || pipes[0];
+      if (defaultPipe) {
         setActivePipeline(defaultPipe.id);
+      } else {
+        // No pipelines exist — just load stages without filter
+        fetch("/api/pipeline/stages").then(r => r.json()).then(d => {
+          setStages(d.stages || []);
+          setLoading(false);
+        });
       }
-    }).catch(() => {});
-  }, [activePipeline]);
+    }).catch(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPipeline = useCallback(async () => {
-    const params = activePipeline ? `?pipelineId=${activePipeline}` : "";
-    const res = await fetch(`/api/pipeline/stages${params}`);
+    if (!activePipeline) return;
+    const res = await fetch(`/api/pipeline/stages?pipelineId=${activePipeline}`);
     const data = await res.json();
     setStages(data.stages || []);
     setLoading(false);

@@ -178,54 +178,56 @@ export default function ContactsPage() {
       </div>
 
       {/* List tabs */}
-      {lists.length > 0 && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <button
-            onClick={() => setActiveList(null)}
-            style={{
-              padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
-              background: !activeList ? "rgba(232,106,42,0.12)" : "rgba(255,255,255,0.04)",
-              color: !activeList ? T.orange : T.muted,
-            }}
-          >
-            All Contacts
-          </button>
-          {lists.map(list => (
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+        {lists.length > 0 && (
+          <>
             <button
-              key={list.id}
-              onClick={() => setActiveList(list.id)}
+              onClick={() => setActiveList(null)}
               style={{
                 padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
-                background: activeList === list.id ? `${list.color}20` : "rgba(255,255,255,0.04)",
-                color: activeList === list.id ? list.color : T.muted,
+                background: !activeList ? "rgba(232,106,42,0.12)" : "rgba(255,255,255,0.04)",
+                color: !activeList ? T.orange : T.muted,
               }}
             >
-              {list.name} <span style={{ fontSize: 10, opacity: 0.6 }}>{list.contact_count}</span>
+              All Contacts
             </button>
-          ))}
-          {showNewList ? (
-            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-              <input
-                value={newListName}
-                onChange={e => setNewListName(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && createList()}
-                placeholder="List name..."
-                autoFocus
-                style={{ padding: "5px 10px", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 11, color: T.text, outline: "none", width: 120 }}
-              />
-              <button onClick={createList} style={{ padding: "5px 10px", background: T.orange, color: "#fff", border: "none", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Add</button>
-              <button onClick={() => { setShowNewList(false); setNewListName(""); }} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 14 }}>×</button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowNewList(true)}
-              style={{ padding: "5px 10px", background: "none", border: `1px dashed ${T.border}`, borderRadius: 6, fontSize: 11, color: T.muted, cursor: "pointer" }}
-            >
-              + New List
-            </button>
-          )}
-        </div>
-      )}
+            {lists.map(list => (
+              <button
+                key={list.id}
+                onClick={() => setActiveList(list.id)}
+                style={{
+                  padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                  background: activeList === list.id ? `${list.color}20` : "rgba(255,255,255,0.04)",
+                  color: activeList === list.id ? list.color : T.muted,
+                }}
+              >
+                {list.name} <span style={{ fontSize: 10, opacity: 0.6 }}>{list.contact_count}</span>
+              </button>
+            ))}
+          </>
+        )}
+        {showNewList ? (
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <input
+              value={newListName}
+              onChange={e => setNewListName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && createList()}
+              placeholder="List name..."
+              autoFocus
+              style={{ padding: "5px 10px", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 11, color: T.text, outline: "none", width: 120 }}
+            />
+            <button onClick={createList} style={{ padding: "5px 10px", background: T.orange, color: "#fff", border: "none", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Add</button>
+            <button onClick={() => { setShowNewList(false); setNewListName(""); }} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 14 }}>×</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowNewList(true)}
+            style={{ padding: "5px 10px", background: "none", border: `1px dashed ${T.border}`, borderRadius: 6, fontSize: 11, color: T.muted, cursor: "pointer" }}
+          >
+            + New List
+          </button>
+        )}
+      </div>
 
       {/* Status tabs */}
       <div className="contacts-tabs">
