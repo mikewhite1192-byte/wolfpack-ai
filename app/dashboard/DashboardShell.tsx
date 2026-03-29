@@ -120,7 +120,7 @@ function DialPad({ onClose, initialNumber }: { onClose: () => void; initialNumbe
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   const { signOut } = useClerk();
   const [dialOpen, setDialOpen] = useState(false);
   const [dialNumber, setDialNumber] = useState("");
