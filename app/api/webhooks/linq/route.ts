@@ -99,13 +99,20 @@ export async function POST(req: Request) {
     const fromE164 = fromDigits.startsWith("1") && fromDigits.length === 11 ? "+" + fromDigits : fromDigits.length === 10 ? "+1" + fromDigits : from;
 
     // Quick DB check first — if this phone has an active Maya demo, skip CRM entirely
+    const fromLast10 = fromDigits.slice(-10);
     const mayaQuickCheck = await sql`
       SELECT id FROM maya_demos
-      WHERE (phone = ${from} OR phone = ${fromE164} OR chat_id = ${chat_id})
+      WHERE (
+        phone = ${from}
+        OR phone = ${fromE164}
+        OR phone LIKE ${"%" + fromLast10}
+        OR chat_id = ${chat_id}
+      )
         AND step < 99
         AND created_at > NOW() - INTERVAL '24 hours'
       LIMIT 1
     `;
+    console.log(`[webhook] Maya check: from=${from} e164=${fromE164} last10=${fromLast10} chat_id=${chat_id} found=${mayaQuickCheck.length}`);
 
     if (mayaQuickCheck.length > 0) {
       try {

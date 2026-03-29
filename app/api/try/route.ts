@@ -44,12 +44,19 @@ export async function POST(req: NextRequest) {
     };
     const msg1 = openers[industry || "insurance"] || openers.other;
 
-    const chatResult = await createChat(FROM_NUMBER, e164, msg1);
+    let chatId: string | null = null;
+    try {
+      const chatResult = await createChat(FROM_NUMBER, e164, msg1);
+      chatId = chatResult?.chat_id || null;
+      console.log(`[try] Chat created, chat_id: ${chatId}, full result:`, JSON.stringify(chatResult));
+    } catch (err) {
+      console.error(`[try] createChat failed but continuing:`, err);
+    }
 
-    // Store the demo state
+    // Store the demo state — phone is the primary lookup key
     await sql`
       INSERT INTO maya_demos (phone, first_name, chat_id, step, industry, conversation, created_at)
-      VALUES (${e164}, ${firstName}, ${chatResult.chat_id}, 1, ${industry || 'insurance'}, ${JSON.stringify([{ role: "assistant", content: msg1 }])}::jsonb, NOW())
+      VALUES (${e164}, ${firstName}, ${chatId}, 1, ${industry || 'insurance'}, ${JSON.stringify([{ role: "assistant", content: msg1 }])}::jsonb, NOW())
     `;
 
     // Schedule the 10-minute follow-up check
