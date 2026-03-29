@@ -45,22 +45,8 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     return true;
   }
 
-  // Steps 1-3: Sonnet generates a short acknowledgment, hardcoded question follows
+  // Steps 1-3: Full Sonnet conversation
   if (step <= 3 && !demo.revealed) {
-    const step1Questions = [
-      `What made you start looking into that now?`,
-      `Are you switching from someone or starting fresh?`,
-      `Is something going on that made you look into this?`,
-      `Have you been shopping around or am I your first call?`,
-    ];
-
-    const step2Questions = [
-      `Are you the one making the call on this or is there a spouse involved?`,
-      `What happens if you just keep putting it off?`,
-      `Are you ready to get this handled or still just looking?`,
-      `Are you pulling the trigger yourself or running it by someone first?`,
-    ];
-
     const reveal = `Okay I have to come clean with you 😄\n\nYou were just texted by an AI. Not a real person. That entire conversation happened automatically in real time.\n\nThat's Wolf Pack AI. An AI sales agent that responds to your leads in seconds, qualifies them, handles objections, and books appointments on your calendar. 24/7. Even while you sleep.\n\nImagine that working on YOUR leads right now.`;
 
     let reply: string;
@@ -68,30 +54,46 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     if (step === 3) {
       reply = reveal;
     } else {
-      // Use Sonnet ONLY to generate a 2-4 word acknowledgment
-      let ack = "Got it.";
-      try {
-        const ackResponse = await anthropic.messages.create({
-          model: "claude-sonnet-4-5-20250514",
-          max_tokens: 15,
-          temperature: 0.9,
-          system: `Someone texted you: "${text}"\n\nRespond with ONLY a 1-4 word casual acknowledgment. Examples: "Nice." "Got it." "Ok cool." "Ha fair enough." "Makes sense." "Oh wow." "Interesting."\n\nJust the acknowledgment. Nothing else. No question. No follow up. Max 4 words.`,
-          messages: [{ role: "user", content: text }],
-        });
-        const raw = (ackResponse.content[0] as { type: string; text: string }).text.trim();
-        // Safety: only use if it's actually short
-        if (raw.length <= 30 && !raw.includes("?")) {
-          ack = raw.endsWith(".") ? raw : raw + ".";
-        }
-      } catch {
-        // fallback to "Got it."
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-5-20250514",
+        max_tokens: 40,
+        temperature: 0.8,
+        system: `You are Maya, texting a lead as a ${industry} sales rep. This is SMS on an iPhone.
+
+CONVERSATION SO FAR: You're on message ${step + 1} of a qualifying conversation.
+
+${step === 1 ? "They just answered your opening question. Now ask about their SITUATION. Why now? What's going on? What triggered this?" : ""}
+${step === 2 ? "They've answered two questions. Ask about COMMITMENT. Are they the decision maker? Are they ready to act? What's holding them back?" : ""}
+
+YOU MUST FOLLOW THESE RULES:
+- Your ENTIRE response must be under 15 words
+- Exactly ONE question mark in your response
+- Start with 1-3 word reaction to what they said, then your question
+- Text like a 28 year old would. Casual. Fragments ok.
+- NEVER say "I'd be happy to" or "thanks for sharing" or any corporate speak
+- NEVER ask two questions
+- NEVER offer help or information. You are ASKING not TELLING.
+- NEVER use dashes
+- Use NEPQ style questions that make them think and feel
+
+EXAMPLES OF PERFECT RESPONSES:
+"Got it. What made you start looking into this now?"
+"Nice. Are you switching from someone or starting fresh?"
+"Makes sense. Are you the one pulling the trigger on this?"
+"Oh wow. What happens if you keep putting it off?"
+
+Write ONLY the text message. Nothing else.`,
+        messages: conversation.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+      });
+
+      reply = (response.content[0] as { type: string; text: string }).text.trim();
+      // Safety: if Sonnet went long, truncate to first sentence with a question mark
+      if (reply.length > 100) {
+        const qIdx = reply.indexOf("?");
+        if (qIdx > 0) reply = reply.substring(0, qIdx + 1);
       }
-
-      const question = step === 1
-        ? step1Questions[Math.floor(Math.random() * step1Questions.length)]
-        : step2Questions[Math.floor(Math.random() * step2Questions.length)];
-
-      reply = `${ack} ${question}`;
+      // Strip any quotes Sonnet might wrap it in
+      reply = reply.replace(/^["']|["']$/g, "");
     }
 
     await sendMessage(chatId, reply);
@@ -102,7 +104,6 @@ export async function handleMayaReply(chatId: string, from: string, text: string
 
     await sql`UPDATE maya_demos SET step = ${nextStep}, responded = TRUE, revealed = ${isReveal}, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
 
-    // If reveal happened, send pitch 30 seconds later
     if (isReveal) {
       setTimeout(async () => {
         try {
