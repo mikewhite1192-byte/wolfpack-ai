@@ -99,7 +99,7 @@ export default function Home() {
         @keyframes heroIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
-        .ticker-track { display: flex; gap: 32px; white-space: nowrap; animation: scroll 20s linear infinite; }
+        .ticker-track { display: flex; gap: 32px; white-space: nowrap; animation: scroll 14s linear infinite; }
         .ticker-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; flex-shrink: 0; }
 
         .wp-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; max-width: 1100px; margin: 0 auto; }
@@ -155,11 +155,8 @@ export default function Home() {
           <br />
           <span style={{ color: "#007AFF" }}><ScrambleText text="NOT GREEN." delay={1400} /></span>
         </h1>
-        <p style={{ fontSize: 18, color: "rgba(232,230,227,0.5)", lineHeight: 1.8, maxWidth: 560, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both" }}>
-          Your competitors are sending green texts hoping they land. You're sending blue iMessages directly through Apple. No A2P registration. No carrier filtering. No competition.
-        </p>
-        <p style={{ fontSize: 15, color: "rgba(232,230,227,0.3)", lineHeight: 1.6, maxWidth: 480, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.2s both" }}>
-          An AI sales agent that responds in seconds, qualifies leads, handles objections, and books appointments on your calendar. All while you sleep.
+        <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 560, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2s both" }}>
+          Your competitors send green texts and hope they land. You send blue iMessages through Apple — no A2P registration, no carrier filtering — while an AI sales agent qualifies leads, handles objections, and books appointments on your calendar. All while you sleep.
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
           <Link href="/demo" className="wp-cta">See It In Action →</Link>
