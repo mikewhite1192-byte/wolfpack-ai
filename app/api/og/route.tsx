@@ -13,7 +13,7 @@ export async function GET() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0D1426",
+          background: "#0a0a0a",
           fontFamily: "system-ui, sans-serif",
         }}
       >
@@ -41,8 +41,8 @@ export async function GET() {
           >
             WP
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: "#f5f3f0", letterSpacing: 2 }}>
-            THE <span style={{ color: "#E86A2A" }}>WOLF</span> PACK AI
+          <div style={{ fontSize: 32, fontWeight: 800, color: "#f5f3f0", letterSpacing: 2, display: "flex", gap: 8 }}>
+            <span>THE</span> <span style={{ color: "#E86A2A" }}>WOLF</span> <span>PACK AI</span>
           </div>
         </div>
         <div
