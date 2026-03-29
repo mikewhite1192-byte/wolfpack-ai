@@ -5,21 +5,21 @@ import { useState, useEffect, useRef } from "react";
 
 // ── Ticker ──────────────────────────────────────────────────────────────────
 const TICKER_ITEMS = [
-  { icon: "🤖", text: "New lead received — AI responded in 3 seconds", color: "#007AFF" },
-  { icon: "📅", text: "Appointment booked — Michael R., Dallas TX", color: "#2ecc71" },
-  { icon: "💬", text: "Day 3 follow-up sent via iMessage — lead re-engaged", color: "#007AFF" },
+  { icon: "🤖", text: "New lead received. AI responded in 3 seconds", color: "#007AFF" },
+  { icon: "📅", text: "Appointment booked. Michael R., Dallas TX", color: "#2ecc71" },
+  { icon: "💬", text: "Day 3 follow-up sent via iMessage. Lead re-engaged", color: "#007AFF" },
   { icon: "🔥", text: "Cold lead from 8 days ago just replied", color: "#E86A2A" },
-  { icon: "📞", text: "AI qualified lead — handed off to agent", color: "#2ecc71" },
-  { icon: "⏰", text: "2:47am — appointment booked while agent slept", color: "#E86A2A" },
-  { icon: "💬", text: "Objection handled automatically — call scheduled", color: "#007AFF" },
+  { icon: "📞", text: "AI qualified lead. Handed off to agent", color: "#2ecc71" },
+  { icon: "⏰", text: "2:47am. Appointment booked while agent slept", color: "#E86A2A" },
+  { icon: "💬", text: "Objection handled automatically. Call scheduled", color: "#007AFF" },
   { icon: "📅", text: "Sarah M. booked for Thursday at 2pm", color: "#2ecc71" },
-  { icon: "🤖", text: "Blue text delivered — responded in 4 seconds, no one lifted a finger", color: "#007AFF" },
-  { icon: "✅", text: "Jake T. moved to closed — AI followed up 4 times", color: "#2ecc71" },
-  { icon: "⏰", text: "Sunday 6am — lead responded to iMessage. AI booked them instantly.", color: "#E86A2A" },
+  { icon: "🤖", text: "Blue text delivered. Responded in 4 seconds, no one lifted a finger", color: "#007AFF" },
+  { icon: "✅", text: "Jake T. moved to closed. AI followed up 4 times", color: "#2ecc71" },
+  { icon: "⏰", text: "Sunday 6am. Lead responded to iMessage. AI booked them instantly.", color: "#E86A2A" },
   { icon: "🔥", text: "3 appointments booked today before 9am", color: "#E86A2A" },
-  { icon: "💬", text: "Price objection handled via blue text — lead asked for next steps", color: "#007AFF" },
-  { icon: "📞", text: "Lead qualified in 4 messages — warm handoff to closer", color: "#2ecc71" },
-  { icon: "✅", text: "Maria G. closed — AI nurtured for 11 days via iMessage", color: "#007AFF" },
+  { icon: "💬", text: "Price objection handled via blue text. Lead asked for next steps", color: "#007AFF" },
+  { icon: "📞", text: "Lead qualified in 4 messages. Warm handoff to closer", color: "#2ecc71" },
+  { icon: "✅", text: "Maria G. closed. AI nurtured for 11 days via iMessage", color: "#007AFF" },
 ];
 
 function Ticker() {
@@ -156,7 +156,7 @@ export default function Home() {
           <span style={{ color: "#007AFF" }}><ScrambleText text="NOT GREEN." delay={1400} /></span>
         </h1>
         <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 560, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2s both" }}>
-          Your competitors send green texts and hope they land. You send blue iMessages through Apple — no A2P registration, no carrier filtering — while an AI sales agent qualifies leads, handles objections, and books appointments on your calendar. All while you sleep.
+          Your competitors send green texts and hope they land. You send blue iMessages directly through Apple. No A2P registration. No carrier filtering. An AI sales agent that qualifies leads, handles objections, and books appointments on your calendar. All while you sleep.
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
           <Link href="/demo" className="wp-cta">See It In Action →</Link>
@@ -191,7 +191,7 @@ export default function Home() {
         </div>
         <div className="wp-outcomes-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           {[
-            { title: "Leads get a text in seconds", desc: "Not minutes. Not hours. The moment a lead comes in from Facebook, Google, or your website — the AI is already texting them. You're first. Every time." },
+            { title: "Leads get a text in seconds", desc: "Not minutes. Not hours. The moment a lead comes in from Facebook, Google, or your website, the AI is already texting them. You're first. Every time." },
             { title: "Objections don't kill your deals", desc: "\"I need to think about it.\" \"What's the price?\" \"I'm talking to other people.\" The AI handles all of it without getting emotional, defensive, or pushy." },
             { title: "Your calendar fills itself", desc: "The AI's only goal is to book an appointment on your calendar. It gets their email, picks a time, sends the invite with a Google Meet link. You just show up." },
             { title: "No lead gets forgotten", desc: "Day 1, 3, 7, 14. Every cold lead gets a follow-up with a different angle. The AI came back on a lead 11 days later and booked them. That's money you were leaving on the table." },
@@ -211,7 +211,7 @@ export default function Home() {
         </div>
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
           {[
-            { num: "01", title: "Lead Comes In", desc: "From ads, your website, referrals — doesn't matter. The AI picks it up instantly." },
+            { num: "01", title: "Lead Comes In", desc: "From ads, your website, referrals. Doesn't matter. The AI picks it up instantly." },
             { num: "02", title: "AI Starts Selling", desc: "Texts within seconds. Qualifies. Handles objections. Builds trust. All using proven sales psychology." },
             { num: "03", title: "Appointment Booked", desc: "Calendar invite sent. Google Meet link attached. You just show up and close." },
           ].map((s, i) => (
@@ -290,7 +290,7 @@ export default function Home() {
         </div>
         <FaqItem q="How does the AI know what to say?" a="It's trained on proven sales methodology (NEPQ). It asks the right questions, listens to answers, handles objections naturally, and guides leads to book an appointment. It gets smarter with every conversation." />
         <FaqItem q="Will leads know they're talking to AI?" a="No. It texts like a real person on your team. No dashes, no bullet points, no robotic grammar. It mirrors the lead's energy and tone. Most leads have no idea." />
-        <FaqItem q="What's the difference between green and blue texts?" a="Green texts (SMS) require A2P registration and can get filtered by carriers. Blue texts (iMessage) go through Apple's network directly — no registration needed, higher deliverability, and a more trusted look. Our Pro plan includes blue texts." />
+        <FaqItem q="What's the difference between green and blue texts?" a="Green texts (SMS) require A2P registration and can get filtered by carriers. Blue texts (iMessage) go through Apple's network directly. No registration needed, higher deliverability, and a more trusted look. Our Pro plan includes blue texts." />
         <FaqItem q="Can I take over a conversation from the AI?" a="Yes. Every conversation has an AI toggle. Turn it off and you're in control. Turn it back on and the AI picks up where you left off." />
         <FaqItem q="How fast does the AI respond to new leads?" a="Within seconds. The moment a lead comes in, the AI is texting them. That speed alone puts you ahead of 90% of your competition." />
         <FaqItem q="Do I need any technical skills?" a="No. When you sign up, the AI walks you through setup with a few questions about your business. You can be live in minutes." />
