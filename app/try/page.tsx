@@ -15,6 +15,7 @@ const T = {
 export default function TryPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [industry, setIndustry] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +30,7 @@ export default function TryPage() {
       const res = await fetch("/api/try", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), industry: industry || "insurance" }),
       });
       const data = await res.json();
       if (data.error) {
@@ -51,8 +52,8 @@ export default function TryPage() {
         .try-input { width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 10px; font-size: 15px; color: ${T.text}; outline: none; font-family: inherit; box-sizing: border-box; }
         .try-input:focus { border-color: ${T.orange}; }
         .try-input::placeholder { color: rgba(255,255,255,0.2); }
-        .try-btn { width: 100%; padding: 16px; background: ${T.orange}; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-        .try-btn:hover { background: #ff7b3a; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,106,42,0.25); }
+        .try-btn { width: 100%; padding: 16px; background: #E86A2A; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; letter-spacing: 0.5px; }
+        .try-btn:hover { background: #ff7b3a; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,106,42,0.3); }
         .try-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
       `}</style>
 
@@ -86,14 +87,30 @@ export default function TryPage() {
               placeholder="Phone number"
               required
             />
+            <select
+              className="try-input"
+              value={industry}
+              onChange={e => setIndustry(e.target.value)}
+              style={{ appearance: "none", cursor: "pointer" }}
+            >
+              <option value="">What industry are you in?</option>
+              <option value="insurance">Insurance</option>
+              <option value="real_estate">Real Estate</option>
+              <option value="mortgage">Mortgage</option>
+              <option value="roofing">Roofing / Home Services</option>
+              <option value="fitness">Fitness / Gym</option>
+              <option value="med_spa">Med Spa / Beauty</option>
+              <option value="solar">Solar</option>
+              <option value="other">Other</option>
+            </select>
             <button className="try-btn" type="submit" disabled={sending || !name.trim() || !phone.trim()}>
               {sending ? "Starting..." : "Text Me Now →"}
             </button>
           </form>
 
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", lineHeight: 1.5 }}>
-            Our AI will text you pretending to be an insurance agent. Play along. We promise it's worth it.
-          </p>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "rgba(232,106,42,0.06)", border: "1px solid rgba(232,106,42,0.15)", borderRadius: 20, fontSize: 12, color: "#ccc", lineHeight: 1.5, marginTop: 4 }}>
+            <span>🎭</span> Our AI will text you pretending to be a sales lead. Play along. We promise it's worth it.
+          </div>
 
           {error && <p style={{ color: "#e74c3c", fontSize: 13, marginTop: 12 }}>{error}</p>}
 
