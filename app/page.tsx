@@ -216,7 +216,7 @@ export default function Home() {
             { num: "03", title: "Appointment Booked", desc: "Calendar invite sent. Google Meet link attached. You just show up and close." },
           ].map((s, i) => (
             <div key={i} style={{ flex: 1, minWidth: 240, padding: "32px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: "rgba(232,106,42,0.15)", marginBottom: 12 }}>{s.num}</div>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: "#E86A2A", marginBottom: 12 }}>{s.num}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "#e8eaf0", marginBottom: 8 }}>{s.title}</div>
               <div style={{ fontSize: 13, color: "rgba(232,230,227,0.4)", lineHeight: 1.6 }}>{s.desc}</div>
             </div>
