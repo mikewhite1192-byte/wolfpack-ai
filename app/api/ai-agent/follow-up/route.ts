@@ -130,6 +130,18 @@ export async function POST(req: Request) {
           WHERE id = ${contact.id}
         `;
 
+        // Save AI note
+        const aiNotes = result.updatedQualification.notes;
+        if (aiNotes) {
+          const dealRow = await sql`SELECT id FROM deals WHERE contact_id = ${contact.id} AND workspace_id = ${contact.ws_id} LIMIT 1`;
+          if (dealRow.length > 0) {
+            await sql`
+              INSERT INTO deal_activity (deal_id, action, details, created_at)
+              VALUES (${dealRow[0].id}, 'ai_note', ${JSON.stringify({ text: aiNotes })}::jsonb, NOW())
+            `;
+          }
+        }
+
         sent++;
         console.log(`[follow-up] Sent follow-up #${newFollowUpCount} to ${leadName} (${contact.phone})`);
       }

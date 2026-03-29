@@ -245,6 +245,18 @@ export async function POST(req: Request) {
         WHERE id = ${contactId}
       `;
 
+      // Save AI note for the user
+      const aiNotes = result.updatedQualification.notes;
+      if (aiNotes) {
+        const dealRow = await sql`SELECT id FROM deals WHERE contact_id = ${contactId} AND workspace_id = ${ws.id} LIMIT 1`;
+        if (dealRow.length > 0) {
+          await sql`
+            INSERT INTO deal_activity (deal_id, action, details, created_at)
+            VALUES (${dealRow[0].id}, 'ai_note', ${JSON.stringify({ text: aiNotes })}::jsonb, NOW())
+          `;
+        }
+      }
+
       // If AI detected an appointment, auto-book calendar + send invite
       if (result.appointmentDetected) {
         try {
