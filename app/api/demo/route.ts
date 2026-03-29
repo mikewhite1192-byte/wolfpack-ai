@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
+import { createChat } from "@/lib/linq/client";
 
 const sql = neon(process.env.DATABASE_URL!);
+const FROM_NUMBER = process.env.LINQ_PHONE_NUMBER || "";
 
 function toE164(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -75,13 +77,30 @@ export async function POST(req: Request) {
       RETURNING *
     `;
 
-    // Queue the AI to send first message immediately
-    await sql`
-      UPDATE contacts SET
-        ai_next_followup = NOW(),
-        ai_followup_count = 0
-      WHERE id = ${contact[0].id}
-    `;
+    // Route through Maya (Sonnet-powered) for better demo experience
+    const industry = businessType || "insurance";
+    const openers: Record<string, string> = {
+      insurance: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you currently looking for life, auto, or health insurance coverage?`,
+      real_estate: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you looking to buy, sell, or just exploring the market right now?`,
+      roofing: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, what's going on with your roof? Are you dealing with damage or just looking for an inspection?`,
+      default: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, what can I help you with today?`,
+    };
+    const msg1 = openers[industry] || openers.default;
+
+    try {
+      const chatResult = await createChat(FROM_NUMBER, formattedPhone, msg1);
+      // Store as Maya demo for Sonnet-powered conversation
+      await sql`
+        INSERT INTO maya_demos (phone, first_name, chat_id, step, industry, conversation, created_at)
+        VALUES (${formattedPhone}, ${firstName}, ${chatResult.chat_id}, 1, ${industry}, ${JSON.stringify([{ role: "assistant", content: msg1 }])}::jsonb, NOW())
+        ON CONFLICT DO NOTHING
+      `;
+      // Also update the CRM conversation with the chat_id
+      await sql`UPDATE conversations SET assigned_to = ${chatResult.chat_id} WHERE id = ${conv[0].id}`;
+    } catch (err) {
+      console.error("[demo] Maya send failed, falling back to cron:", err);
+      await sql`UPDATE contacts SET ai_next_followup = NOW(), ai_followup_count = 0 WHERE id = ${contact[0].id}`;
+    }
 
     return NextResponse.json({
       contactId: contact[0].id,
