@@ -5,21 +5,21 @@ import { useState, useEffect, useRef } from "react";
 
 // ── Ticker ──────────────────────────────────────────────────────────────────
 const TICKER_ITEMS = [
-  { icon: "🤖", text: "New lead received — AI responded in 3 seconds", color: "#2ecc71" },
-  { icon: "📅", text: "Appointment booked — Michael R., Dallas TX", color: "#f5a623" },
-  { icon: "💬", text: "Day 3 follow-up sent — lead re-engaged", color: "#8b8fa8" },
+  { icon: "🤖", text: "New lead received — AI responded in 3 seconds", color: "#007AFF" },
+  { icon: "📅", text: "Appointment booked — Michael R., Dallas TX", color: "#2ecc71" },
+  { icon: "💬", text: "Day 3 follow-up sent via iMessage — lead re-engaged", color: "#007AFF" },
   { icon: "🔥", text: "Cold lead from 8 days ago just replied", color: "#E86A2A" },
   { icon: "📞", text: "AI qualified lead — handed off to agent", color: "#2ecc71" },
-  { icon: "⏰", text: "2:47am — appointment booked while agent slept", color: "#f5a623" },
-  { icon: "💬", text: "Objection handled automatically — call scheduled", color: "#8b8fa8" },
+  { icon: "⏰", text: "2:47am — appointment booked while agent slept", color: "#E86A2A" },
+  { icon: "💬", text: "Objection handled automatically — call scheduled", color: "#007AFF" },
   { icon: "📅", text: "Sarah M. booked for Thursday at 2pm", color: "#2ecc71" },
-  { icon: "🤖", text: "New lead — texted back in 4 seconds, no one lifted a finger", color: "#E86A2A" },
+  { icon: "🤖", text: "Blue text delivered — responded in 4 seconds, no one lifted a finger", color: "#007AFF" },
   { icon: "✅", text: "Jake T. moved to closed — AI followed up 4 times", color: "#2ecc71" },
-  { icon: "⏰", text: "Sunday 6am — lead responded to follow-up. AI booked them instantly.", color: "#f5a623" },
+  { icon: "⏰", text: "Sunday 6am — lead responded to iMessage. AI booked them instantly.", color: "#E86A2A" },
   { icon: "🔥", text: "3 appointments booked today before 9am", color: "#E86A2A" },
-  { icon: "💬", text: "Price objection handled — lead asked for next steps", color: "#8b8fa8" },
+  { icon: "💬", text: "Price objection handled via blue text — lead asked for next steps", color: "#007AFF" },
   { icon: "📞", text: "Lead qualified in 4 messages — warm handoff to closer", color: "#2ecc71" },
-  { icon: "✅", text: "Maria G. closed — AI nurtured for 11 days", color: "#2ecc71" },
+  { icon: "✅", text: "Maria G. closed — AI nurtured for 11 days via iMessage", color: "#007AFF" },
 ];
 
 function Ticker() {
@@ -99,7 +99,7 @@ export default function Home() {
         @keyframes heroIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
-        .ticker-track { display: flex; gap: 32px; white-space: nowrap; animation: scroll 40s linear infinite; }
+        .ticker-track { display: flex; gap: 32px; white-space: nowrap; animation: scroll 20s linear infinite; }
         .ticker-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; flex-shrink: 0; }
 
         .wp-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; max-width: 1100px; margin: 0 auto; }
@@ -145,17 +145,23 @@ export default function Home() {
       {/* Hero */}
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "100px 40px 60px", textAlign: "center" }}>
         <div style={{ animation: "heroIn 0.6s ease 0.2s both" }}>
-          <div style={{ display: "inline-block", padding: "4px 14px", background: "rgba(232,106,42,0.08)", border: "1px solid rgba(232,106,42,0.2)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>AI-Powered Sales CRM</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(0,122,255,0.08)", border: "1px solid rgba(0,122,255,0.2)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#007AFF", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#007AFF", display: "inline-block" }} />
+            iMessage Powered
+          </div>
         </div>
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 24px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both" }}>
-          <ScrambleText text="YOUR AI SALES AGENT." delay={600} />
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both" }}>
+          <ScrambleText text="BLUE TEXTS." delay={600} />
           <br />
-          <span style={{ color: "#E86A2A" }}><ScrambleText text="THAT NEVER SLEEPS." delay={1400} /></span>
+          <span style={{ color: "#007AFF" }}><ScrambleText text="NOT GREEN." delay={1400} /></span>
         </h1>
-        <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2s both" }}>
-          It responds in seconds. Qualifies leads. Handles objections. Books appointments on your calendar. All while you sleep.
+        <p style={{ fontSize: 18, color: "rgba(232,230,227,0.5)", lineHeight: 1.8, maxWidth: 560, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both" }}>
+          Your competitors are sending green texts hoping they land. You're sending blue iMessages directly through Apple. No A2P registration. No carrier filtering. No competition.
         </p>
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.4s both" }}>
+        <p style={{ fontSize: 15, color: "rgba(232,230,227,0.3)", lineHeight: 1.6, maxWidth: 480, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.2s both" }}>
+          An AI sales agent that responds in seconds, qualifies leads, handles objections, and books appointments on your calendar. All while you sleep.
+        </p>
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
           <Link href="/demo" className="wp-cta">See It In Action →</Link>
           <Link href="/book/default" className="wp-ghost">Book a Demo</Link>
         </div>
