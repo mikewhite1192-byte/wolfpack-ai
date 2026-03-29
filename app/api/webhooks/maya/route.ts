@@ -45,6 +45,116 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     return true;
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // AGENCY MODE — Maya is a real sales rep selling agency services
+  // ═══════════════════════════════════════════════════════════════
+  const isAgencyMode = (industry as string).startsWith("agency_");
+
+  if (isAgencyMode && step < 99) {
+    const actualIndustry = (industry as string).replace("agency_", "");
+    console.log(`[maya-agency] Step ${step} for ${firstName}, industry: ${actualIndustry}`);
+
+    // Check if they're giving an email (for calendar booking)
+    const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    // Check if they agreed to a time
+    const timeMatch = /monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|morning|afternoon|pm|am|\d{1,2}:\d{2}|\d{1,2}\s*(am|pm)/i.test(text);
+
+    let systemPrompt: string;
+
+    if (step >= 5 && emailMatch) {
+      // They gave their email — book it
+      const email = emailMatch[0];
+      console.log(`[maya-agency] Got email: ${email}, booking appointment`);
+
+      // Book on Google Calendar
+      try {
+        const { getGmailToken, createCalendarEvent } = await import("@/lib/calendar");
+        const ws = await sql`SELECT * FROM workspaces WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`;
+        if (ws.length > 0) {
+          const calToken = await getGmailToken(ws[0].id);
+          if (calToken) {
+            // Book for next available — tomorrow at 2pm as default
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(14, 0, 0, 0);
+            const end = new Date(tomorrow.getTime() + 30 * 60000);
+
+            await createCalendarEvent(
+              calToken,
+              `Wolf Pack Co — ${firstName}`,
+              `Agency demo call with ${firstName}\nPhone: ${demo.phone}\nEmail: ${email}\nIndustry: ${actualIndustry}\nBooked by Maya AI`,
+              tomorrow.toISOString(),
+              end.toISOString(),
+              email,
+              true,
+            );
+            console.log(`[maya-agency] Calendar event created for ${firstName}`);
+          }
+        }
+      } catch (calErr) {
+        console.error("[maya-agency] Calendar booking failed:", calErr);
+      }
+
+      const reply = `You're all set ${firstName}! Calendar invite with a Google Meet link is heading to ${email} right now. Looking forward to showing you what we can do for your ${actualIndustry} business. Talk soon!`;
+      await sendMessage(chatId, reply);
+      conversation.push({ role: "assistant", content: reply });
+      await sql`UPDATE maya_demos SET step = 99, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
+      return true;
+    }
+
+    // Build system prompt for agency sales
+    systemPrompt = `You are Maya, a sales rep for The Wolf Pack Co, a digital marketing agency. You're texting ${firstName} who runs a ${actualIndustry} business. Your ONLY goal is to get them booked on a demo call.
+
+WHAT YOU SELL:
+- Done for you paid ads (Meta + Google) that bring exclusive leads
+- AI video creative that stops the scroll
+- Custom website + 2 landing pages
+- Wolf Pack AI CRM included free (a $289/month AI sales agent that texts leads in 3 seconds)
+- Guarantee: we hit your lead numbers or you don't pay
+- Packages start at $1,499/month. No long term contracts.
+
+CONVERSATION STATE: Message ${step}
+
+${step <= 2 ? "You're still qualifying. Ask about their current lead generation, what's working, what's not. NEPQ style. One question at a time." : ""}
+${step === 3 ? "You've qualified them. Now create urgency. Help them feel the cost of their current situation. What are they missing out on?" : ""}
+${step >= 4 && !timeMatch ? "Time to close. Suggest getting on a quick 15 minute call this week to show them exactly how it works. Be direct but not pushy. Ask what day works best." : ""}
+${step >= 4 && timeMatch ? "They suggested a time. Confirm it and ask for their email to send the calendar invite. Say something like 'Perfect, what's the best email to send the invite to?'" : ""}
+
+RULES:
+- Max 2 sentences. This is texting.
+- Sound like a real 28 year old sales rep. Casual but professional.
+- NEPQ: ask questions that make them feel, never pitch features
+- Acknowledge what they said with genuine empathy before your question
+- ONE question per message
+- NEVER use dashes or bullet points
+- NEVER say "I'd be happy to" or corporate speak
+- If they object on price, reframe the value: "Most of our clients make back their investment in the first month from the leads alone"
+- If they say not interested, be graceful
+- Your goal is ALWAYS to get them on a call
+
+Write ONLY the text message. Nothing else.`;
+
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 80,
+      temperature: 0.8,
+      system: systemPrompt,
+      messages: conversation.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+    });
+
+    const reply = ((response.content[0] as { type: string; text: string }).text || "").trim().replace(/^["']|["']$/g, "");
+    console.log(`[maya-agency] Reply: "${reply}"`);
+
+    await sendMessage(chatId, reply);
+    conversation.push({ role: "assistant", content: reply });
+    await sql`UPDATE maya_demos SET step = ${step + 1}, responded = TRUE, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // TRY MODE — Maya pretends to sell, then reveals she's AI
+  // ═══════════════════════════════════════════════════════════════
+
   // Steps 1-4: Full Sonnet conversation, reveal after 3 real answers
   if (step <= 4 && !demo.revealed) {
     console.log(`[maya] Processing step ${step} for ${firstName}, industry: ${industry}`);
