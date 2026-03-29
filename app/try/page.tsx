@@ -3,15 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const T = {
-  bg: "#0a0a0a",
-  orange: "#E86A2A",
-  text: "#e8eaf0",
-  muted: "rgba(232,230,227,0.45)",
-  border: "rgba(255,255,255,0.07)",
-  blue: "#007AFF",
-};
-
 export default function TryPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -46,28 +37,31 @@ export default function TryPage() {
   }
 
   return (
-    <div style={{ background: T.bg, color: T.text, minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+    <div style={{ background: "#0a0a0a", color: "#e8eaf0", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px 100px" }}>
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .try-input { width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 10px; font-size: 15px; color: ${T.text}; outline: none; font-family: inherit; box-sizing: border-box; }
-        .try-input:focus { border-color: ${T.orange}; }
+        .try-input { width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; font-size: 15px; color: #e8eaf0; outline: none; font-family: inherit; box-sizing: border-box; }
+        .try-input:focus { border-color: #F97316; }
         .try-input::placeholder { color: rgba(255,255,255,0.2); }
-        .try-btn { width: 100%; padding: 16px; background: #E86A2A; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; letter-spacing: 0.5px; }
-        .try-btn:hover { background: #ff7b3a; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,106,42,0.3); }
+        .try-select { width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; font-size: 15px; color: #e8eaf0; outline: none; font-family: inherit; box-sizing: border-box; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; }
+        .try-select:focus { border-color: #F97316; }
+        .try-select option { background: #111; color: #e8eaf0; }
+        .try-btn { width: 100%; padding: 16px; background: #F97316; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; letter-spacing: 0.5px; }
+        .try-btn:hover { background: #fb923c; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(249,115,22,0.3); }
         .try-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
       `}</style>
 
       {/* Logo */}
-      <Link href="/" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 2, color: T.text, textDecoration: "none", marginBottom: 60 }}>
-        THE <span style={{ color: T.orange }}>WOLF</span> PACK
+      <Link href="/" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 2, color: "#e8eaf0", textDecoration: "none", marginBottom: 60 }}>
+        THE <span style={{ color: "#F97316" }}>WOLF</span> PACK
       </Link>
 
       {!sent ? (
         <div style={{ maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeUp 0.6s ease" }}>
-          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(36px, 8vw, 52px)", lineHeight: 1, margin: "0 0 16px", letterSpacing: 1 }}>
-            See What Your Leads<br />Experience in <span style={{ color: T.orange }}>30 Seconds</span>
+          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(36px, 8vw, 52px)", lineHeight: 1, margin: "0 0 16px", letterSpacing: 1, color: "#fff" }}>
+            See What Your Leads<br />Experience in <span style={{ color: "#F97316" }}>30 Seconds</span>
           </h1>
-          <p style={{ fontSize: 16, color: T.muted, lineHeight: 1.6, margin: "0 0 32px" }}>
+          <p style={{ fontSize: 16, color: "#fff", lineHeight: 1.6, margin: "0 0 32px" }}>
             Enter your number. The AI texts you back instantly. No signup needed.
           </p>
 
@@ -88,10 +82,9 @@ export default function TryPage() {
               required
             />
             <select
-              className="try-input"
+              className="try-select"
               value={industry}
               onChange={e => setIndustry(e.target.value)}
-              style={{ appearance: "none", cursor: "pointer" }}
             >
               <option value="">What industry are you in?</option>
               <option value="insurance">Insurance</option>
@@ -108,7 +101,7 @@ export default function TryPage() {
             </button>
           </form>
 
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "rgba(232,106,42,0.06)", border: "1px solid rgba(232,106,42,0.15)", borderRadius: 20, fontSize: 12, color: "#ccc", lineHeight: 1.5, marginTop: 4 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 20, fontSize: 12, color: "#fff", lineHeight: 1.5, marginTop: 4 }}>
             <span>🎭</span> Our AI will text you pretending to be a sales lead. Play along. We promise it's worth it.
           </div>
 
@@ -122,35 +115,35 @@ export default function TryPage() {
               { num: "10X", label: "More appointments" },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: T.orange }}>{s.num}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{s.label}</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: "#F97316" }}>{s.num}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{s.label}</div>
               </div>
             ))}
+          </div>
+
+          {/* Footer */}
+          <div style={{ marginTop: 48 }}>
+            <Link href="/privacy" style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", textDecoration: "none", marginRight: 16 }}>Privacy</Link>
+            <Link href="/terms" style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", textDecoration: "none" }}>Terms</Link>
           </div>
         </div>
       ) : (
         <div style={{ maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeUp 0.6s ease" }}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>📱</div>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px", letterSpacing: 1 }}>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px", letterSpacing: 1, color: "#fff" }}>
             Check Your Phone
           </h2>
-          <p style={{ fontSize: 16, color: T.muted, lineHeight: 1.6, margin: "0 0 8px" }}>
+          <p style={{ fontSize: 16, color: "#fff", lineHeight: 1.6, margin: "0 0 8px" }}>
             Maya from Wolf Pack just texted you. Reply naturally and see what happens.
           </p>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.2)", marginBottom: 32 }}>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 32 }}>
             The whole experience takes about 60 seconds.
           </p>
-          <Link href="/" style={{ fontSize: 13, color: T.orange, textDecoration: "none" }}>
+          <Link href="/" style={{ fontSize: 13, color: "#F97316", textDecoration: "none" }}>
             ← Back to home
           </Link>
         </div>
       )}
-
-      {/* Footer */}
-      <div style={{ position: "fixed", bottom: 24, left: 0, right: 0, textAlign: "center" }}>
-        <Link href="/privacy" style={{ fontSize: 11, color: "rgba(255,255,255,0.15)", textDecoration: "none", marginRight: 16 }}>Privacy</Link>
-        <Link href="/terms" style={{ fontSize: 11, color: "rgba(255,255,255,0.15)", textDecoration: "none" }}>Terms</Link>
-      </div>
     </div>
   );
 }

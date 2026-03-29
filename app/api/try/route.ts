@@ -9,7 +9,7 @@ const FROM_NUMBER = process.env.LINQ_PHONE_NUMBER || "";
 // POST /api/try — start the Maya demo sequence
 export async function POST(req: NextRequest) {
   try {
-    const { name, phone } = await req.json();
+    const { name, phone, industry } = await req.json();
 
     if (!name?.trim() || !phone?.trim()) {
       return NextResponse.json({ error: "Name and phone required" }, { status: 400 });
@@ -31,15 +31,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "We already texted this number in the last 24 hours. Check your messages!" }, { status: 429 });
     }
 
-    // Send Message 1 — the opening
-    const msg1 = `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you currently looking for life, auto, or health insurance coverage?`;
+    // Send Message 1 — the opening (industry-specific)
+    const openers: Record<string, string> = {
+      insurance: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you currently looking for life, auto, or health insurance coverage?`,
+      real_estate: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you looking to buy, sell, or just exploring the market right now?`,
+      mortgage: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you looking to purchase a new home or refinance your current mortgage?`,
+      roofing: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, what's going on with your roof? Are you dealing with damage or just looking for an inspection?`,
+      fitness: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you looking to get started with a membership or checking out personal training?`,
+      med_spa: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you interested in a specific treatment or just exploring what we offer?`,
+      solar: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, have you looked into solar before or is this your first time exploring it?`,
+      other: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, what can I help you with today?`,
+    };
+    const msg1 = openers[industry || "insurance"] || openers.other;
 
     const chatResult = await createChat(FROM_NUMBER, e164, msg1);
 
     // Store the demo state
     await sql`
-      INSERT INTO maya_demos (phone, first_name, chat_id, step, created_at)
-      VALUES (${e164}, ${firstName}, ${chatResult.chat_id}, 1, NOW())
+      INSERT INTO maya_demos (phone, first_name, chat_id, step, industry, conversation, created_at)
+      VALUES (${e164}, ${firstName}, ${chatResult.chat_id}, 1, ${industry || 'insurance'}, ${JSON.stringify([{ role: "assistant", content: msg1 }])}::jsonb, NOW())
     `;
 
     // Schedule the 10-minute follow-up check
