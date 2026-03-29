@@ -8,10 +8,21 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_SONNET_KEY || pr
 
 // Called from the Linq webhook when a message comes from a Maya demo chat_id
 export async function handleMayaReply(chatId: string, from: string, text: string) {
-  const demos = await sql`
-    SELECT * FROM maya_demos WHERE chat_id = ${chatId} ORDER BY created_at DESC LIMIT 1
+  // Try by chat_id first, then by phone number
+  let demos = await sql`
+    SELECT * FROM maya_demos WHERE chat_id = ${chatId} AND step < 99 ORDER BY created_at DESC LIMIT 1
   `;
+  if (demos.length === 0) {
+    demos = await sql`
+      SELECT * FROM maya_demos WHERE phone = ${from} AND step < 99 AND created_at > NOW() - INTERVAL '24 hours' ORDER BY created_at DESC LIMIT 1
+    `;
+  }
   if (demos.length === 0) return false;
+
+  // Update chat_id if we matched by phone
+  if (demos[0].chat_id !== chatId) {
+    await sql`UPDATE maya_demos SET chat_id = ${chatId} WHERE id = ${demos[0].id}`;
+  }
 
   const demo = demos[0];
   const firstName = demo.first_name as string;
