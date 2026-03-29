@@ -16,6 +16,10 @@
     {
       "path": "/api/dashboard/recommendations",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/outreach/send",
+      "schedule": "0 13 * * *"
     }
   ]
 }

@@ -27,6 +27,12 @@ const NAV = [
   { label: "Settings", href: "/dashboard/settings", icon: "⚙" },
 ];
 
+const ADMIN_NAV = [
+  { label: "Outreach", href: "/dashboard/outreach", icon: "📨" },
+];
+
+const ADMIN_EMAILS = ["info@thewolfpackco.com"];
+
 function DialPad({ onClose, initialNumber }: { onClose: () => void; initialNumber?: string }) {
   const [number, setNumber] = useState(initialNumber || "");
   const [callStatus, setCallStatus] = useState<"idle" | "connecting" | "connected" | "ended">("idle");
@@ -189,6 +195,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 key={item.href}
                 href={item.href}
                 className={`topnav-link ${pathname === item.href ? "topnav-link-active" : ""}`}
+              >
+                <span style={{ fontSize: 12 }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+            {isSignedIn && user?.primaryEmailAddress?.emailAddress && ADMIN_EMAILS.includes(user.primaryEmailAddress.emailAddress.toLowerCase()) && ADMIN_NAV.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`topnav-link ${pathname === item.href ? "topnav-link-active" : ""}`}
+                style={{ borderLeft: `1px solid ${T.border}`, paddingLeft: 12, marginLeft: 4 }}
               >
                 <span style={{ fontSize: 12 }}>{item.icon}</span>
                 {item.label}
