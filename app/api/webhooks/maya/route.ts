@@ -45,32 +45,53 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     return true;
   }
 
-  // Steps 1-3: hardcoded conversational responses (Sonnet was too verbose)
+  // Steps 1-3: Sonnet generates a short acknowledgment, hardcoded question follows
   if (step <= 3 && !demo.revealed) {
-    const step1Responses = [
-      `Nice. What made you start looking into that now?`,
-      `Got it. Are you switching from someone or starting fresh?`,
-      `Ok cool. Is something going on that made you look into this?`,
-      `Makes sense. Have you been shopping around or am I your first call?`,
+    const step1Questions = [
+      `What made you start looking into that now?`,
+      `Are you switching from someone or starting fresh?`,
+      `Is something going on that made you look into this?`,
+      `Have you been shopping around or am I your first call?`,
     ];
 
-    const step2Responses = [
-      `Gotcha. Are you the one making the call on this or is there a spouse involved?`,
-      `Got it. What happens if you just keep putting it off?`,
-      `Makes sense. Are you ready to get this handled or still just looking?`,
-      `Ok. Are you pulling the trigger yourself or running it by someone first?`,
+    const step2Questions = [
+      `Are you the one making the call on this or is there a spouse involved?`,
+      `What happens if you just keep putting it off?`,
+      `Are you ready to get this handled or still just looking?`,
+      `Are you pulling the trigger yourself or running it by someone first?`,
     ];
 
     const reveal = `Okay I have to come clean with you 😄\n\nYou were just texted by an AI. Not a real person. That entire conversation happened automatically in real time.\n\nThat's Wolf Pack AI. An AI sales agent that responds to your leads in seconds, qualifies them, handles objections, and books appointments on your calendar. 24/7. Even while you sleep.\n\nImagine that working on YOUR leads right now.`;
 
     let reply: string;
 
-    if (step === 1) {
-      reply = step1Responses[Math.floor(Math.random() * step1Responses.length)];
-    } else if (step === 2) {
-      reply = step2Responses[Math.floor(Math.random() * step2Responses.length)];
-    } else {
+    if (step === 3) {
       reply = reveal;
+    } else {
+      // Use Sonnet ONLY to generate a 2-4 word acknowledgment
+      let ack = "Got it.";
+      try {
+        const ackResponse = await anthropic.messages.create({
+          model: "claude-sonnet-4-5-20250514",
+          max_tokens: 15,
+          temperature: 0.9,
+          system: `Someone texted you: "${text}"\n\nRespond with ONLY a 1-4 word casual acknowledgment. Examples: "Nice." "Got it." "Ok cool." "Ha fair enough." "Makes sense." "Oh wow." "Interesting."\n\nJust the acknowledgment. Nothing else. No question. No follow up. Max 4 words.`,
+          messages: [{ role: "user", content: text }],
+        });
+        const raw = (ackResponse.content[0] as { type: string; text: string }).text.trim();
+        // Safety: only use if it's actually short
+        if (raw.length <= 30 && !raw.includes("?")) {
+          ack = raw.endsWith(".") ? raw : raw + ".";
+        }
+      } catch {
+        // fallback to "Got it."
+      }
+
+      const question = step === 1
+        ? step1Questions[Math.floor(Math.random() * step1Questions.length)]
+        : step2Questions[Math.floor(Math.random() * step2Questions.length)];
+
+      reply = `${ack} ${question}`;
     }
 
     await sendMessage(chatId, reply);
