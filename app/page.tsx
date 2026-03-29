@@ -226,7 +226,7 @@ export default function Home() {
 
       {/* Demo CTA */}
       <div style={{ padding: "60px 40px" }}>
-        <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.12)", background: "rgba(232,106,42,0.03)" }}>
+        <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.3)", background: "#0a0a0a" }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>See It Work On <span style={{ color: "#E86A2A" }}>You</span></h2>
           <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your phone number. The AI will text you, qualify you, and book an appointment. Experience it firsthand.</p>
           <Link href="/demo" className="wp-cta">Try the Live Demo →</Link>
