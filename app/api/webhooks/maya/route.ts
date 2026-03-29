@@ -47,6 +47,8 @@ export async function handleMayaReply(chatId: string, from: string, text: string
 
   // Steps 1-3: Full Sonnet conversation
   if (step <= 3 && !demo.revealed) {
+    console.log(`[maya] Processing step ${step} for ${firstName}, industry: ${industry}`);
+
     const reveal = `Okay I have to come clean with you 😄\n\nYou were just texted by an AI. Not a real person. That entire conversation happened automatically in real time.\n\nThat's Wolf Pack AI. An AI sales agent that responds to your leads in seconds, qualifies them, handles objections, and books appointments on your calendar. 24/7. Even while you sleep.\n\nImagine that working on YOUR leads right now.`;
 
     let reply: string;
@@ -54,6 +56,7 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     if (step === 3) {
       reply = reveal;
     } else {
+      console.log(`[maya] Calling Sonnet with ${conversation.length} messages`);
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-5-20250514",
         max_tokens: 40,
@@ -87,6 +90,7 @@ Write ONLY the text message. Nothing else.`,
       });
 
       reply = (response.content[0] as { type: string; text: string }).text.trim();
+      console.log(`[maya] Sonnet raw reply: "${reply}"`);
       // Safety: if Sonnet went long, truncate to first sentence with a question mark
       if (reply.length > 100) {
         const qIdx = reply.indexOf("?");
@@ -96,7 +100,9 @@ Write ONLY the text message. Nothing else.`,
       reply = reply.replace(/^["']|["']$/g, "");
     }
 
+    console.log(`[maya] Sending reply: "${reply.substring(0, 80)}"`);
     await sendMessage(chatId, reply);
+    console.log(`[maya] Reply sent successfully`);
     conversation.push({ role: "assistant", content: reply });
 
     const isReveal = step === 3;
