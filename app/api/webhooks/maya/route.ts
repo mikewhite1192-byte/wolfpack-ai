@@ -58,7 +58,7 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     } else {
       console.log(`[maya] Calling Sonnet with ${conversation.length} messages`);
       const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-5-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 40,
         temperature: 0.8,
         system: `You are Maya, texting a lead as a ${industry} sales rep. This is SMS on an iPhone.
@@ -143,7 +143,7 @@ If they're not interested, be graceful about it. This is your last message to th
 RESPOND WITH ONLY THE TEXT MESSAGE TO SEND. Keep it short. 2-3 sentences max.`;
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250514",
+      model: "claude-sonnet-4-5",
       max_tokens: 200,
       system: postRevealPrompt,
       messages: conversation.map(m => ({
