@@ -41,11 +41,14 @@ interface Activity {
 }
 
 interface Recommendation {
-  type: "urgent" | "opportunity" | "insight";
+  id: string;
+  type: "urgent" | "warning" | "insight" | "positive";
+  key: string;
   title: string;
   description: string;
-  action?: string;
-  actionHref?: string;
+  action_label?: string;
+  action_href?: string;
+  contact_id?: string;
 }
 
 function fmt(n: number) { return n.toLocaleString("en-US"); }
@@ -79,8 +82,8 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-const typeColors: Record<string, string> = { urgent: "#e74c3c", opportunity: "#f5a623", insight: "#007AFF" };
-const typeLabels: Record<string, string> = { urgent: "Urgent", opportunity: "Warning", insight: "Insight" };
+const typeColors: Record<string, string> = { urgent: "#e74c3c", warning: "#f5a623", insight: "#007AFF", positive: "#2ecc71" };
+const typeLabels: Record<string, string> = { urgent: "Urgent", warning: "Warning", insight: "Insight", positive: "Win" };
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -102,11 +105,22 @@ export default function DashboardPage() {
       .then(data => { if (!data.done) setShowOnboarding(true); setOnboardingChecked(true); })
       .catch(() => setOnboardingChecked(true));
 
-    fetch("/api/dashboard/recommendations")
+    // Generate fresh recommendations, then fetch
+    fetch("/api/dashboard/recommendations", { method: "POST" })
+      .then(() => fetch("/api/dashboard/recommendations"))
       .then(r => r.json())
       .then(data => setRecommendations(data.recommendations || []))
       .catch(() => {});
   }, []);
+
+  async function dismissRec(id: string) {
+    setRecommendations(prev => prev.filter(r => r.id !== id));
+    await fetch("/api/dashboard/recommendations", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  }
 
   const maxStageCount = Math.max(...stages.map(s => parseInt(s.count) || 0), 1);
 
@@ -237,17 +251,24 @@ export default function DashboardPage() {
               {recommendations.length === 0 ? (
                 <div className="dash-empty">All caught up. No actions needed.</div>
               ) : (
-                recommendations.map((r, i) => (
-                  <div key={i} className="dash-rec-item">
-                    <div
-                      className="dash-rec-badge"
-                      style={{ background: `${typeColors[r.type]}18`, color: typeColors[r.type], border: `1px solid ${typeColors[r.type]}30` }}
-                    >
-                      {typeLabels[r.type]}
+                recommendations.map((r) => (
+                  <div key={r.id} className="dash-rec-item">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div
+                        className="dash-rec-badge"
+                        style={{ background: `${typeColors[r.type] || "#888"}18`, color: typeColors[r.type] || "#888", border: `1px solid ${typeColors[r.type] || "#888"}30` }}
+                      >
+                        {typeLabels[r.type] || r.type}
+                      </div>
+                      <button
+                        onClick={() => dismissRec(r.id)}
+                        style={{ background: "none", border: "none", color: "rgba(255,255,255,0.15)", cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 }}
+                        title="Dismiss"
+                      >×</button>
                     </div>
                     <div className="dash-rec-title">{r.title}</div>
                     <div className="dash-rec-desc">{r.description}</div>
-                    {r.action && r.actionHref && <Link href={r.actionHref} className="dash-rec-action">{r.action} →</Link>}
+                    {r.action_label && r.action_href && <Link href={r.action_href} className="dash-rec-action">{r.action_label} →</Link>}
                   </div>
                 ))
               )}
