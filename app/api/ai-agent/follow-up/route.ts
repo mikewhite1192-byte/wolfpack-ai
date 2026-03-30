@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { runSalesAgent, DEFAULT_CONFIG, getNextFollowUpHours, type AgentConfig, type LeadQualification, type ConversationStage } from "@/lib/ai-agent";
-import { sendMessage } from "@/lib/linq/client";
+import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const chatId = contact.chat_id;
+      const chatId = contact.phone;
       if (!chatId) {
         skipped++;
         continue;
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
       let error = false;
       try {
         const sendResult = await sendMessage(chatId, result.reply);
-        msgId = sendResult.message.id;
+        msgId = sendResult.message_id;
       } catch (err) {
         console.error(`[follow-up] Failed to send to ${contact.phone}:`, err);
         error = true;

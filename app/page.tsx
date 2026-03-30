@@ -87,8 +87,215 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+// ── Demo Modal ──────────────────────────────────────────────────────────────
+function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!open) return null;
+
+  async function handleSubmit() {
+    if (!name.trim() || !phone.trim()) return;
+    setSending(true);
+    setError("");
+    const res = await fetch("/api/try", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      setError(data.error);
+      setSending(false);
+    } else {
+      setSent(true);
+      setSending(false);
+    }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(4px)" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 36, maxWidth: 420, width: "100%", position: "relative" }}>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 20, background: "none", border: "none", color: "rgba(232,230,227,0.3)", fontSize: 20, cursor: "pointer" }}>×</button>
+
+        {!sent ? (
+          <>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 1, color: "#e8eaf0", marginBottom: 8 }}>
+                SEE IT <span style={{ color: "#E86A2A" }}>WORK ON YOU</span>
+              </div>
+              <p style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.6, margin: 0 }}>
+                Enter your number. Maya will text you in 3 seconds.
+              </p>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(232,230,227,0.4)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Your Name</div>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="John Smith"
+                style={{ width: "100%", padding: "12px 16px", background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, fontSize: 14, color: "#e8eaf0", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(232,230,227,0.4)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Phone Number</div>
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                type="tel"
+                placeholder="(555) 000-0000"
+                style={{ width: "100%", padding: "12px 16px", background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, fontSize: 14, color: "#e8eaf0", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+
+            {error && <div style={{ color: "#e74c3c", fontSize: 13, marginBottom: 12, textAlign: "center" }}>{error}</div>}
+
+            <button
+              onClick={handleSubmit}
+              disabled={sending || !name.trim() || !phone.trim()}
+              style={{ width: "100%", padding: 14, background: "#E86A2A", color: "#fff", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", opacity: sending ? 0.5 : 1 }}
+            >
+              {sending ? "Sending..." : "Text Me Now →"}
+            </button>
+
+            <div style={{ fontSize: 11, color: "rgba(232,230,227,0.2)", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
+              By clicking, you agree to receive a text message. Standard rates apply.
+            </div>
+          </>
+        ) : (
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>📱</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: "#e8eaf0", marginBottom: 8 }}>CHECK YOUR PHONE</div>
+            <p style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.6, margin: "0 0 20px" }}>
+              Maya just texted you. Reply naturally and see the AI appointment setter in action.
+            </p>
+            <button onClick={onClose} style={{ padding: "10px 28px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "rgba(232,230,227,0.6)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Chat Widget ─────────────────────────────────────────────────────────────
+function ChatWidget() {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function send() {
+    if (!input.trim() || sending) return;
+    const text = input.trim();
+    setInput("");
+    const updated = [...messages, { role: "user", content: text }];
+    setMessages(updated);
+    setSending(true);
+
+    const res = await fetch("/api/chat-widget", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, history: messages }),
+    });
+    const data = await res.json();
+    setMessages([...updated, { role: "assistant", content: data.reply }]);
+    setSending(false);
+  }
+
+  return (
+    <>
+      {/* Floating button */}
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          position: "fixed", bottom: 24, right: 24, width: 56, height: 56,
+          borderRadius: "50%", background: "#E86A2A", border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 20px rgba(232,106,42,0.4)", zIndex: 9998,
+          fontSize: 24, color: "#fff", transition: "transform 0.2s",
+          transform: open ? "rotate(45deg)" : "none",
+        }}
+      >
+        {open ? "+" : "💬"}
+      </button>
+
+      {/* Chat window */}
+      {open && (
+        <div style={{
+          position: "fixed", bottom: 90, right: 24, width: 360, maxWidth: "calc(100vw - 48px)",
+          height: 460, maxHeight: "calc(100vh - 120px)",
+          background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16,
+          display: "flex", flexDirection: "column", overflow: "hidden", zIndex: 9998,
+          boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+        }}>
+          {/* Header */}
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(232,106,42,0.2)", color: "#E86A2A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>M</div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#e8eaf0" }}>Maya</div>
+              <div style={{ fontSize: 11, color: "rgba(232,230,227,0.4)" }}>Wolf Pack AI Assistant</div>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+            {messages.length === 0 && (
+              <div style={{ background: "rgba(232,106,42,0.08)", borderRadius: "14px 14px 14px 4px", padding: "10px 14px", fontSize: 13, color: "#e8eaf0", lineHeight: 1.5, maxWidth: "85%" }}>
+                Hey! I'm Maya. Got questions about Wolf Pack AI? Ask me anything.
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                <div style={{
+                  maxWidth: "85%", padding: "10px 14px", fontSize: 13, lineHeight: 1.5, borderRadius: 14,
+                  background: m.role === "user" ? "#E86A2A" : "rgba(255,255,255,0.06)",
+                  color: m.role === "user" ? "#fff" : "#e8eaf0",
+                }}>
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {sending && (
+              <div style={{ fontSize: 12, color: "rgba(232,230,227,0.3)", padding: "4px 8px" }}>Maya is typing...</div>
+            )}
+            <div ref={endRef} />
+          </div>
+
+          {/* Input */}
+          <div style={{ padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 8 }}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && send()}
+              placeholder="Ask Maya anything..."
+              style={{ flex: 1, padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, fontSize: 13, color: "#e8eaf0", outline: "none" }}
+            />
+            <button onClick={send} disabled={sending || !input.trim()} style={{ padding: "10px 16px", background: "#E86A2A", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: sending ? 0.5 : 1 }}>
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function Home() {
+  const [demoOpen, setDemoOpen] = useState(false);
+
   return (
     <div style={{ background: "#0a0a0a", color: "#e8eaf0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden" }}>
       <style>{`
@@ -147,7 +354,7 @@ export default function Home() {
           <a href="#how">How It Works</a>
           <a href="#pricing">Pricing</a>
           <a href="#faq">FAQ</a>
-          <Link href="/demo" style={{ color: "#E86A2A" }}>Live Demo</Link>
+          <a href="#" onClick={e => { e.preventDefault(); setDemoOpen(true); }} style={{ color: "#E86A2A" }}>Live Demo</a>
           <Link href="/sign-in" style={{ color: "rgba(232,230,227,0.4)" }}>Sign In</Link>
           <Link href="/sign-up" className="wp-cta" style={{ padding: "8px 20px", fontSize: 12 }}>Get Started</Link>
         </div>
@@ -173,12 +380,12 @@ export default function Home() {
         <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both" }}>
           Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
         </p>
-        <p style={{ fontSize: 14, color: "rgba(232,230,227,0.55)", maxWidth: 520, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.6 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.12)", border: "1px solid rgba(0,122,255,0.25)", borderRadius: 20, padding: "3px 12px", fontSize: 13, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle" }}>🔵 iMessage</span>
-          texts. No A2P registration. No carrier filtering. Your leads actually hear from you first.
+        <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 560, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.7, fontWeight: 600 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.12)", border: "1px solid rgba(0,122,255,0.25)", borderRadius: 20, padding: "4px 14px", fontSize: 14, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle" }}>🔵 iMessage</span>
+          texts. No A2P registration. No carrier filtering. <span style={{ color: "#E86A2A" }}>Your leads actually hear from you first.</span>
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
-          <Link href="/demo" className="wp-cta">See It Work On You →</Link>
+          <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
           <Link href="/book-demo" className="wp-ghost">Book a Demo</Link>
         </div>
       </div>
@@ -273,7 +480,7 @@ export default function Home() {
         <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.3)", background: "#0a0a0a" }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>SEE IT SET AN APPOINTMENT <span style={{ color: "#E86A2A" }}>ON YOU</span></h2>
           <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your number. The AI texts you back in 3 seconds pretending to be an insurance agent. Play along — you'll understand exactly why it works.</p>
-          <Link href="/demo" className="wp-cta">Text Me Now →</Link>
+          <button onClick={() => setDemoOpen(true)} className="wp-cta">Text Me Now →</button>
         </div>
       </div>
 
@@ -352,10 +559,16 @@ export default function Home() {
         </h2>
         <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", margin: "0 0 32px" }}>Your competitors are texting your leads right now.</p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/demo" className="wp-cta">See It Work On You →</Link>
+          <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
           <Link href="/book-demo" className="wp-ghost">Book a Demo</Link>
         </div>
       </div>
+
+      {/* Demo Modal */}
+      <DemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
+
+      {/* Chat Widget */}
+      <ChatWidget />
 
       {/* Footer */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "40px 40px 24px" }}>

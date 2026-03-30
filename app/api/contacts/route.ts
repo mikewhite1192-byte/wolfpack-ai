@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { getOrCreateWorkspace } from "@/lib/workspace";
 import { generateFirstTouch, DEFAULT_CONFIG, type AgentConfig } from "@/lib/ai-agent";
-import { createChat } from "@/lib/linq/client";
+import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -128,12 +128,12 @@ export async function POST(req: Request) {
 
         // Send via messaging provider
         const fromNumber = workspace.twilio_phone || process.env.LINQ_PHONE_NUMBER || "";
-        const chatResult = await createChat(fromNumber, phone, firstMessage);
+        const chatResult = await sendMessage(phone, firstMessage);
 
         // Create conversation + store the message
         const conv = await sql`
           INSERT INTO conversations (workspace_id, contact_id, channel, status, ai_enabled, ai_stage, assigned_to)
-          VALUES (${workspace.id}, ${contact[0].id}, 'sms', 'open', TRUE, 'connection', ${chatResult.chat_id})
+          VALUES (${workspace.id}, ${contact[0].id}, 'sms', 'open', TRUE, 'connection', ${chatResult.message_id})
           RETURNING *
         `;
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { sendLinqSMS } from "@/lib/linq";
+import { sendLinqSMS } from "@/lib/loop";
 import { generateSMSReply } from "@/lib/ai";
 import { checkUpgradeEvent } from "@/lib/outreach/upgrade-sequence";
 

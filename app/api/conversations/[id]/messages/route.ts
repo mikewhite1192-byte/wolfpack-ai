@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { getOrCreateWorkspace } from "@/lib/workspace";
-import { sendLinqSMS } from "@/lib/linq";
-import { sendMessage as sendLinqReply } from "@/lib/linq/client";
+import { sendLinqSMS } from "@/lib/loop";
+import { sendMessage as sendLinqReply } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -64,18 +64,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // Send via Linq — use existing chat_id if available (stored in assigned_to), otherwise create new
     if ((effectiveChannel === "sms" || effectiveChannel === "imessage") && conv[0].phone) {
-      const linqChatId = conv[0].assigned_to; // We store linq chat_id here
-      if (linqChatId && linqChatId.length > 10) {
-        // Reply to existing Linq chat
-        try {
-          const result = await sendLinqReply(linqChatId, body);
-          msgId = result.message?.id || "sent";
-        } catch {
-          msgId = null;
-        }
-      } else {
-        // New conversation — send to phone number
-        msgId = await sendLinqSMS(conv[0].phone, body);
+      // Send via Loop using phone number directly
+      try {
+        const result = await sendLinqReply(conv[0].phone, body);
+        msgId = result.message_id || "sent";
+      } catch {
+        msgId = null;
       }
     }
 

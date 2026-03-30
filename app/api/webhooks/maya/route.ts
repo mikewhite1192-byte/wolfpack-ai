@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { sendMessage } from "@/lib/linq/client";
+import { sendMessage } from "@/lib/loop/client";
 import Anthropic from "@anthropic-ai/sdk";
 
 const sql = neon(process.env.DATABASE_URL!);
@@ -39,7 +39,7 @@ export async function handleMayaReply(chatId: string, from: string, text: string
   const isNegative = /not interested|no thanks|stop|unsubscribe|remove me|leave me alone|fuck off/i.test(text);
   if (isNegative) {
     const reply = `No worries at all! Appreciate you giving it a try. If you ever want to see how it could work for your business, we're at thewolfpack.ai. Have a great day ${firstName}!`;
-    await sendMessage(chatId, reply);
+    await sendMessage(demo.phone as string, reply);
     conversation.push({ role: "assistant", content: reply });
     await sql`UPDATE maya_demos SET step = 99, responded = TRUE, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
     return true;
@@ -134,7 +134,7 @@ export async function handleMayaReply(chatId: string, from: string, text: string
       }
 
       const reply = `You're all set ${firstName}! Calendar invite with a Google Meet link is heading to ${email} right now. Looking forward to showing you what we can do for your ${actualIndustry} business. Talk soon!`;
-      await sendMessage(chatId, reply);
+      await sendMessage(demo.phone as string, reply);
       conversation.push({ role: "assistant", content: reply });
       await sql`UPDATE maya_demos SET step = 99, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
       return true;
@@ -183,7 +183,7 @@ Write ONLY the text message. Nothing else.`;
     const reply = ((response.content[0] as { type: string; text: string }).text || "").trim().replace(/^["']|["']$/g, "");
     console.log(`[maya-agency] Reply: "${reply}"`);
 
-    await sendMessage(chatId, reply);
+    await sendMessage(demo.phone as string, reply);
     conversation.push({ role: "assistant", content: reply });
     await sql`UPDATE maya_demos SET step = ${step + 1}, responded = TRUE, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
     return true;
@@ -239,7 +239,7 @@ Write ONLY the text message. Nothing else.`;
         }
 
         const reply = `You're all set ${firstName}! Calendar invite with a Google Meet link is heading to ${email} right now. Looking forward to showing you how it works. Talk soon!`;
-        await sendMessage(chatId, reply);
+        await sendMessage(demo.phone as string, reply);
         conversation.push({ role: "assistant", content: reply });
         await sql`UPDATE maya_demos SET step = 99, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
         return true;
@@ -289,7 +289,7 @@ Write ONLY the text message. Nothing else.`;
     const reply = ((response.content[0] as { type: string; text: string }).text || "").trim().replace(/^["']|["']$/g, "");
     console.log(`[maya] Reply: "${reply}"`);
 
-    await sendMessage(chatId, reply);
+    await sendMessage(demo.phone as string, reply);
     conversation.push({ role: "assistant", content: reply });
     await sql`UPDATE maya_demos SET step = ${step + 1}, responded = TRUE, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
     return true;
@@ -310,7 +310,7 @@ export async function POST() {
     `;
     for (const demo of tenMinDue) {
       try {
-        await sendMessage(demo.chat_id, `Just checking in. Did you have a chance to see my last message? Only takes a second to answer 😊`);
+        await sendMessage(demo.phone as string, `Just checking in. Did you have a chance to see my last message? Only takes a second to answer 😊`);
         await sql`UPDATE maya_demos SET followup_at = NOW() + INTERVAL '14 hours' WHERE id = ${demo.id}`;
       } catch {}
     }
@@ -326,7 +326,7 @@ export async function POST() {
     for (const demo of lastTouch) {
       try {
         const msg = `Hey ${demo.first_name}, just circling back. If you're still losing leads to slow follow-up, Wolf Pack AI fixes that. 3 second response time, books appointments on your calendar automatically.\n\nthewolfpack.ai\n\nEither way, hope your day is great.`;
-        await sendMessage(demo.chat_id, msg);
+        await sendMessage(demo.phone as string, msg);
         await sql`UPDATE maya_demos SET step = 99, revealed = TRUE WHERE id = ${demo.id}`;
       } catch {}
     }

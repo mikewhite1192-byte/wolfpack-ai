@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { createChat, sendMessage } from "@/lib/linq/client";
+import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 const FROM_NUMBER = process.env.LINQ_PHONE_NUMBER || "";
@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
 
     let chatId: string | null = null;
     try {
-      const chatResult = await createChat(FROM_NUMBER, e164, msg1);
-      chatId = chatResult?.chat_id || (chatResult as unknown as Record<string, Record<string, string>>)?.chat?.id || null;
-      console.log(`[try] Chat created, chat_id: ${chatId}, full result:`, JSON.stringify(chatResult));
+      const chatResult = await sendMessage(e164, msg1);
+      chatId = chatResult?.message_id || null;
+      console.log(`[try] Message sent, message_id: ${chatId}, full result:`, JSON.stringify(chatResult));
     } catch (err) {
       console.error(`[try] createChat failed but continuing:`, err);
     }

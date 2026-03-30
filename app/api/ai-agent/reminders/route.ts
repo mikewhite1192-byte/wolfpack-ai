@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { sendMessage } from "@/lib/linq/client";
+import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     // Send 24-hour reminders
     for (const contact of tomorrow) {
-      const chatId = contact.chat_id;
+      const chatId = contact.phone;
       if (!chatId) continue;
 
       const name = contact.first_name || "there";
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         const result = await sendMessage(chatId, reminder);
         await sql`
           INSERT INTO messages (conversation_id, workspace_id, direction, channel, sender, recipient, body, status, sent_by, twilio_sid)
-          VALUES (${contact.conv_id}, ${contact.workspace_id}, 'outbound', 'sms', '', ${contact.phone || ''}, ${reminder}, 'sent', 'ai', ${result.message.id})
+          VALUES (${contact.conv_id}, ${contact.workspace_id}, 'outbound', 'sms', '', ${contact.phone || ''}, ${reminder}, 'sent', 'ai', ${result.message_id})
         `;
         await sql`UPDATE conversations SET last_message_at = NOW() WHERE id = ${contact.conv_id}`;
         sent++;
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
     // Send 2-hour reminders
     for (const contact of upcoming) {
-      const chatId = contact.chat_id;
+      const chatId = contact.phone;
       if (!chatId) continue;
 
       const name = contact.first_name || "there";
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
         const result = await sendMessage(chatId, reminder);
         await sql`
           INSERT INTO messages (conversation_id, workspace_id, direction, channel, sender, recipient, body, status, sent_by, twilio_sid)
-          VALUES (${contact.conv_id}, ${contact.workspace_id}, 'outbound', 'sms', '', ${contact.phone || ''}, ${reminder}, 'sent', 'ai', ${result.message.id})
+          VALUES (${contact.conv_id}, ${contact.workspace_id}, 'outbound', 'sms', '', ${contact.phone || ''}, ${reminder}, 'sent', 'ai', ${result.message_id})
         `;
         await sql`UPDATE conversations SET last_message_at = NOW() WHERE id = ${contact.conv_id}`;
         // Mark reminder as sent
