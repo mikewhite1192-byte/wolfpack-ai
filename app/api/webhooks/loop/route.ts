@@ -45,7 +45,8 @@ export async function POST(req: Request) {
     const fromLast10 = fromDigits.slice(-10);
 
     // --- Check if this is a Maya demo conversation ---
-    const mayaCheck = await sql`
+    // Check for active Maya demo (still in conversation)
+    const mayaActive = await sql`
       SELECT id FROM maya_demos
       WHERE (
         phone = ${from}
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
       LIMIT 1
     `;
 
-    if (mayaCheck.length > 0) {
+    if (mayaActive.length > 0) {
       try {
         const { handleMayaReply } = await import("@/app/api/webhooks/maya/route");
         await handleMayaReply(messageId, fromE164, text);
@@ -65,6 +66,24 @@ export async function POST(req: Request) {
       } catch (mayaErr) {
         console.error("[loop-webhook] Maya handler error:", mayaErr);
       }
+      return NextResponse.json({ received: true });
+    }
+
+    // Check for completed Maya demo — don't let CRM agent take over, just ignore
+    const mayaCompleted = await sql`
+      SELECT id FROM maya_demos
+      WHERE (
+        phone = ${from}
+        OR phone = ${fromE164}
+        OR phone LIKE ${"%" + fromLast10}
+      )
+        AND step >= 99
+        AND created_at > NOW() - INTERVAL '7 days'
+      LIMIT 1
+    `;
+
+    if (mayaCompleted.length > 0) {
+      console.log(`[loop-webhook] Ignoring message from completed Maya demo contact ${from}`);
       return NextResponse.json({ received: true });
     }
 
