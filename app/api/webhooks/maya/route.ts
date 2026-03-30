@@ -132,7 +132,7 @@ export async function handleMayaReply(chatId: string, from: string, text: string
             // Book for next available — tomorrow at 2pm as default
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(14, 0, 0, 0);
+            tomorrow.setHours(18, 0, 0, 0); // 2pm ET (UTC-4 during EDT)
             const end = new Date(tomorrow.getTime() + 30 * 60000);
 
             await createCalendarEvent(
@@ -255,7 +255,8 @@ RULES:
 - ONE question per message. Only ONE question mark allowed in your entire response.
 - ABSOLUTELY NO DASHES. No em dashes, no hyphens between words, no bullet points. Zero dashes.
 - NEVER say "I'd be happy to" or corporate speak
-- If they object on price, reframe: "Most of our clients make back their investment in the first month from the leads alone"
+- WHENEVER you mention price ($1,499/month), ALWAYS mention the guarantee in the same message: "and we guarantee we hit your lead numbers or you don't pay"
+- If they object on price, reframe: "Most of our clients make back their investment in the first month from the leads alone, and we guarantee your lead numbers or you don't pay"
 - If they say not interested, be graceful
 - NEVER guess or make up an answer. If you don't know, push for a call.
 - Do NOT push for a demo call until you've delivered at least 3 value drops (exclusive leads, AI video, Wolf Pack AI)
@@ -314,7 +315,7 @@ Write ONLY the text message. Nothing else.`;
             const calToken = await refreshAccessToken(refreshToken);
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(14, 0, 0, 0);
+            tomorrow.setHours(18, 0, 0, 0); // 2pm ET (UTC-4 during EDT)
             const end = new Date(tomorrow.getTime() + 30 * 60000);
             await createCalendarEvent(
               calToken,
@@ -348,8 +349,8 @@ Write ONLY the text message. Nothing else.`;
           try {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(14, 0, 0, 0);
-            const timeStr = tomorrow.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) + " at 2:00 PM";
+            tomorrow.setHours(18, 0, 0, 0); // 2pm ET (UTC-4 during EDT)
+            const timeStr = tomorrow.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "America/New_York" }) + " at 2:00 PM ET";
             await sendMessage(notifyPhone, `New demo booked by Maya!\n\nName: ${firstName}\nEmail: ${email}\nPhone: ${demo.phone}\nIndustry: ${industry}\nTime: ${timeStr}\n\nThey came through the Wolf Pack AI demo.`);
           } catch { /* silent */ }
         }
