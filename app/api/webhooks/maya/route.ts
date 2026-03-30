@@ -164,7 +164,7 @@ RULES:
 - NEPQ: ask questions that make them feel, never pitch features
 - Acknowledge what they said with genuine empathy before your question
 - ONE question per message
-- NEVER use dashes or bullet points
+- ABSOLUTELY NO DASHES. No em dashes (—), no hyphens between words, no bullet points. Zero dashes in any message. This is critical.
 - NEVER say "I'd be happy to" or corporate speak
 - If they object on price, reframe the value: "Most of our clients make back their investment in the first month from the leads alone"
 - If they say not interested, be graceful
@@ -205,9 +205,9 @@ Write ONLY the text message. Nothing else.`;
     } else if (step === 3) {
       stepInstruction = "You've qualified them. Now hit them hard with the two big things: 1) Wolf Pack AI SETS APPOINTMENTS for you automatically — your calendar fills itself while you sleep. 2) It texts through iMessage (BLUE texts) so your messages actually get through instead of getting filtered like green SMS. Ask if they've had issues with texts getting filtered or leads not seeing their messages.";
     } else if (step === 4) {
-      stepInstruction = "Time to close. Paint the picture: imagine waking up tomorrow with 3 new appointments on your calendar that the AI booked overnight through blue iMessage texts. Then push for a quick 15 min demo call — 'Want me to set up a quick call so Mike can show you exactly how it works? Takes 15 min.' Ask what day works.";
+      stepInstruction = "Time to close. Paint the picture: imagine waking up tomorrow with 3 new appointments on your calendar that the AI booked overnight through blue iMessage texts. Then push for a quick 15 min demo call — 'Want me to set up a quick call so our team can show you exactly how it works? Takes 15 min.' Ask what day works.";
     } else if (step === 5) {
-      stepInstruction = "They haven't committed to a demo yet. Try a different angle: 'No pressure at all. Most people just want to see it work first. I can get you on a quick 15 min call and Mike will show you live how the appointments get booked through blue texts. What day works best for you?'";
+      stepInstruction = "They haven't committed to a demo yet. Try a different angle: 'No pressure at all. Most people just want to see it work first. I can get you on a quick 15 min call and our team will show you live how the appointments get booked through blue texts. What day works best for you?'";
     } else if (step >= 6) {
       // Check if they're giving an email for booking
       const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
@@ -282,17 +282,20 @@ RULES:
 - NEPQ style: ask questions that make them feel the pain of their current situation
 - Acknowledge what they said before asking your next question
 - ONE question per message
-- NEVER use dashes or bullet points
+- ABSOLUTELY NO DASHES. No em dashes (—), no hyphens between words, no bullet points. Zero dashes in any message. This is critical.
 - NEVER say "I'd be happy to" or corporate speak
 - If they ask about price: "$49/month to start, $199 for iMessage. No contracts. First 100 Pro spots at $149 are gone — next 100 at $199 before it goes to $299."
 - If they ask about integrations: "Wolf Pack AI is its own platform — CRM, AI appointment setting, calendar, everything built in. No need to connect anything else."
 - If they object, reframe around appointments: "Most agents using this are waking up to appointments already booked on their calendar. The AI does the follow-up through blue texts that actually get through."
 - Always tie back to APPOINTMENTS and BLUE TEXTS. These are the two things that matter.
-- If you don't know the answer to something, say "Great question — I'd set up a quick call with Mike so he can walk you through that" and ask for their email
+- If you don't know the answer to something, say "Great question, let me get you on a quick call with The Wolf Pack team so they can walk you through that" and ask for their email
 - NEVER guess or make up an answer
 - Primary goal: BOOK A DEMO CALL. Get their email so you can send a calendar invite. That's the win.
-- Don't push them to sign up on the website. Push them to get on a 15 min call with Mike where he shows them exactly how it works.
+- Don't push them to sign up on the website. Push them to get on a quick 15 min demo call with The Wolf Pack team.
 - Be genuine, not pushy
+- If they say they're busy or not available, DON'T keep pushing. Say something like "No worries at all, when's a better time this week? I'll follow up then." Be cool about it.
+- If they give a time like "tomorrow" or "next week", confirm it and say you'll reach back out then
+- Never make them feel pressured. If they need space, give it.
 
 Write ONLY the text message. Nothing else.`;
 

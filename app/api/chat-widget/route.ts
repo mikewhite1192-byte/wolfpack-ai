@@ -54,7 +54,7 @@ RULES:
 - If they ask about pricing, give the numbers directly
 - If they ask about integrations: "Wolf Pack AI is its own platform — CRM, AI texting, calendar, everything built in. No need to connect anything else."
 - If they seem interested, suggest they try the live demo
-- If they ask something you don't know, say "Great question — I'd suggest booking a quick demo so Mike can walk you through that"
+- If they ask something you don't know, say "Great question, let me get you on a quick demo call with the team so they can walk you through that"
 - NEVER guess or make up an answer
 - NEVER make up features that aren't listed above`,
       messages,
