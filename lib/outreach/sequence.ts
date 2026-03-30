@@ -146,6 +146,7 @@ export async function getSequenceStats() {
       COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed,
       COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied,
       COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced,
+      COUNT(*) FILTER (WHERE sequence_status = 'invalid') as invalid,
       COUNT(*) FILTER (WHERE sequence_status = 'unsubscribed') as unsubscribed,
       COUNT(*) FILTER (WHERE converted = TRUE) as converted
     FROM outreach_contacts

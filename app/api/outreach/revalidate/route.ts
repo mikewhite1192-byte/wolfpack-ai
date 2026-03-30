@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       checked++;
 
       if (!result.valid) {
-        await sql`UPDATE outreach_contacts SET bounced = TRUE, sequence_status = 'bounced' WHERE id = ${c.id}`;
+        await sql`UPDATE outreach_contacts SET sequence_status = 'invalid' WHERE id = ${c.id}`;
         removed++;
         removedEmails.push(email);
         console.log(`[revalidate] Removed ${email}: ${result.details}`);

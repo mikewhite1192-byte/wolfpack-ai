@@ -379,6 +379,7 @@ export default function OutreachPage() {
                   { label: "Completed", value: stats.completed, color: T.muted },
                   { label: "Replied", value: stats.replied, color: T.green },
                   { label: "Bounced", value: stats.bounced, color: T.red },
+                  { label: "Invalid", value: stats.invalid || "0", color: T.muted },
                   { label: "Unsubscribed", value: stats.unsubscribed, color: T.yellow },
                   { label: "Converted", value: stats.converted, color: T.green },
                   { label: "Reply Rate", value: parseInt(stats.total) > 0 ? `${Math.round((parseInt(stats.replied) / parseInt(stats.total)) * 100)}%` : "0%", color: T.blue },
