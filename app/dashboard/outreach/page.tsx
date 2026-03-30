@@ -160,6 +160,14 @@ export default function OutreachPage() {
     refreshStats();
   }
 
+  async function revalidateContacts() {
+    setSendResult("Revalidating all contacts...");
+    const res = await fetch("/api/outreach/revalidate", { method: "POST" });
+    const data = await res.json();
+    setSendResult(`Revalidated: ${data.checked} checked, ${data.removed} removed${data.removedEmails?.length ? ` (${data.removedEmails.join(", ")})` : ""}`);
+    refreshStats();
+  }
+
   async function addEmailAddress() {
     setAddingEmail(true);
     setAddResult(null);
@@ -384,6 +392,7 @@ export default function OutreachPage() {
                       <div style={{ display: "flex", gap: 8 }}>
                         <button className="out-btn" onClick={runSend} disabled={sending}>{sending ? "Sending..." : "Send Cold Emails"}</button>
                         <button className="out-btn-ghost" onClick={runWarmup}>Run Warmup</button>
+                        <button className="out-btn-ghost" onClick={revalidateContacts}>Revalidate</button>
                       </div>
                       {sendResult && <div style={{ fontSize: 12, color: T.green, marginTop: 6 }}>{sendResult}</div>}
                     </div>

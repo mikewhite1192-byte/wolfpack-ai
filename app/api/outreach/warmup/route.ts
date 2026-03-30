@@ -3,6 +3,7 @@ import {
   runWarmupCycle,
   runWarmupSend,
   runWarmupReply,
+  scanForBounces,
   getWarmupStatus,
   addWarmupAddress,
 } from "@/lib/outreach/warmup";
@@ -23,6 +24,11 @@ export async function POST(req: NextRequest) {
 
     if (type === "reply") {
       const result = await runWarmupReply(batch);
+      return NextResponse.json(result);
+    }
+
+    if (type === "bounce") {
+      const result = await scanForBounces(batch);
       return NextResponse.json(result);
     }
 

@@ -549,6 +549,89 @@ export async function runWarmupCycle(): Promise<{ sent: number; errors: number; 
   return { sent: totalSent, errors: totalErrors, completed: allCompleted, replied: 0 };
 }
 
+// Scan one cold sender inbox for bounce-back emails and auto-mark contacts as bounced
+export async function scanForBounces(batch: number = 0): Promise<{ bounced: number }> {
+  const coldSenders = await getColdSenderAddresses();
+  if (batch >= coldSenders.length) return { bounced: 0 };
+
+  const addr = coldSenders[batch];
+  let bounced = 0;
+
+  try {
+    const { ImapFlow } = await import("imapflow");
+    const imapHost = addr.imap_host || addr.smtp_host.replace("smtp.", "imap.");
+    const imapPort = addr.imap_port || 993;
+
+    const client = new ImapFlow({
+      host: imapHost,
+      port: imapPort,
+      secure: true,
+      auth: { user: addr.smtp_user, pass: addr.smtp_pass },
+      logger: false,
+    });
+
+    await client.connect();
+    const lock = await client.getMailboxLock("INBOX");
+
+    try {
+      const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); // Last 3 days
+      const messages = client.fetch({ since }, { envelope: true, source: true, uid: true });
+
+      for await (const msg of messages) {
+        const envelope = msg.envelope;
+        if (!envelope) continue;
+
+        const fromAddr = envelope.from?.[0]?.address?.toLowerCase() || "";
+        const subject = (envelope.subject || "").toLowerCase();
+
+        // Only process MAILER-DAEMON / delivery failure emails
+        if (!fromAddr.includes("mailer-daemon") && !fromAddr.includes("postmaster")) continue;
+        if (!subject.includes("deliver") && !subject.includes("failure") && !subject.includes("returned") && !subject.includes("undeliver")) continue;
+
+        // Parse the body to find the original recipient email
+        if (!msg.source) continue;
+        const { simpleParser } = await import("mailparser");
+        const parsed = await simpleParser(msg.source);
+        const body = parsed.text || parsed.html || "";
+
+        // Find email addresses in the bounce message
+        const emailMatches = body.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+
+        for (const bouncedEmail of emailMatches) {
+          const lower = bouncedEmail.toLowerCase();
+          // Skip our own addresses
+          if (lower === addr.email.toLowerCase()) continue;
+          if (lower.includes("mailer-daemon") || lower.includes("postmaster")) continue;
+
+          // Mark as bounced in outreach contacts
+          const result = await sql`
+            UPDATE outreach_contacts SET bounced = TRUE, sequence_status = 'bounced'
+            WHERE email = ${lower} AND bounced = FALSE
+          `;
+          if (result && (result as unknown as { count?: number }).count) {
+            bounced++;
+            console.log(`[bounce-scan] Marked ${lower} as bounced (from ${addr.email})`);
+          }
+        }
+
+        // Archive the bounce email
+        try {
+          await client.messageFlagsAdd(msg.uid, ["\\Seen"], { uid: true });
+          await client.messageMove(msg.uid, "[Gmail]/All Mail", { uid: true });
+        } catch { /* ok */ }
+      }
+    } finally {
+      lock.release();
+      await client.logout();
+    }
+  } catch (err) {
+    console.error(`[bounce-scan] Error for ${addr.email}:`, err);
+  }
+
+  if (bounced > 0) console.log(`[bounce-scan] Found ${bounced} bounced emails from ${addr.email}`);
+  return { bounced };
+}
+
 // Get warmup status for all addresses
 export async function getWarmupStatus(): Promise<{
   address: string;

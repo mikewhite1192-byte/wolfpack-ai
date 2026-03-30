@@ -78,6 +78,18 @@
       "schedule": "45 18 * * *"
     },
     {
+      "path": "/api/outreach/warmup?type=bounce&batch=0",
+      "schedule": "5 20 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=bounce&batch=1",
+      "schedule": "25 20 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=bounce&batch=2",
+      "schedule": "45 20 * * *"
+    },
+    {
       "path": "/api/outreach/upgrade",
       "schedule": "0 14 * * *"
     },
