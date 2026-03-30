@@ -135,7 +135,7 @@ export async function handleMayaReply(chatId: string, from: string, text: string
             tomorrow.setHours(18, 0, 0, 0); // 2pm ET (UTC-4 during EDT)
             const end = new Date(tomorrow.getTime() + 30 * 60000);
 
-            await createCalendarEvent(
+            const calEvent = await createCalendarEvent(
               calToken,
               `Wolf Pack Co — ${firstName}`,
               `Agency demo call with ${firstName}\nPhone: ${demo.phone}\nEmail: ${email}\nIndustry: ${actualIndustry}\nBooked by Maya AI`,
@@ -144,7 +144,9 @@ export async function handleMayaReply(chatId: string, from: string, text: string
               email,
               true,
             );
-            console.log(`[maya-agency] Calendar event created for ${firstName}`);
+            // Store event ID for rescheduling
+            await sql`UPDATE maya_demos SET calendar_event_id = ${calEvent.id} WHERE id = ${demo.id}`;
+            console.log(`[maya-agency] Calendar event created for ${firstName}: ${calEvent.id}`);
           }
         }
       } catch (calErr) {
@@ -317,7 +319,7 @@ Write ONLY the text message. Nothing else.`;
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(18, 0, 0, 0); // 2pm ET (UTC-4 during EDT)
             const end = new Date(tomorrow.getTime() + 30 * 60000);
-            await createCalendarEvent(
+            const calEvent = await createCalendarEvent(
               calToken,
               `Wolf Pack AI Demo — ${firstName}`,
               `Demo call with ${firstName}\nPhone: ${demo.phone}\nEmail: ${email}\nIndustry: ${industry}\nBooked by Maya AI`,
@@ -326,6 +328,7 @@ Write ONLY the text message. Nothing else.`;
               email,
               true,
             );
+            await sql`UPDATE maya_demos SET calendar_event_id = ${calEvent.id} WHERE id = ${demo.id}`;
           }
         } catch (calErr) {
           console.error("[maya] Calendar booking failed:", calErr);
@@ -407,7 +410,7 @@ RULES:
 - Don't push them to sign up on the website. Push them to get on a quick 15 min demo call with The Wolf Pack team.
 - Be genuine, not pushy
 - When booking a time, always confirm it's Eastern time: "I'll book you for [day] at [time] Eastern, does that work for your time zone?"
-- You CANNOT reschedule or cancel appointments. If someone asks to reschedule, say "I can't modify existing appointments but I'll have someone from the team reach out to get that switched for you."
+- If someone asks to reschedule or cancel, tell them "No problem! Just text back the new day and time and I'll get it switched for you."
 - CRITICAL: Short answers like "no", "nah", "not really", "nope" are just ANSWERS to your question, NOT rejections of the conversation. Keep going. Ask a follow-up. "No" to "are you happy with your appointments?" means they're NOT happy, which is an opportunity. Only bail if they explicitly say "stop", "not interested", "leave me alone", or "unsubscribe".
 - NEVER end the conversation early. Keep selling unless they explicitly tell you to stop.
 - If they say they're busy or not available, DON'T keep pushing. Say something like "No worries at all, when's a better time this week? I'll follow up then." Be cool about it.

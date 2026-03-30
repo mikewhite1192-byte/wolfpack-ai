@@ -69,9 +69,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // Check for completed Maya demo — don't let CRM agent take over, just ignore
+    // Check for completed Maya demo — handle rescheduling, otherwise ignore
     const mayaCompleted = await sql`
-      SELECT id FROM maya_demos
+      SELECT id, calendar_event_id, phone FROM maya_demos
       WHERE (
         phone = ${from}
         OR phone = ${fromE164}
@@ -79,10 +79,113 @@ export async function POST(req: Request) {
       )
         AND step >= 99
         AND created_at > NOW() - INTERVAL '7 days'
-      LIMIT 1
+      ORDER BY created_at DESC LIMIT 1
     `;
 
     if (mayaCompleted.length > 0) {
+      // Check if they're trying to reschedule
+      const isReschedule = /reschedul|cancel|change.*time|switch.*time|move.*appointment|different.*day|different.*time/i.test(text);
+      const eventId = mayaCompleted[0].calendar_event_id as string | null;
+
+      if (isReschedule && eventId) {
+        try {
+          const { sendMessage } = await import("@/lib/loop/client");
+          const { refreshAccessToken } = await import("@/lib/gmail");
+          const { cancelCalendarEvent } = await import("@/lib/calendar");
+
+          // Cancel the old event
+          const refreshToken = process.env.DEMO_BOOKING_REFRESH_TOKEN;
+          if (refreshToken) {
+            const calToken = await refreshAccessToken(refreshToken);
+            await cancelCalendarEvent(calToken, eventId);
+            await sql`UPDATE maya_demos SET calendar_event_id = NULL, step = 97 WHERE id = ${mayaCompleted[0].id}`;
+            await sendMessage(fromE164, "No problem! I cancelled your current appointment. What day and time works better for you? Just let me know and I'll get a new invite sent over.");
+            console.log(`[loop-webhook] Cancelled event ${eventId} for ${from}, waiting for new time`);
+          }
+        } catch (err) {
+          console.error("[loop-webhook] Reschedule error:", err);
+          const { sendMessage } = await import("@/lib/loop/client");
+          await sendMessage(fromE164, "I'm having trouble updating the calendar right now. Can you email info@thewolfpackco.com and we'll get it switched for you?");
+        }
+        return NextResponse.json({ received: true });
+      }
+
+      // Check if they're giving a new time after cancellation (step 97)
+      const mayaReschedule = await sql`
+        SELECT * FROM maya_demos
+        WHERE (phone = ${from} OR phone = ${fromE164} OR phone LIKE ${"%" + fromLast10})
+          AND step = 97 AND created_at > NOW() - INTERVAL '7 days'
+        ORDER BY created_at DESC LIMIT 1
+      `;
+
+      if (mayaReschedule.length > 0) {
+        try {
+          const { sendMessage } = await import("@/lib/loop/client");
+          const { refreshAccessToken } = await import("@/lib/gmail");
+          const { createCalendarEvent } = await import("@/lib/calendar");
+          const demo = mayaReschedule[0];
+          const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+
+          // Try to parse a day/time from their message
+          const timeMatch = /monday|tuesday|wednesday|thursday|friday|tomorrow|today/i.exec(text);
+          const hourMatch = /(\d{1,2})\s*(am|pm|AM|PM)/i.exec(text);
+
+          if (timeMatch || hourMatch) {
+            const refreshToken = process.env.DEMO_BOOKING_REFRESH_TOKEN;
+            if (refreshToken) {
+              const calToken = await refreshAccessToken(refreshToken);
+              const newDate = new Date();
+
+              // Parse day
+              if (timeMatch) {
+                const dayMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+                const targetDay = dayMap[timeMatch[0].toLowerCase()];
+                if (targetDay !== undefined) {
+                  const currentDay = newDate.getDay();
+                  let daysToAdd = targetDay - currentDay;
+                  if (daysToAdd <= 0) daysToAdd += 7;
+                  newDate.setDate(newDate.getDate() + daysToAdd);
+                } else if (timeMatch[0].toLowerCase() === "tomorrow") {
+                  newDate.setDate(newDate.getDate() + 1);
+                }
+              }
+
+              // Parse time
+              if (hourMatch) {
+                let hour = parseInt(hourMatch[1]);
+                if (hourMatch[2].toLowerCase() === "pm" && hour < 12) hour += 12;
+                if (hourMatch[2].toLowerCase() === "am" && hour === 12) hour = 0;
+                newDate.setHours(hour + 4, 0, 0, 0); // Convert ET to UTC
+              } else {
+                newDate.setHours(18, 0, 0, 0); // Default 2pm ET
+              }
+
+              const end = new Date(newDate.getTime() + 30 * 60000);
+              const calEvent = await createCalendarEvent(
+                calToken,
+                `Wolf Pack AI Demo — ${demo.first_name}`,
+                `Rescheduled demo with ${demo.first_name}\nPhone: ${demo.phone}`,
+                newDate.toISOString(),
+                end.toISOString(),
+                emailMatch?.[0] || undefined,
+                true,
+              );
+
+              await sql`UPDATE maya_demos SET step = 99, calendar_event_id = ${calEvent.id} WHERE id = ${demo.id}`;
+
+              const dayStr = newDate.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "America/New_York" });
+              const timeStr = newDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+              await sendMessage(fromE164, `You're all set! New appointment booked for ${dayStr} at ${timeStr} ET. Calendar invite is on its way. See you then!`);
+            }
+          } else {
+            await sendMessage(fromE164, "What day and time works best for you? Something like 'Tuesday at 2pm' works great.");
+          }
+        } catch (err) {
+          console.error("[loop-webhook] Rebook error:", err);
+        }
+        return NextResponse.json({ received: true });
+      }
+
       console.log(`[loop-webhook] Ignoring message from completed Maya demo contact ${from}`);
       return NextResponse.json({ received: true });
     }

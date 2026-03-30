@@ -147,6 +147,58 @@ export async function createCalendarEvent(
   return res.json();
 }
 
+// Update/reschedule a Google Calendar event
+export async function updateCalendarEvent(
+  token: string,
+  eventId: string,
+  updates: {
+    startTime?: string;
+    endTime?: string;
+    summary?: string;
+    description?: string;
+    attendeeEmail?: string;
+  },
+): Promise<CalendarEvent> {
+  const event: Record<string, unknown> = {};
+
+  if (updates.startTime) event.start = { dateTime: updates.startTime, timeZone: "America/New_York" };
+  if (updates.endTime) event.end = { dateTime: updates.endTime, timeZone: "America/New_York" };
+  if (updates.summary) event.summary = updates.summary;
+  if (updates.description) event.description = updates.description;
+  if (updates.attendeeEmail) {
+    event.attendees = [{ email: updates.attendeeEmail }];
+    event.sendUpdates = "all";
+  }
+
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(event),
+    }
+  );
+
+  return res.json();
+}
+
+// Cancel/delete a Google Calendar event
+export async function cancelCalendarEvent(
+  token: string,
+  eventId: string,
+): Promise<void> {
+  await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}?sendUpdates=all`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+}
+
 // List upcoming events
 export async function getUpcomingEvents(token: string, maxResults: number = 20): Promise<CalendarEvent[]> {
   const now = new Date().toISOString();
