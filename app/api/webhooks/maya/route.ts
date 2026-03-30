@@ -202,14 +202,16 @@ Write ONLY the text message. Nothing else.`;
     if (step === 1) {
       stepInstruction = "They just answered your opening question about their industry. Acknowledge it, then ask if they're happy with how many appointments they're booking right now or if leads are slipping through.";
     } else if (step === 2) {
-      stepInstruction = "They told you about their situation. Acknowledge the pain. Ask how fast they typically respond to a new lead — because speed is everything and most agents lose deals just from being too slow.";
+      stepInstruction = "They told you about their situation. Acknowledge the pain. Ask how fast they typically respond to a new lead because speed is everything and most agents lose deals just from being too slow.";
     } else if (step === 3) {
-      stepInstruction = "You've qualified them. Pick ONE of these angles and ask about it in 2 short sentences: either ask if they've had issues with their texts getting filtered (blue iMessage solves that) OR ask if they'd want appointments booking themselves automatically while they sleep. Don't try to say both in one message.";
+      stepInstruction = "NOW DELIVER THE VALUE. Tell them what Wolf Pack AI actually does. Say something like: 'So Wolf Pack AI sends blue iMessage texts to your leads in 3 seconds and books appointments on your calendar automatically. No more chasing, no more filtered texts.' Then ask if that's something they'd want running on their leads.";
     } else if (step === 4) {
-      stepInstruction = "Time to close. Push for a demo call in 2 short sentences. Example: 'Want me to get you on a quick 15 min call so we can show you how it works? What day is best for you this week?' Pick one question, not both.";
+      stepInstruction = "They showed interest in the value. Now hit the second angle they haven't heard yet. If you talked about blue texts, now mention the AI books appointments while they sleep. If you talked about appointments, mention the blue iMessage texts that don't get filtered. Then ask if they want to see it in action on a quick call.";
     } else if (step === 5) {
-      stepInstruction = "They haven't committed to a demo yet. Try a different angle: 'No pressure at all. Most people just want to see it work first. I can get you on a quick 15 min call and our team will show you live how the appointments get booked through blue texts. What day works best for you?'";
-    } else if (step >= 6) {
+      stepInstruction = "Time to close for the demo. Keep it simple: 'Want me to get you on a quick 15 min call so we can show you how it works?' ONE question only.";
+    } else if (step === 6) {
+      stepInstruction = "They haven't committed to a demo yet. Try a softer angle: 'No pressure at all. Most people just want to see it work first. What day works best for you this week?'";
+    } else if (step >= 7) {
       // Check if they're giving an email for booking
       const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
       if (emailMatch) {
