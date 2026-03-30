@@ -3,6 +3,7 @@
 
 const BASE_URL = "https://a.loopmessage.com/api/v1";
 const API_KEY = process.env.LOOP_API_KEY || "";
+const SENDER_ID = process.env.LOOP_SENDER_ID || "";
 
 // Ensure phone number is in E.164 format (+1XXXXXXXXXX)
 function toE164(phone: string): string {
@@ -41,6 +42,9 @@ export async function sendMessage(
     contact,
     text,
   };
+
+  // Always use dedicated sender if configured
+  if (SENDER_ID) body.sender = SENDER_ID;
 
   if (options?.channel) body.channel = options.channel;
   if (options?.sender) body.sender = options.sender;

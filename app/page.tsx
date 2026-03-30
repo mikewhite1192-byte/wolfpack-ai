@@ -335,13 +335,18 @@ export default function Home() {
           .wp-mobile-menu { display: flex !important; }
           .wp-stats { flex-direction: column !important; gap: 20px !important; }
           .wp-problem-stats { flex-direction: column !important; gap: 32px !important; }
-          .wp-hero h1 { font-size: 52px !important; }
-          .wp-hero p { font-size: 15px !important; }
           .wp-section-title { font-size: 36px !important; }
+          .wp-nav { padding: 16px 20px !important; }
+          .wp-hero-section { padding: 60px 20px 40px !important; }
+          .wp-hero-title { font-size: 48px !important; }
+          .wp-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
+          .wp-how-steps { flex-direction: column !important; }
+          .wp-price-card { max-width: 100% !important; }
         }
         @media (max-width: 480px) {
-          .wp-hero h1 { font-size: 42px !important; }
+          .wp-hero-title { font-size: 38px !important; }
           .wp-problem-num { font-size: 44px !important; }
+          .wp-section-heading { font-size: 32px !important; }
         }
       `}</style>
 
@@ -365,14 +370,14 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "100px 40px 60px", textAlign: "center" }}>
+      <div className="wp-hero-section" style={{ maxWidth: 900, margin: "0 auto", padding: "100px 40px 60px", textAlign: "center" }}>
         <div style={{ animation: "heroIn 0.6s ease 0.2s both" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.1)", border: "1px solid rgba(232,106,42,0.25)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E86A2A", display: "inline-block" }} />
             AI Appointment Setter
           </div>
         </div>
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both" }}>
+        <h1 className="wp-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both" }}>
           <ScrambleText text="STOP CHASING LEADS." delay={600} />
           <br />
           <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
@@ -439,7 +444,7 @@ export default function Home() {
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 8px", letterSpacing: 1 }}>THREE STEPS. ONE FULL CALENDAR.</h2>
         </div>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+        <div className="wp-how-steps" style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
           {[
             { num: "01", title: "Lead Comes In", desc: "From ads, your website, referrals — doesn't matter. The AI picks it up instantly." },
             { num: "02", title: "AI Sets The Appointment", desc: "Texts back in 3 seconds via iMessage. Qualifies. Handles objections. Books directly on your calendar." },
