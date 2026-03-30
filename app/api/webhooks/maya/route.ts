@@ -6,7 +6,61 @@ import Anthropic from "@anthropic-ai/sdk";
 const sql = neon(process.env.DATABASE_URL!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_SONNET_KEY || process.env.ANTHROPIC_API_KEY });
 
-// Called from the Linq webhook when a message comes from a Maya demo chat_id
+// Sync completed Maya demo conversation to CRM so it shows in dashboard
+async function syncMayaToCRM(phone: string, firstName: string, email: string | null, industry: string, conversation: { role: string; content: string }[]) {
+  const ws = await sql`SELECT * FROM workspaces WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`;
+  if (ws.length === 0) return;
+  const wsId = ws[0].id;
+
+  // Check if contact already exists
+  const existing = await sql`SELECT id FROM contacts WHERE workspace_id = ${wsId} AND phone = ${phone} LIMIT 1`;
+  let contactId: string;
+
+  if (existing.length > 0) {
+    contactId = existing[0].id as string;
+    if (email) await sql`UPDATE contacts SET email = ${email} WHERE id = ${contactId} AND email IS NULL`;
+  } else {
+    const contact = await sql`
+      INSERT INTO contacts (workspace_id, first_name, email, phone, source, source_detail)
+      VALUES (${wsId}, ${firstName}, ${email}, ${phone}, 'maya_demo', ${industry})
+      RETURNING id
+    `;
+    contactId = contact[0].id as string;
+
+    // Create deal
+    const firstStage = await sql`SELECT id FROM pipeline_stages WHERE workspace_id = ${wsId} ORDER BY position ASC LIMIT 1`;
+    if (firstStage.length > 0) {
+      await sql`INSERT INTO deals (workspace_id, contact_id, stage_id, title) VALUES (${wsId}, ${contactId}, ${firstStage[0].id}, ${firstName + ' — Demo Booked'})`;
+    }
+  }
+
+  // Create or find conversation
+  let conv = await sql`SELECT id FROM conversations WHERE workspace_id = ${wsId} AND contact_id = ${contactId} AND channel = 'sms' LIMIT 1`;
+  if (conv.length === 0) {
+    conv = await sql`
+      INSERT INTO conversations (workspace_id, contact_id, channel, status, ai_enabled, ai_stage)
+      VALUES (${wsId}, ${contactId}, 'sms', 'open', FALSE, 'booked')
+      RETURNING id
+    `;
+  } else {
+    // Disable AI on existing conversation so CRM agent doesn't take over
+    await sql`UPDATE conversations SET ai_enabled = FALSE, ai_stage = 'booked' WHERE id = ${conv[0].id}`;
+  }
+  const convId = conv[0].id as string;
+
+  // Sync all messages from the Maya conversation
+  for (const msg of conversation) {
+    await sql`
+      INSERT INTO messages (conversation_id, workspace_id, direction, channel, sender, recipient, body, status, sent_by)
+      VALUES (${convId}, ${wsId}, ${msg.role === "user" ? "inbound" : "outbound"}, 'imessage', ${msg.role === "user" ? phone : ""}, ${msg.role === "user" ? "" : phone}, ${msg.content}, 'sent', ${msg.role === "user" ? "contact" : "ai"})
+    `;
+  }
+
+  await sql`UPDATE conversations SET last_message_at = NOW() WHERE id = ${convId}`;
+  console.log(`[maya] Synced ${conversation.length} messages to CRM for ${firstName} (${phone})`);
+}
+
+// Called from the Loop webhook when a message comes from a Maya demo
 export async function handleMayaReply(chatId: string, from: string, text: string) {
   // Try by chat_id first, then by phone number
   let demos = await sql`
@@ -267,6 +321,14 @@ Write ONLY the text message. Nothing else.`;
         await sendMessage(demo.phone as string, reply);
         conversation.push({ role: "assistant", content: reply });
         await sql`UPDATE maya_demos SET step = 99, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
+
+        // Sync full Maya conversation to CRM
+        try {
+          await syncMayaToCRM(demo.phone as string, firstName, email, industry, conversation);
+        } catch (syncErr) {
+          console.error("[maya] CRM sync failed:", syncErr);
+        }
+
         return true;
       }
 
