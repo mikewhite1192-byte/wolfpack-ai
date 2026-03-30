@@ -90,6 +90,10 @@
       "schedule": "0 21 * * *"
     },
     {
+      "path": "/api/outreach/scrape",
+      "schedule": "0 11 * * *"
+    },
+    {
       "path": "/api/outreach/upgrade",
       "schedule": "0 14 * * *"
     },

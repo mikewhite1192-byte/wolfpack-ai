@@ -39,7 +39,13 @@ function parseCSVLine(line: string): string[] {
 // POST /api/outreach/scrape — pull insurance agents from Florida DOI
 export async function POST(req: NextRequest) {
   try {
-    const { count = 30, state = "FL" } = await req.json();
+    let count = 15;
+    try {
+      const body = await req.json();
+      count = body.count || 15;
+    } catch {
+      // Cron calls with no body — default to 15
+    }
 
     console.log(`[scrape] Starting Florida DOI scrape for ${count} contacts`);
 
