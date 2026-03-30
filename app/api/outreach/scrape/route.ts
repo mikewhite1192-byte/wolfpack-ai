@@ -9,12 +9,11 @@ const sql = neon(process.env.DATABASE_URL!);
 const FL_INDIVIDUAL_CSV = "https://www.myfloridacfo.com/downloads/AAS/LicenseeSearch/AllValidLicensesIndividual.csv";
 
 // License types we want (insurance agents, not adjusters)
+// Target life insurance agents only
 const TARGET_LICENSE_TYPES = [
-  "GENERAL LINES (PROP & CAS)",
   "LIFE INCL VAR ANNUITY & HEALTH",
   "LIFE INCLUDING VARIABLE ANNUITY",
-  "HEALTH",
-  "PERSONAL LINES",
+  "LIFE",
 ];
 
 function parseCSVLine(line: string): string[] {
@@ -44,58 +43,101 @@ export async function POST(req: NextRequest) {
 
     console.log(`[scrape] Starting Florida DOI scrape for ${count} contacts`);
 
-    // Download the CSV (stream it, don't load 318MB into memory)
+    // Track where we left off so each scrape gets fresh contacts
+    const offsetResult = await sql`
+      SELECT COALESCE(MAX(scrape_offset), 0) as offset FROM outreach_scrape_state WHERE source = 'FL_DOI'
+    `.catch(() => [{ offset: 0 }]);
+    const startOffset = parseInt(offsetResult[0]?.offset as string || "0");
+
+    // Stream the CSV — only read enough lines to find our contacts
     const response = await fetch(FL_INDIVIDUAL_CSV);
-    if (!response.ok) {
+    if (!response.ok || !response.body) {
       return NextResponse.json({ error: "Failed to download Florida DOI data" }, { status: 500 });
     }
 
-    const text = await response.text();
-    const lines = text.split("\n");
-    const headers = parseCSVLine(lines[0]);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let headers: string[] = [];
+    let lineNumber = 0;
+    let headersParsed = false;
 
-    // Find column indices
     const colIdx = {
-      firstName: headers.indexOf("First Name"),
-      lastName: headers.indexOf("Last Name"),
-      email: headers.indexOf("Email Address"),
-      phone: headers.indexOf("Business Phone"),
-      company: headers.indexOf("Business Address1"),
-      city: headers.indexOf("Business City"),
-      state: headers.indexOf("Business State"),
-      licenseType: headers.indexOf("License TYCL Desc"),
-      licenseNumber: headers.indexOf("License Number"),
+      firstName: -1, lastName: -1, email: -1, phone: -1,
+      company: -1, city: -1, state: -1, licenseType: -1, licenseNumber: -1,
     };
 
     // Get existing emails to avoid re-processing
     const existing = await sql`SELECT email FROM outreach_contacts`;
     const existingEmails = new Set(existing.map(r => (r.email as string).toLowerCase()));
 
-    // Process lines, filter for target license types, dedupe
     const candidates: { email: string; firstName: string; lastName: string; company: string; state: string; licenseNumber: string }[] = [];
     const seenEmails = new Set<string>();
+    const neededCandidates = count * 3;
 
-    for (let i = 1; i < lines.length && candidates.length < count * 3; i++) {
-      if (!lines[i].trim()) continue;
-      const row = parseCSVLine(lines[i]);
+    // Read chunks until we have enough candidates
+    let done = false;
+    while (!done && candidates.length < neededCandidates) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
 
-      const licenseType = row[colIdx.licenseType] || "";
-      if (!TARGET_LICENSE_TYPES.some(t => licenseType.includes(t))) continue;
+      buffer += decoder.decode(chunk.value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || ""; // keep incomplete last line
 
-      const email = (row[colIdx.email] || "").trim().toLowerCase();
-      if (!email || email.length < 5) continue;
-      if (seenEmails.has(email) || existingEmails.has(email)) continue;
-      seenEmails.add(email);
+      for (const line of lines) {
+        lineNumber++;
 
-      candidates.push({
-        email,
-        firstName: row[colIdx.firstName] || "",
-        lastName: row[colIdx.lastName] || "",
-        company: row[colIdx.company] || "",
-        state: row[colIdx.state] || "FL",
-        licenseNumber: (row[colIdx.licenseNumber] || "").replace(/=/g, "").replace(/"/g, ""),
-      });
+        if (!headersParsed) {
+          headers = parseCSVLine(line);
+          colIdx.firstName = headers.indexOf("First Name");
+          colIdx.lastName = headers.indexOf("Last Name");
+          colIdx.email = headers.indexOf("Email Address");
+          colIdx.phone = headers.indexOf("Business Phone");
+          colIdx.company = headers.indexOf("Business Address1");
+          colIdx.city = headers.indexOf("Business City");
+          colIdx.state = headers.indexOf("Business State");
+          colIdx.licenseType = headers.indexOf("License TYCL Desc");
+          colIdx.licenseNumber = headers.indexOf("License Number");
+          headersParsed = true;
+          continue;
+        }
+
+        // Skip lines we've already processed
+        if (lineNumber <= startOffset) continue;
+
+        if (!line.trim()) continue;
+        const row = parseCSVLine(line);
+
+        const licenseType = row[colIdx.licenseType] || "";
+        if (!TARGET_LICENSE_TYPES.some(t => licenseType.includes(t))) continue;
+
+        const email = (row[colIdx.email] || "").trim().toLowerCase();
+        if (!email || email.length < 5) continue;
+        if (seenEmails.has(email) || existingEmails.has(email)) continue;
+        seenEmails.add(email);
+
+        candidates.push({
+          email,
+          firstName: row[colIdx.firstName] || "",
+          lastName: row[colIdx.lastName] || "",
+          company: row[colIdx.company] || "",
+          state: row[colIdx.state] || "FL",
+          licenseNumber: (row[colIdx.licenseNumber] || "").replace(/=/g, "").replace(/"/g, ""),
+        });
+
+        if (candidates.length >= neededCandidates) { done = true; break; }
+      }
     }
+
+    // Cancel the remaining download
+    reader.cancel().catch(() => {});
+
+    // Save where we left off for next scrape
+    await sql`
+      INSERT INTO outreach_scrape_state (source, scrape_offset) VALUES ('FL_DOI', ${lineNumber})
+      ON CONFLICT (source) DO UPDATE SET scrape_offset = ${lineNumber}, updated_at = NOW()
+    `.catch(() => {});
 
     console.log(`[scrape] Found ${candidates.length} candidates after filtering`);
 
