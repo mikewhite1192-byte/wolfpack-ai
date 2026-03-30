@@ -75,7 +75,15 @@ export default function OutreachPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeState, setScrapeState] = useState("");
   const [scrapeCount, setScrapeCount] = useState(30);
-  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox">("overview");
+  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts">("overview");
+
+  // Outreach contacts
+  const [outreachContacts, setOutreachContacts] = useState<Array<{
+    id: string; email: string; first_name: string | null; last_name: string | null;
+    company: string | null; state: string | null; sequence_status: string;
+    sequence_step: number; assigned_sender: string | null; replied: boolean;
+    bounced: boolean; unsubscribed: boolean; created_at: string; last_email_sent_at: string | null;
+  }>>([]);
 
   // Inbox state
   const [inboxReplies, setInboxReplies] = useState<Array<{
@@ -115,6 +123,7 @@ export default function OutreachPage() {
         setStats(data.stats);
         setRecentEmails(data.recentEmails || []);
         setEmailHealth(data.emailHealth || []);
+        setOutreachContacts(data.outreachContacts || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -193,6 +202,7 @@ export default function OutreachPage() {
         setStats(data.stats);
         setRecentEmails(data.recentEmails || []);
         setEmailHealth(data.emailHealth || []);
+        setOutreachContacts(data.outreachContacts || []);
       });
   }
 
@@ -320,6 +330,7 @@ export default function OutreachPage() {
       <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${T.border}`, marginBottom: 20 }}>
         <button className={`out-tab ${tab === "overview" ? "active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`out-tab ${tab === "emails" ? "active" : ""}`} onClick={() => setTab("emails")}>Email Addresses</button>
+        <button className={`out-tab ${tab === "contacts" ? "active" : ""}`} onClick={() => setTab("contacts")}>Contacts ({outreachContacts.length})</button>
         <button className={`out-tab ${tab === "health" ? "active" : ""}`} onClick={() => setTab("health")}>Health Monitor</button>
         <button className={`out-tab ${tab === "inbox" ? "active" : ""}`} onClick={() => setTab("inbox")} style={{ position: "relative" }}>
           Inbox
@@ -532,6 +543,67 @@ export default function OutreachPage() {
                   </div>
                 ))
               )}
+            </>
+          )}
+
+          {/* ============= CONTACTS TAB ============= */}
+          {tab === "contacts" && (
+            <>
+              <div className="out-label">Outreach Contacts ({outreachContacts.length})</div>
+              <div className="out-card">
+                {outreachContacts.length === 0 ? (
+                  <div style={{ color: T.muted, fontSize: 13, padding: "20px 0", textAlign: "center" }}>No contacts yet. Hit Scrape NIPR on the Overview tab.</div>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="out-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Company</th>
+                          <th>State</th>
+                          <th>Status</th>
+                          <th>Step</th>
+                          <th>Sender</th>
+                          <th>Last Sent</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {outreachContacts.map(c => (
+                          <tr key={c.id}>
+                            <td style={{ fontWeight: 600 }}>{[c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}</td>
+                            <td style={{ fontSize: 12 }}>{c.email}</td>
+                            <td className="muted" style={{ fontSize: 12 }}>{c.company || "—"}</td>
+                            <td className="muted">{c.state || "—"}</td>
+                            <td>
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6,
+                                background: c.sequence_status === "active" ? "rgba(232,106,42,0.15)" :
+                                  c.sequence_status === "replied" ? "rgba(46,204,113,0.15)" :
+                                  c.sequence_status === "bounced" ? "rgba(231,76,60,0.15)" :
+                                  c.sequence_status === "completed" ? "rgba(176,180,200,0.1)" :
+                                  "rgba(255,255,255,0.05)",
+                                color: c.sequence_status === "active" ? T.orange :
+                                  c.sequence_status === "replied" ? T.green :
+                                  c.sequence_status === "bounced" ? T.red :
+                                  T.muted,
+                                textTransform: "uppercase",
+                              }}>
+                                {c.sequence_status}
+                              </span>
+                            </td>
+                            <td className="muted">{c.sequence_step}/4</td>
+                            <td className="muted" style={{ fontSize: 11 }}>{c.assigned_sender?.split("@")[0] || "—"}</td>
+                            <td className="muted" style={{ fontSize: 11 }}>
+                              {c.last_email_sent_at ? new Date(c.last_email_sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </>
           )}
 

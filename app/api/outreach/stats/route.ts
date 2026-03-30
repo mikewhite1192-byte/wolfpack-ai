@@ -25,9 +25,18 @@ export async function GET() {
       // Table may not exist yet
     }
 
-    return NextResponse.json({ stats, recentEmails, emailHealth });
+    // Get outreach contacts list
+    const outreachContacts = await sql`
+      SELECT id, email, first_name, last_name, company, state, sequence_status, sequence_step,
+             assigned_sender, replied, bounced, unsubscribed, created_at, last_email_sent_at
+      FROM outreach_contacts
+      ORDER BY created_at DESC
+      LIMIT 200
+    `;
+
+    return NextResponse.json({ stats, recentEmails, emailHealth, outreachContacts });
   } catch (e: unknown) {
     console.error("[outreach/stats]", e);
-    return NextResponse.json({ stats: { total: "0", active: "0", completed: "0", replied: "0", bounced: "0", unsubscribed: "0", converted: "0" }, recentEmails: [], emailHealth: [] });
+    return NextResponse.json({ stats: { total: "0", active: "0", completed: "0", replied: "0", bounced: "0", unsubscribed: "0", converted: "0" }, recentEmails: [], emailHealth: [], outreachContacts: [] });
   }
 }
