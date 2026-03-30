@@ -23,6 +23,7 @@ interface Stats {
   completed: string;
   replied: string;
   bounced: string;
+  invalid: string;
   unsubscribed: string;
   converted: string;
 }
