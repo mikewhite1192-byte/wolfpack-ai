@@ -5,21 +5,18 @@ import { useState, useEffect, useRef } from "react";
 
 // ── Ticker ──────────────────────────────────────────────────────────────────
 const TICKER_ITEMS = [
-  { icon: "🤖", text: "New lead received. AI responded in 3 seconds", color: "#007AFF" },
-  { icon: "📅", text: "Appointment booked. Michael R., Dallas TX", color: "#2ecc71" },
-  { icon: "💬", text: "Day 3 follow-up sent via iMessage. Lead re-engaged", color: "#007AFF" },
-  { icon: "🔥", text: "Cold lead from 8 days ago just replied", color: "#E86A2A" },
-  { icon: "📞", text: "AI qualified lead. Handed off to agent", color: "#2ecc71" },
-  { icon: "⏰", text: "2:47am. Appointment booked while agent slept", color: "#E86A2A" },
-  { icon: "💬", text: "Objection handled automatically. Call scheduled", color: "#007AFF" },
-  { icon: "📅", text: "Sarah M. booked for Thursday at 2pm", color: "#2ecc71" },
-  { icon: "🤖", text: "Blue text delivered. Responded in 4 seconds, no one lifted a finger", color: "#007AFF" },
-  { icon: "✅", text: "Jake T. moved to closed. AI followed up 4 times", color: "#2ecc71" },
-  { icon: "⏰", text: "Sunday 6am. Lead responded to iMessage. AI booked them instantly.", color: "#E86A2A" },
-  { icon: "🔥", text: "3 appointments booked today before 9am", color: "#E86A2A" },
-  { icon: "💬", text: "Price objection handled via blue text. Lead asked for next steps", color: "#007AFF" },
-  { icon: "📞", text: "Lead qualified in 4 messages. Warm handoff to closer", color: "#2ecc71" },
-  { icon: "✅", text: "Maria G. closed. AI nurtured for 11 days via iMessage", color: "#007AFF" },
+  { icon: "📅", text: "Appointment booked — Michael R., Dallas TX" },
+  { icon: "🤖", text: "New lead texted back in 3 seconds" },
+  { icon: "💬", text: "Objection handled automatically" },
+  { icon: "📅", text: "Sarah M. booked for Thursday 2pm" },
+  { icon: "⏰", text: "2:47am — appointment booked while agent slept" },
+  { icon: "🔵", text: "Blue text delivered — no carrier filtering" },
+  { icon: "📅", text: "3 appointments booked before 9am" },
+  { icon: "🤖", text: "Lead qualified in 4 messages. Appointment set." },
+  { icon: "💬", text: "Price objection handled. Lead booked next day." },
+  { icon: "⏰", text: "Sunday 6am. AI booked appointment instantly." },
+  { icon: "🔵", text: "iMessage delivered. Lead responded in 30 seconds." },
+  { icon: "📅", text: "Maria G. booked — AI nurtured for 11 days" },
 ];
 
 function Ticker() {
@@ -33,7 +30,7 @@ function Ticker() {
         {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
           <div key={i} className="ticker-item">
             <span>{item.icon}</span>
-            <span style={{ color: item.color }}>{item.text}</span>
+            <span>{item.text}</span>
           </div>
         ))}
       </div>
@@ -99,8 +96,8 @@ export default function Home() {
         @keyframes heroIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
-        .ticker-track { display: flex; gap: 32px; white-space: nowrap; animation: scroll 14s linear infinite; }
-        .ticker-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+        .ticker-track { display: flex; gap: 32px; white-space: nowrap; animation: scroll 18s linear infinite; }
+        .ticker-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; flex-shrink: 0; color: rgba(232,230,227,0.5); }
 
         .wp-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; max-width: 1100px; margin: 0 auto; }
         .wp-nav a { color: rgba(232,230,227,0.4); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; letter-spacing: 0.5px; }
@@ -118,6 +115,10 @@ export default function Home() {
         .wp-price-card:hover { border-color: rgba(232,106,42,0.2); }
         .wp-price-card.featured { border-color: #E86A2A; background: rgba(232,106,42,0.03); }
 
+        .wp-problem-stat { text-align: center; flex: 1; min-width: 180px; }
+        .wp-problem-num { font-family: 'Bebas Neue', sans-serif; font-size: 56px; color: #E86A2A; line-height: 1; }
+        .wp-problem-label { font-size: 13px; color: rgba(232,230,227,0.4); line-height: 1.5; margin-top: 8px; }
+
         @media (max-width: 768px) {
           .wp-hero-grid { flex-direction: column !important; text-align: center !important; }
           .wp-hero-grid h1 { font-size: 48px !important; }
@@ -125,6 +126,7 @@ export default function Home() {
           .wp-price-grid { flex-direction: column !important; }
           .wp-nav-links { display: none !important; }
           .wp-stats { flex-direction: column !important; gap: 20px !important; }
+          .wp-problem-stats { flex-direction: column !important; gap: 32px !important; }
         }
       `}</style>
 
@@ -147,32 +149,30 @@ export default function Home() {
         <div style={{ animation: "heroIn 0.6s ease 0.2s both" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(0,122,255,0.08)", border: "1px solid rgba(0,122,255,0.2)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#007AFF", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#007AFF", display: "inline-block" }} />
-            iMessage Powered
+            AI Appointment Setter
           </div>
         </div>
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both" }}>
-          <ScrambleText text="BLUE TEXTS." delay={600} />
+          <ScrambleText text="STOP CHASING LEADS." delay={600} />
           <br />
-          <span style={{ color: "#007AFF" }}><ScrambleText text="NOT GREEN." delay={1400} /></span>
+          <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
         </h1>
-        <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 560, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2s both" }}>
-          Your competitors send green texts and hope they land. You send blue iMessages directly through Apple. No A2P registration. No carrier filtering. An AI sales agent that qualifies leads, handles objections, and books appointments on your calendar. All while you sleep.
+        <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both" }}>
+          Your AI appointment setter texts new leads in 3 seconds, qualifies them, and books the appointment on your calendar. 24/7. No staff. No missed leads. No lost deals.
+        </p>
+        <p style={{ fontSize: 14, color: "#007AFF", maxWidth: 520, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.6 }}>
+          Blue iMessage texts. No A2P registration. No carrier filtering. Your leads actually hear from you first.
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
-          <Link href="/demo" className="wp-cta">See It In Action →</Link>
+          <Link href="/demo" className="wp-cta">See It Work On You →</Link>
           <Link href="/book/default" className="wp-ghost">Book a Demo</Link>
         </div>
       </div>
 
-      {/* Ticker */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", margin: "20px 0" }}>
-        <Ticker />
-      </div>
-
-      {/* Stats */}
+      {/* Stats Bar */}
       <div className="wp-stats" style={{ display: "flex", gap: 60, justifyContent: "center", padding: "50px 40px", maxWidth: 700, margin: "0 auto" }}>
         {[
-          { num: "3 SEC", label: "Average response time" },
+          { num: "3 SEC", label: "Response time" },
           { num: "24/7", label: "Never misses a lead" },
           { num: "10X", label: "More appointments booked" },
         ].map((s, i) => (
@@ -183,37 +183,46 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Outcomes (replaces feature bullets) */}
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px" }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: "0 0 12px", letterSpacing: 1 }}>What Changes When You Turn It On</h2>
-          <p style={{ fontSize: 14, color: "rgba(232,230,227,0.35)", maxWidth: 480, margin: "0 auto" }}>Not features. Outcomes.</p>
-        </div>
-        <div className="wp-outcomes-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          {[
-            { title: "Leads get a text in seconds", desc: "Not minutes. Not hours. The moment a lead comes in from Facebook, Google, or your website, the AI is already texting them. You're first. Every time." },
-            { title: "Objections don't kill your deals", desc: "\"I need to think about it.\" \"What's the price?\" \"I'm talking to other people.\" The AI handles all of it without getting emotional, defensive, or pushy." },
-            { title: "Your calendar fills itself", desc: "The AI's only goal is to book an appointment on your calendar. It gets their email, picks a time, sends the invite with a Google Meet link. You just show up." },
-            { title: "No lead gets forgotten", desc: "Day 1, 3, 7, 14. Every cold lead gets a follow-up with a different angle. The AI came back on a lead 11 days later and booked them. That's money you were leaving on the table." },
-          ].map((o, i) => (
-            <div key={i} className="wp-outcome">
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#e8eaf0", marginBottom: 10 }}>{o.title}</div>
-              <div style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.7 }}>{o.desc}</div>
-            </div>
-          ))}
+      {/* Ticker */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", margin: "20px 0" }}>
+        <Ticker />
+      </div>
+
+      {/* Problem Section */}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "80px 40px 60px", textAlign: "center" }}>
+        <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1 }}>
+          EVERY MINUTE YOU WAIT{" "}
+          <span style={{ color: "#E86A2A" }}>YOUR LEAD IS TEXTING SOMEONE ELSE</span>
+        </h2>
+        <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 48px" }}>
+          The first person to respond wins. Always. Are you first?
+        </p>
+        <div className="wp-problem-stats" style={{ display: "flex", gap: 48, justifyContent: "center", flexWrap: "wrap" }}>
+          <div className="wp-problem-stat">
+            <div className="wp-problem-num">78%</div>
+            <div className="wp-problem-label">Buy from the<br />first responder</div>
+          </div>
+          <div className="wp-problem-stat">
+            <div className="wp-problem-num">5 MIN</div>
+            <div className="wp-problem-label">Response time drops<br />conversion 80%</div>
+          </div>
+          <div className="wp-problem-stat">
+            <div className="wp-problem-num">48%</div>
+            <div className="wp-problem-label">Never follow<br />up at all</div>
+          </div>
         </div>
       </div>
 
       {/* How It Works */}
       <div id="how" style={{ maxWidth: 900, margin: "0 auto", padding: "60px 40px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: 0, letterSpacing: 1 }}>Three Steps. Zero Effort.</h2>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 8px", letterSpacing: 1 }}>THREE STEPS. ONE FULL CALENDAR.</h2>
         </div>
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
           {[
-            { num: "01", title: "Lead Comes In", desc: "From ads, your website, referrals. Doesn't matter. The AI picks it up instantly." },
-            { num: "02", title: "AI Starts Selling", desc: "Texts within seconds. Qualifies. Handles objections. Builds trust. All using proven sales psychology." },
-            { num: "03", title: "Appointment Booked", desc: "Calendar invite sent. Google Meet link attached. You just show up and close." },
+            { num: "01", title: "Lead Comes In", desc: "From ads, your website, referrals — doesn't matter. The AI picks it up instantly." },
+            { num: "02", title: "AI Sets The Appointment", desc: "Texts back in 3 seconds via iMessage. Qualifies. Handles objections. Books directly on your calendar." },
+            { num: "03", title: "You Just Show Up", desc: "Calendar invite sent. Google Meet link attached. You just show up and close." },
           ].map((s, i) => (
             <div key={i} style={{ flex: 1, minWidth: 240, padding: "32px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: "#E86A2A", marginBottom: 12 }}>{s.num}</div>
@@ -224,26 +233,50 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Outcomes */}
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1 }}>WHAT CHANGES WHEN YOU TURN IT ON</h2>
+          <p style={{ fontSize: 14, color: "rgba(232,230,227,0.35)", maxWidth: 480, margin: "0 auto" }}>Not features. Appointments.</p>
+        </div>
+        <div className="wp-outcomes-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {[
+            { title: "Your calendar fills itself", desc: "The AI's only job is booking appointments. It texts, qualifies, handles objections, and sends the calendar invite. You just show up." },
+            { title: "Leads stop going cold", desc: "3 second response time every single time. 2am Sunday, middle of a closing, driving between appointments. The AI never misses." },
+            { title: "Blue texts get through", desc: "Your competitors send green SMS texts that get filtered. You send iMessages through Apple's network directly. No registration. No filtering. No competition." },
+            { title: "No lead gets forgotten", desc: "Day 1, 3, 7, 14. Every cold lead gets a follow up with a different angle every time. The AI came back on a lead 11 days later and booked them." },
+          ].map((o, i) => (
+            <div key={i} className="wp-outcome">
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#e8eaf0", marginBottom: 10 }}>{o.title}</div>
+              <div style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.7 }}>{o.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Demo CTA */}
       <div style={{ padding: "60px 40px" }}>
         <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.3)", background: "#0a0a0a" }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>See It Work On <span style={{ color: "#E86A2A" }}>You</span></h2>
-          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your phone number. The AI will text you, qualify you, and book an appointment. Experience it firsthand.</p>
-          <Link href="/demo" className="wp-cta">Try the Live Demo →</Link>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>SEE IT SET AN APPOINTMENT <span style={{ color: "#E86A2A" }}>ON YOU</span></h2>
+          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your number. The AI texts you back in 3 seconds pretending to be an insurance agent. Play along — you'll understand exactly why it works.</p>
+          <Link href="/demo" className="wp-cta">Text Me Now →</Link>
         </div>
       </div>
 
       {/* Pricing */}
       <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: "0 0 8px", letterSpacing: 1 }}>Simple. Transparent.</h2>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 8px", letterSpacing: 1 }}>
+            YOUR APPOINTMENT SETTER.<br />
+            <span style={{ color: "#E86A2A" }}>STARTING AT $49/MONTH.</span>
+          </h2>
           <p style={{ fontSize: 14, color: "rgba(232,230,227,0.3)" }}>No contracts. Cancel anytime.</p>
         </div>
         <div className="wp-price-grid" style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
           {[
-            { name: "STARTER", price: "$49", period: "/mo", desc: "Everything you need to start.", featured: false, plan: "starter", features: ["AI Sales Agent", "1 Phone Number (SMS + Voice)", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Analytics"], cta: "Get Started" },
-            { name: "PRO", price: "$289", period: "/mo", desc: "Blue texts. Maximum deliverability.", featured: true, badge: "MOST POPULAR", plan: "pro", features: ["Everything in Starter", "iMessage (Blue Texts)", "RCS Messaging", "No A2P Registration", "Higher Deliverability", "Priority Support", "Self-Learning AI", "Google Review Automation", "CSV Import"], cta: "Get Started" },
-            { name: "AGENCY", price: "Custom", period: "", desc: "For agencies managing clients.", featured: false, plan: null, features: ["Everything in Pro", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"], cta: "Contact Us" },
+            { name: "STARTER", price: "$49", period: "/mo", desc: "Everything you need to start filling your calendar.", featured: false, plan: "starter", features: ["AI Appointment Setter", "1 Phone Number (SMS)", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Analytics"], cta: "Get Started" },
+            { name: "PRO", price: "$199", period: "/mo", desc: "Blue texts. Maximum deliverability. More appointments.", featured: true, badge: "MOST POPULAR", plan: "pro", features: ["Everything in Starter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Higher Deliverability", "Priority Support", "Self-Learning AI", "Google Review Automation", "CSV Import"], cta: "Get Started" },
+            { name: "AGENCY", price: "Custom", period: "", desc: "For agencies managing multiple clients.", featured: false, plan: null, features: ["Everything in Pro", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"], cta: "Contact Us" },
           ].map((p, i) => (
             <div key={i} className={`wp-price-card ${p.featured ? "featured" : ""}`} style={{ flex: 1, minWidth: 260, maxWidth: 320, position: "relative" }}>
               {p.badge && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#E86A2A", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5 }}>{p.badge}</div>}
@@ -288,22 +321,25 @@ export default function Home() {
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: 0, letterSpacing: 1 }}>Questions? We Got You.</h2>
         </div>
-        <FaqItem q="How does the AI know what to say?" a="It's trained on proven sales methodology (NEPQ). It asks the right questions, listens to answers, handles objections naturally, and guides leads to book an appointment. It gets smarter with every conversation." />
+        <FaqItem q="How does the AI set appointments?" a="The moment a lead comes in, the AI texts them within seconds. It qualifies them with natural questions, handles any objections, and books directly on your calendar with a Google Meet link. You just show up." />
         <FaqItem q="Will leads know they're talking to AI?" a="No. It texts like a real person on your team. No dashes, no bullet points, no robotic grammar. It mirrors the lead's energy and tone. Most leads have no idea." />
-        <FaqItem q="What's the difference between green and blue texts?" a="Green texts (SMS) require A2P registration and can get filtered by carriers. Blue texts (iMessage) go through Apple's network directly. No registration needed, higher deliverability, and a more trusted look. Our Pro plan includes blue texts." />
+        <FaqItem q="What's the difference between blue and green texts?" a="Green texts (SMS) require A2P registration and get filtered by carriers — your leads might never see them. Blue texts (iMessage) go through Apple's network directly. No registration. No filtering. Higher response rates. Our Pro plan includes blue texts." />
         <FaqItem q="Can I take over a conversation from the AI?" a="Yes. Every conversation has an AI toggle. Turn it off and you're in control. Turn it back on and the AI picks up where you left off." />
-        <FaqItem q="How fast does the AI respond to new leads?" a="Within seconds. The moment a lead comes in, the AI is texting them. That speed alone puts you ahead of 90% of your competition." />
+        <FaqItem q="How fast does the AI respond?" a="3 seconds. The moment a lead comes in, the AI is texting them. That speed alone puts you ahead of 90% of your competition." />
         <FaqItem q="Do I need any technical skills?" a="No. When you sign up, the AI walks you through setup with a few questions about your business. You can be live in minutes." />
-        <FaqItem q="What happens if a lead goes cold?" a="The AI follows up automatically with a different approach each time. Day 1, 3, 7, 14. Each message uses a different angle. No lead gets forgotten." />
+        <FaqItem q="What happens if a lead goes cold?" a="The AI follows up automatically on day 1, 3, 7, and 14 with a different approach each time. No lead gets forgotten. The AI came back on a lead 11 days later and booked them." />
       </div>
 
       {/* Final CTA */}
       <div style={{ padding: "60px 40px 80px", textAlign: "center" }}>
-        <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 16px", letterSpacing: 1 }}>Stop Losing Leads. <span style={{ color: "#E86A2A" }}>Start Today.</span></h2>
-        <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", margin: "0 0 32px" }}>Your competitors are already following up faster than you.</p>
+        <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: "0 0 16px", letterSpacing: 1, lineHeight: 1.1 }}>
+          STOP LOSING APPOINTMENTS TO<br />
+          <span style={{ color: "#E86A2A" }}>WHOEVER RESPONDED FASTER</span>
+        </h2>
+        <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", margin: "0 0 32px" }}>Your competitors are texting your leads right now.</p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/demo" className="wp-cta">Try the Live Demo →</Link>
-          <Link href="/book/default" className="wp-ghost">Book a Call</Link>
+          <Link href="/demo" className="wp-cta">See It Work On You →</Link>
+          <Link href="/book/default" className="wp-ghost">Book a Demo</Link>
         </div>
       </div>
 
