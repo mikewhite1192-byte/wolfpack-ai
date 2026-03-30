@@ -161,7 +161,8 @@ export default function Home() {
           Your AI appointment setter texts new leads in 3 seconds, qualifies them, and books the appointment on your calendar. 24/7. No staff. No missed leads. No lost deals.
         </p>
         <p style={{ fontSize: 14, color: "#007AFF", maxWidth: 520, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.6 }}>
-          Blue iMessage texts. No A2P registration. No carrier filtering. Your leads actually hear from you first.
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.12)", border: "1px solid rgba(0,122,255,0.25)", borderRadius: 20, padding: "3px 12px", fontSize: 13, fontWeight: 700, color: "#007AFF", marginRight: 6 }}>🔵 iMessage</span>
+          texts. No A2P registration. No carrier filtering. Your leads actually hear from you first.
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
           <Link href="/demo" className="wp-cta">See It Work On You →</Link>
