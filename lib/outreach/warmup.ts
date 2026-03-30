@@ -63,11 +63,11 @@ export async function addWarmupAddress(address: {
   return result[0].id;
 }
 
-// Get only addresses that are designated cold senders (and have completed warmup)
+// Get only addresses that are designated cold senders
 export async function getColdSenderAddresses(): Promise<WarmupAddress[]> {
   return await sql`
     SELECT * FROM warmup_addresses
-    WHERE is_active = TRUE AND cold_sender = TRUE AND warmup_completed = TRUE
+    WHERE is_active = TRUE AND cold_sender = TRUE
     ORDER BY warmup_started_at ASC
   ` as unknown as WarmupAddress[];
 }
@@ -99,9 +99,10 @@ export async function markWarmupComplete(addressId: string) {
 }
 
 // Get the cold email daily limit for an address based on its ramp schedule
+// Cold senders start sending from day 1 — ramp runs alongside warmup
 export function getColdDailyLimit(address: WarmupAddress): number {
-  if (!address.warmup_completed || !address.cold_outreach_started_at) return 0;
-  const started = new Date(address.cold_outreach_started_at);
+  if (!address.cold_sender) return 0;
+  const started = new Date(address.warmup_started_at);
   const now = new Date();
   const daysSinceStart = Math.floor((now.getTime() - started.getTime()) / (1000 * 60 * 60 * 24));
   return getColdLimitForDay(daysSinceStart);

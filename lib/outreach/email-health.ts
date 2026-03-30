@@ -167,10 +167,8 @@ export async function getAllEmailHealth(): Promise<EmailHealth[]> {
 
     // Calculate cold daily limit
     let coldDailyLimit = 0;
-    if (coldSender && warmupComplete && addr.cold_outreach_started_at) {
-      const coldStarted = new Date(addr.cold_outreach_started_at as string);
-      const daysSinceCold = Math.floor((Date.now() - coldStarted.getTime()) / (1000 * 60 * 60 * 24));
-      const week = Math.floor(daysSinceCold / 7) + 1;
+    if (coldSender) {
+      const week = Math.floor(daysInWarmup / 7) + 1;
       coldDailyLimit = Math.min(week * 5, 40);
     }
 
