@@ -158,7 +158,7 @@ export default function Home() {
           <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
         </h1>
         <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both" }}>
-          Your AI appointment setter texts new leads in 3 seconds, qualifies them, and books the appointment on your calendar. 24/7. No staff. No missed leads. No lost deals.
+          Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
         </p>
         <p style={{ fontSize: 14, color: "#007AFF", maxWidth: 520, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.6 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.12)", border: "1px solid rgba(0,122,255,0.25)", borderRadius: 20, padding: "3px 12px", fontSize: 13, fontWeight: 700, color: "#007AFF", marginRight: 6 }}>🔵 iMessage</span>
