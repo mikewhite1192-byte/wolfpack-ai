@@ -161,10 +161,25 @@ export default function OutreachPage() {
   }
 
   async function revalidateContacts() {
-    setSendResult("Revalidating all contacts...");
-    const res = await fetch("/api/outreach/revalidate", { method: "POST" });
-    const data = await res.json();
-    setSendResult(`Revalidated: ${data.checked} checked, ${data.removed} removed${data.removedEmails?.length ? ` (${data.removedEmails.join(", ")})` : ""}`);
+    let offset = 0;
+    let totalChecked = 0;
+    let totalRemoved = 0;
+    const allRemoved: string[] = [];
+    let hasMore = true;
+
+    while (hasMore) {
+      setSendResult(`Revalidating contacts... (${totalChecked} checked, ${totalRemoved} removed so far)`);
+      const res = await fetch(`/api/outreach/revalidate?offset=${offset}`, { method: "POST" });
+      const data = await res.json();
+      if (data.error) { setSendResult(`Error: ${data.error}`); return; }
+      totalChecked += data.checked || 0;
+      totalRemoved += data.removed || 0;
+      allRemoved.push(...(data.removedEmails || []));
+      hasMore = data.hasMore || false;
+      offset = data.nextOffset || offset + 15;
+    }
+
+    setSendResult(`Done! ${totalChecked} checked, ${totalRemoved} removed${allRemoved.length ? `: ${allRemoved.join(", ")}` : ""}`);
     refreshStats();
   }
 
