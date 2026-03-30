@@ -165,7 +165,7 @@ export default function Home() {
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
           <Link href="/demo" className="wp-cta">See It Work On You →</Link>
-          <Link href="/book/default" className="wp-ghost">Book a Demo</Link>
+          <Link href="/book-demo" className="wp-ghost">Book a Demo</Link>
         </div>
       </div>
 
@@ -307,7 +307,7 @@ export default function Home() {
                   {p.cta}
                 </button>
               ) : (
-                <Link href="/book/default" className="wp-ghost" style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
+                <Link href="/book-demo" className="wp-ghost" style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
                   {p.cta}
                 </Link>
               )}
@@ -339,7 +339,7 @@ export default function Home() {
         <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", margin: "0 0 32px" }}>Your competitors are texting your leads right now.</p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/demo" className="wp-cta">See It Work On You →</Link>
-          <Link href="/book/default" className="wp-ghost">Book a Demo</Link>
+          <Link href="/book-demo" className="wp-ghost">Book a Demo</Link>
         </div>
       </div>
 
