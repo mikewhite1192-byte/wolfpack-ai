@@ -1,56 +1,96 @@
-import { NextResponse } from "next/server";
-import { getDueContacts, advanceContact, getTodaySendCount, markBounced } from "@/lib/outreach/sequence";
-import { sendEmail, getTemplate } from "@/lib/outreach/send-email";
+import { NextRequest, NextResponse } from "next/server";
+import { getDueContacts, advanceContact } from "@/lib/outreach/sequence";
+import { sendColdEmail, getTemplate, getThreadMessageId, pickSenderAddress } from "@/lib/outreach/send-email";
+import { getColdSenderAddresses, getColdDailyLimit, getTodayColdSendCount } from "@/lib/outreach/warmup";
+import { markBounced } from "@/lib/outreach/sequence";
 
-// Daily send limit ramp (configurable)
-const DAILY_LIMIT = parseInt(process.env.OUTREACH_DAILY_LIMIT || "30");
-
-// POST /api/outreach/send — process sequence and send emails (cron)
-export async function POST() {
+// POST /api/outreach/send — process sequence and send cold emails (cron)
+export async function POST(req: NextRequest) {
   try {
-    const todaySent = await getTodaySendCount();
-    const remaining = Math.max(0, DAILY_LIMIT - todaySent);
-
-    if (remaining === 0) {
-      return NextResponse.json({ message: "Daily limit reached", sent: 0 });
+    // Verify cron secret
+    const auth = req.headers.get("authorization");
+    if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const dueContacts = await getDueContacts(remaining);
-    let sent = 0;
-    let failed = 0;
-    let skipped = 0;
+    // Only use addresses flagged as cold senders (already filtered to warmup-complete)
+    const addresses = await getColdSenderAddresses();
+    let totalSent = 0;
+    let totalFailed = 0;
+    const perAddress: Record<string, { sent: number; limit: number }> = {};
 
-    for (const contact of dueContacts) {
-      const step = contact.sequence_step as number;
-      const email = contact.email as string;
-      const contactId = contact.id as string;
+    for (const addr of addresses) {
 
-      // Get template for this step
-      const template = await getTemplate(step, contact);
+      const dailyLimit = getColdDailyLimit(addr);
+      const alreadySent = await getTodayColdSendCount(addr.email);
+      const remaining = Math.max(0, dailyLimit - alreadySent);
 
-      // Send
-      const result = await sendEmail(email, template.subject, template.body, contactId, step);
+      perAddress[addr.email] = { sent: 0, limit: dailyLimit };
 
-      if (result.success) {
-        await advanceContact(contactId, step);
-        sent++;
-      } else {
-        // Check if it's a bounce
-        if (result.error?.includes("bounce") || result.error?.includes("rejected") || result.error?.includes("invalid")) {
-          await markBounced(email);
+      if (remaining === 0) continue;
+
+      // Get contacts due for this sender
+      const dueContacts = await getDueContacts(addr.email, remaining);
+
+      for (const contact of dueContacts) {
+        const step = contact.sequence_step as number;
+        const email = contact.email as string;
+        const contactId = contact.id as string;
+
+        // Get template for this step
+        const template = await getTemplate(step, contact);
+
+        // For steps 2-4, send in the same thread as step 1
+        let inReplyTo: string | undefined;
+        let references: string | undefined;
+        let subject = template.subject;
+
+        if (step > 1) {
+          const thread = await getThreadMessageId(contactId);
+          if (thread.messageId) {
+            inReplyTo = thread.messageId;
+            references = thread.messageId;
+            // Use original subject for thread continuity
+            if (thread.subject) {
+              subject = thread.subject;
+            }
+          }
         }
-        failed++;
+
+        // Send plain text email
+        const result = await sendColdEmail(
+          addr,
+          email,
+          subject,
+          template.body,
+          contactId,
+          step,
+          inReplyTo,
+          references,
+        );
+
+        if (result.success) {
+          await advanceContact(contactId, step);
+          totalSent++;
+          perAddress[addr.email].sent++;
+        } else {
+          if (result.error?.includes("bounce") || result.error?.includes("rejected") || result.error?.includes("invalid")) {
+            await markBounced(email);
+          }
+          totalFailed++;
+        }
       }
     }
 
-    console.log(`[outreach] Sent: ${sent}, Failed: ${failed}, Skipped: ${skipped}, Today total: ${todaySent + sent}`);
+    console.log(`[outreach] Cold sends complete: ${totalSent} sent, ${totalFailed} failed`);
+    for (const [email, stats] of Object.entries(perAddress)) {
+      console.log(`  ${email}: ${stats.sent}/${stats.limit}`);
+    }
 
     return NextResponse.json({
-      sent,
-      failed,
-      skipped,
-      todayTotal: todaySent + sent,
-      dailyLimit: DAILY_LIMIT,
+      sent: totalSent,
+      failed: totalFailed,
+      perAddress,
     });
   } catch (err) {
     console.error("[outreach] Send error:", err);

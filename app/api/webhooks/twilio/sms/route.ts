@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { sendLinqSMS } from "@/lib/linq";
 import { generateSMSReply } from "@/lib/ai";
+import { checkUpgradeEvent } from "@/lib/outreach/upgrade-sequence";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -138,6 +139,9 @@ export async function POST(req: Request) {
 
       console.log(`[sms] AI replied to ${from}: ${reply.substring(0, 50)}...`);
     }
+
+    // Fire event-based upgrade check (non-blocking)
+    checkUpgradeEvent(ws.id as string, "inbound_reply").catch(() => {});
 
     // Return empty TwiML (we send replies via API, not TwiML)
     return new Response("<Response></Response>", {

@@ -2,16 +2,18 @@ import { neon } from "@neondatabase/serverless";
 
 const sql = neon(process.env.DATABASE_URL!);
 
-// Sequence schedule: step -> days after entry
+// 4-touch sequence over 12-16 days
+// step -> days after entry
 const SEQUENCE_SCHEDULE: Record<number, number> = {
-  1: 0, // Day 1: immediate
-  2: 2, // Day 3: 2 days after first
-  3: 6, // Day 7: 6 days after first
+  1: 0,   // Day 1: immediate
+  2: 3,   // Day 3-4: light bump (same thread)
+  3: 7,   // Day 7-9: new angle (same thread)
+  4: 12,  // Day 12-15: close loop (same thread)
 };
 
-const MAX_STEPS = 3;
+const MAX_STEPS = 4;
 
-// Add new contacts to sequence
+// Add new contacts to sequence, assigned to a specific sender
 export async function addToSequence(contacts: {
   email: string;
   firstName?: string;
@@ -19,22 +21,22 @@ export async function addToSequence(contacts: {
   company?: string;
   state?: string;
   licenseNumber?: string;
-}[]): Promise<{ added: number; skipped: number }> {
+}[], assignedSender?: string): Promise<{ added: number; skipped: number }> {
   let added = 0;
   let skipped = 0;
 
   for (const c of contacts) {
     const email = c.email.trim().toLowerCase();
 
-    // Check if already exists (completed, active, or unsubscribed)
+    // Check if already exists
     const existing = await sql`
       SELECT id FROM outreach_contacts WHERE email = ${email} LIMIT 1
     `;
     if (existing.length > 0) { skipped++; continue; }
 
     await sql`
-      INSERT INTO outreach_contacts (email, first_name, last_name, company, state, license_number, sequence_status, sequence_step, next_email_at)
-      VALUES (${email}, ${c.firstName || null}, ${c.lastName || null}, ${c.company || null}, ${c.state || null}, ${c.licenseNumber || null}, 'active', 1, NOW())
+      INSERT INTO outreach_contacts (email, first_name, last_name, company, state, license_number, sequence_status, sequence_step, next_email_at, assigned_sender)
+      VALUES (${email}, ${c.firstName || null}, ${c.lastName || null}, ${c.company || null}, ${c.state || null}, ${c.licenseNumber || null}, 'active', 1, NOW(), ${assignedSender || null})
     `;
     added++;
   }
@@ -42,8 +44,8 @@ export async function addToSequence(contacts: {
   return { added, skipped };
 }
 
-// Get contacts due for their next email
-export async function getDueContacts(limit: number = 100): Promise<Record<string, unknown>[]> {
+// Get contacts due for their next email, filtered by sender address
+export async function getDueContacts(senderEmail: string, limit: number = 100): Promise<Record<string, unknown>[]> {
   return sql`
     SELECT * FROM outreach_contacts
     WHERE sequence_status = 'active'
@@ -52,6 +54,7 @@ export async function getDueContacts(limit: number = 100): Promise<Record<string
       AND bounced = FALSE
       AND unsubscribed = FALSE
       AND sequence_step <= ${MAX_STEPS}
+      AND (assigned_sender = ${senderEmail} OR assigned_sender IS NULL)
     ORDER BY next_email_at ASC
     LIMIT ${limit}
   `;
@@ -73,7 +76,9 @@ export async function advanceContact(contactId: string, currentStep: number) {
   }
 
   const daysUntilNext = SEQUENCE_SCHEDULE[nextStep] - SEQUENCE_SCHEDULE[currentStep];
-  const nextDate = new Date(Date.now() + daysUntilNext * 24 * 60 * 60 * 1000);
+  // Add some randomness (+-1 day) to look natural
+  const jitterHours = Math.floor(Math.random() * 48) - 24;
+  const nextDate = new Date(Date.now() + daysUntilNext * 24 * 60 * 60 * 1000 + jitterHours * 60 * 60 * 1000);
 
   await sql`
     UPDATE outreach_contacts SET
@@ -82,6 +87,21 @@ export async function advanceContact(contactId: string, currentStep: number) {
       last_email_sent_at = NOW()
     WHERE id = ${contactId}
   `;
+}
+
+// Assign unassigned contacts to a sender (round-robin across available senders)
+export async function assignContactsToSender(senderEmail: string, limit: number): Promise<number> {
+  const result = await sql`
+    UPDATE outreach_contacts SET assigned_sender = ${senderEmail}
+    WHERE id IN (
+      SELECT id FROM outreach_contacts
+      WHERE assigned_sender IS NULL
+        AND sequence_status = 'active'
+      ORDER BY created_at ASC
+      LIMIT ${limit}
+    )
+  `;
+  return (result as unknown as { count?: number }).count || 0;
 }
 
 // Mark contact as replied
@@ -133,11 +153,20 @@ export async function getSequenceStats() {
   return stats[0];
 }
 
-// Get daily send count (for rate limiting)
-export async function getTodaySendCount(): Promise<number> {
+// Get daily send count for a specific sender
+export async function getTodaySendCount(senderEmail?: string): Promise<number> {
+  if (senderEmail) {
+    const result = await sql`
+      SELECT COUNT(*) as count FROM outreach_emails
+      WHERE from_email = ${senderEmail}
+        AND sent_at >= CURRENT_DATE
+        AND email_type = 'cold'
+    `;
+    return parseInt(result[0].count);
+  }
   const result = await sql`
     SELECT COUNT(*) as count FROM outreach_emails
-    WHERE sent_at >= CURRENT_DATE
+    WHERE sent_at >= CURRENT_DATE AND email_type = 'cold'
   `;
   return parseInt(result[0].count);
 }

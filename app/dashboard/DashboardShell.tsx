@@ -28,6 +28,7 @@ const NAV = [
 ];
 
 const ADMIN_NAV = [
+  { label: "Business", href: "/dashboard/owner", icon: "📈" },
   { label: "Outreach", href: "/dashboard/outreach", icon: "📨" },
 ];
 

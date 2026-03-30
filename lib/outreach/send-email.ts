@@ -1,71 +1,111 @@
 import { neon } from "@neondatabase/serverless";
+import { getColdSenderAddresses, getColdDailyLimit, getTodayColdSendCount } from "./warmup";
+import type { WarmupAddress } from "./warmup";
 
 const sql = neon(process.env.DATABASE_URL!);
 
-const SES_REGION = process.env.AWS_SES_REGION || "us-east-1";
-const AWS_ACCESS_KEY = process.env.AWS_ACCESS_KEY_ID || "";
-const AWS_SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY || "";
-const FROM_EMAIL = process.env.OUTREACH_FROM_EMAIL || "hello@getwolfpack.com";
-const FROM_NAME = process.env.OUTREACH_FROM_NAME || "Wolf Pack AI";
+const SIGNATURE = "\nMike, The Wolf Pack AI";
 
-// Send email via AWS SES v2 API
-export async function sendEmail(
+// Send a cold email via SMTP from a warmup address (plain text, no HTML)
+export async function sendColdEmail(
+  fromAddress: WarmupAddress,
   to: string,
   subject: string,
-  htmlBody: string,
+  body: string,
   contactId: string,
   step: number,
+  inReplyTo?: string,
+  references?: string,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    // Use AWS SDK
-    const { SESv2Client, SendEmailCommand } = await import("@aws-sdk/client-sesv2");
-
-    const client = new SESv2Client({
-      region: SES_REGION,
-      credentials: {
-        accessKeyId: AWS_ACCESS_KEY,
-        secretAccessKey: AWS_SECRET_KEY,
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.createTransport({
+      host: fromAddress.smtp_host,
+      port: fromAddress.smtp_port,
+      secure: fromAddress.smtp_port === 465,
+      auth: {
+        user: fromAddress.smtp_user,
+        pass: fromAddress.smtp_pass,
       },
     });
 
-    const command = new SendEmailCommand({
-      FromEmailAddress: `${FROM_NAME} <${FROM_EMAIL}>`,
-      Destination: { ToAddresses: [to] },
-      Content: {
-        Simple: {
-          Subject: { Data: subject, Charset: "UTF-8" },
-          Body: {
-            Html: { Data: htmlBody, Charset: "UTF-8" },
-          },
-        },
-      },
-    });
+    const mailOptions: Record<string, unknown> = {
+      from: `${fromAddress.display_name} <${fromAddress.email}>`,
+      to,
+      subject,
+      text: body, // Plain text only — no HTML
+    };
 
-    const result = await client.send(command);
-    const messageId = result.MessageId || null;
+    // Same-thread follow-ups
+    if (inReplyTo) {
+      mailOptions.inReplyTo = inReplyTo;
+      mailOptions.references = references || inReplyTo;
+      // Prefix subject with Re: for thread continuity
+      if (!subject.startsWith("Re:")) {
+        mailOptions.subject = `Re: ${subject}`;
+      }
+    }
+
+    const result = await transporter.sendMail(mailOptions);
+    const messageId = result.messageId || null;
 
     // Log the sent email
     await sql`
-      INSERT INTO outreach_emails (contact_id, step, subject, body, ses_message_id, status)
-      VALUES (${contactId}, ${step}, ${subject}, ${htmlBody}, ${messageId}, 'sent')
+      INSERT INTO outreach_emails (from_email, contact_id, step, subject, body, ses_message_id, status, email_type, message_id_header)
+      VALUES (${fromAddress.email}, ${contactId}, ${step}, ${subject}, ${body}, ${messageId}, 'sent', 'cold', ${messageId})
     `;
 
     return { success: true, messageId: messageId || undefined };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error(`[outreach] Failed to send to ${to}:`, msg);
+    console.error(`[outreach] Failed to send from ${fromAddress.email} to ${to}:`, msg);
 
     // Log the failure
     await sql`
-      INSERT INTO outreach_emails (contact_id, step, subject, body, status)
-      VALUES (${contactId}, ${step}, ${subject}, ${htmlBody}, 'failed')
+      INSERT INTO outreach_emails (from_email, contact_id, step, subject, body, status, email_type)
+      VALUES (${fromAddress.email}, ${contactId}, ${step}, ${subject}, ${body}, 'failed', 'cold')
     `;
 
     return { success: false, error: msg };
   }
 }
 
-// Get email template for a step, with variable substitution
+// Get the first email's Message-ID for a contact (to thread follow-ups)
+export async function getThreadMessageId(contactId: string): Promise<{ messageId: string | null; subject: string | null }> {
+  const result = await sql`
+    SELECT message_id_header, subject FROM outreach_emails
+    WHERE contact_id = ${contactId} AND step = 1 AND status = 'sent' AND message_id_header IS NOT NULL
+    ORDER BY sent_at ASC LIMIT 1
+  `;
+  if (result.length === 0) return { messageId: null, subject: null };
+  return {
+    messageId: result[0].message_id_header as string,
+    subject: result[0].subject as string,
+  };
+}
+
+// Pick the best cold sender address (one with most remaining daily capacity)
+export async function pickSenderAddress(): Promise<WarmupAddress | null> {
+  const addresses = await getColdSenderAddresses();
+  let best: WarmupAddress | null = null;
+  let bestRemaining = 0;
+
+  for (const addr of addresses) {
+
+    const limit = getColdDailyLimit(addr);
+    const sent = await getTodayColdSendCount(addr.email);
+    const remaining = limit - sent;
+
+    if (remaining > bestRemaining) {
+      best = addr;
+      bestRemaining = remaining;
+    }
+  }
+
+  return best;
+}
+
+// Get email template for a step, with variable substitution (plain text)
 export async function getTemplate(step: number, contact: Record<string, unknown>): Promise<{ subject: string; body: string }> {
   const templates = await sql`
     SELECT subject, body FROM outreach_templates WHERE step = ${step} LIMIT 1
@@ -83,7 +123,6 @@ export async function getTemplate(step: number, contact: Record<string, unknown>
     "{{lastName}}": (contact.last_name as string) || "",
     "{{company}}": (contact.company as string) || "your agency",
     "{{state}}": (contact.state as string) || "",
-    "{{unsubscribeUrl}}": `https://thewolfpack.ai/api/outreach/unsubscribe?email=${encodeURIComponent(contact.email as string)}`,
   };
 
   for (const [key, val] of Object.entries(vars)) {
@@ -94,77 +133,48 @@ export async function getTemplate(step: number, contact: Record<string, unknown>
   return { subject, body };
 }
 
+// 4-touch plain text sequence — no links, no HTML, short and conversational
 function getDefaultTemplate(step: number, contact: Record<string, unknown>): { subject: string; body: string } {
   const firstName = (contact.first_name as string) || "there";
-  const unsubUrl = `https://thewolfpack.ai/api/outreach/unsubscribe?email=${encodeURIComponent(contact.email as string)}`;
-
-  const signature = `
-    <table cellpadding="0" cellspacing="0" style="margin-top: 28px; border-top: 1px solid #eee; padding-top: 16px;">
-      <tr>
-        <td style="padding-right: 14px; vertical-align: top;">
-          <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #F97316, #E86A2A); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 18px; font-family: Arial, sans-serif; text-align: center; line-height: 48px;">M</div>
-        </td>
-        <td style="vertical-align: top;">
-          <div style="font-weight: 700; color: #222; font-size: 14px; font-family: Arial, sans-serif;">Michael White</div>
-          <div style="color: #888; font-size: 12px; font-family: Arial, sans-serif;">Founder, Wolf Pack AI</div>
-          <div style="margin-top: 4px;">
-            <a href="https://thewolfpack.ai" style="color: #E86A2A; font-size: 12px; font-family: Arial, sans-serif; text-decoration: none;">thewolfpack.ai</a>
-          </div>
-        </td>
-      </tr>
-    </table>`;
-
-  const footer = `
-    <p style="color: #bbb; font-size: 10px; margin-top: 32px; line-height: 1.5; font-family: Arial, sans-serif;">
-      Wolf Pack AI, 1950 S Rochester Rd #1217, Rochester Hills MI 48307<br>
-      <a href="${unsubUrl}" style="color: #bbb; text-decoration: underline;">Unsubscribe</a>
-    </p>`;
-
-  const wrap = (content: string) => `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.7; font-size: 14px;">
-      ${content}
-      ${signature}
-      ${footer}
-    </div>`;
 
   const templates: Record<number, { subject: string; body: string }> = {
+    // Email 1 (Day 1) — Main hook
     1: {
-      subject: `can I show you something weird ${firstName}?`,
-      body: wrap(`
-        <p>Hey ${firstName},</p>
-        <p>I want to show you something weird.</p>
-        <p>Go to this link and enter your phone number:</p>
-        <p><a href="https://thewolfpack.ai/try" style="color: #E86A2A; font-weight: bold; font-size: 15px;">thewolfpack.ai/try</a></p>
-        <p>An AI is going to text you pretending to be an insurance agent. Play along for 60 seconds.</p>
-        <p>I promise it's worth it.</p>
-      `),
+      subject: `quick question ${firstName}`,
+      body: `Hey ${firstName},
+
+Quick question — are your follow-ups still going through SMS or have you moved away from A2P yet?
+
+We built something that handles lead follow-up instantly without touching A2P at all. Curious if that's even on your radar.
+
+${SIGNATURE}`,
     },
+    // Email 2 (Day 3-4) — Light bump, same thread
     2: {
-      subject: `did you try it ${firstName}?`,
-      body: wrap(`
-        <p>Hey ${firstName},</p>
-        <p>Following up. Did you get a chance to try it?</p>
-        <p>Here's what happens when you enter your number at <a href="https://thewolfpack.ai/try" style="color: #E86A2A; font-weight: bold;">thewolfpack.ai/try</a>:</p>
-        <p>An AI texts you back in 3 seconds pretending to be an insurance agent. It qualifies you, handles your responses, and feels completely real.</p>
-        <p>Then it reveals itself.</p>
-        <p>That reveal moment is what your leads would experience. Except instead of selling them on Wolf Pack AI, it's selling them on your business. 24/7. Without you lifting a finger.</p>
-        <p>Insurance agents, mortgage brokers, and real estate agents are using it right now to never miss a lead again.</p>
-        <p><a href="https://thewolfpack.ai/try" style="color: #E86A2A; font-weight: bold;">30 seconds to see it</a></p>
-      `),
+      subject: `quick question ${firstName}`,
+      body: `Hey ${firstName},
+
+Just wanted to bump this — curious how you're handling follow-ups right now.
+
+${SIGNATURE}`,
     },
+    // Email 3 (Day 7-9) — New angle, same thread
     3: {
-      subject: `closing your file ${firstName}`,
-      body: wrap(`
-        <p>Hey ${firstName},</p>
-        <p>Last one from me.</p>
-        <p>I'll be straight with you. I built an AI that texts your leads in 3 seconds, qualifies them like a real agent would, and books appointments on your calendar while you sleep.</p>
-        <p>The best way to understand it isn't to read about it.</p>
-        <p>It's to experience it yourself.</p>
-        <p>Enter your number, play along for 60 seconds, and see exactly what your leads would feel the moment they reach out to you.</p>
-        <p><a href="https://thewolfpack.ai/try" style="color: #E86A2A; font-weight: bold; font-size: 15px;">thewolfpack.ai/try</a></p>
-        <p>No signup. No credit card. Just your phone number.</p>
-        <p>Either way, good luck out there ${firstName}.</p>
-      `),
+      subject: `quick question ${firstName}`,
+      body: `Hey ${firstName},
+
+Most agents we've talked to are losing deals just from slow follow-up — have you found a way around that?
+
+${SIGNATURE}`,
+    },
+    // Email 4 (Day 12-15) — Pattern interrupt / close loop, same thread
+    4: {
+      subject: `quick question ${firstName}`,
+      body: `Hey ${firstName},
+
+Not sure if this is relevant right now — should I close this out or is follow-up something you're still trying to improve?
+
+${SIGNATURE}`,
     },
   };
 
