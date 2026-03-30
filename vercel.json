@@ -79,15 +79,15 @@
     },
     {
       "path": "/api/outreach/warmup?type=bounce&batch=0",
-      "schedule": "5 20 * * *"
+      "schedule": "0 13 * * *"
     },
     {
       "path": "/api/outreach/warmup?type=bounce&batch=1",
-      "schedule": "25 20 * * *"
+      "schedule": "0 17 * * *"
     },
     {
       "path": "/api/outreach/warmup?type=bounce&batch=2",
-      "schedule": "45 20 * * *"
+      "schedule": "0 21 * * *"
     },
     {
       "path": "/api/outreach/upgrade",
