@@ -1,17 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   runWarmupCycle,
+  runWarmupSend,
+  runWarmupReply,
   getWarmupStatus,
   addWarmupAddress,
 } from "@/lib/outreach/warmup";
 
-// POST /api/outreach/warmup — run warmup cycle (cron or admin)
+// POST /api/outreach/warmup — run warmup (cron or admin)
+// Query params: ?type=send&batch=0 or ?type=reply&batch=0
+// No params = full cycle (dashboard manual trigger)
 export async function POST(req: NextRequest) {
   try {
+    const url = new URL(req.url);
+    const type = url.searchParams.get("type");
+    const batch = parseInt(url.searchParams.get("batch") || "0");
 
+    if (type === "send") {
+      const result = await runWarmupSend(batch, 3);
+      return NextResponse.json(result);
+    }
+
+    if (type === "reply") {
+      const result = await runWarmupReply(batch);
+      return NextResponse.json(result);
+    }
+
+    // Full cycle (manual trigger from dashboard)
     const result = await runWarmupCycle();
-
-    console.log(`[warmup] Cycle complete: ${result.sent} sent, ${result.replied} auto-replies, ${result.errors} errors, ${result.completed.length} newly completed warmup`);
+    console.log(`[warmup] Cycle complete: ${result.sent} sent, ${result.errors} errors, ${result.completed.length} newly completed warmup`);
 
     return NextResponse.json(result);
   } catch (err) {

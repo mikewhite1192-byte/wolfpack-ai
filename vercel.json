@@ -38,16 +38,44 @@
       "schedule": "10 19 * * *"
     },
     {
-      "path": "/api/outreach/warmup",
-      "schedule": "30 12 * * *"
+      "path": "/api/outreach/warmup?type=send&batch=0",
+      "schedule": "20 12 * * *"
     },
     {
-      "path": "/api/outreach/warmup",
-      "schedule": "0 15 * * *"
+      "path": "/api/outreach/warmup?type=send&batch=1",
+      "schedule": "40 13 * * *"
     },
     {
-      "path": "/api/outreach/warmup",
-      "schedule": "45 17 * * *"
+      "path": "/api/outreach/warmup?type=send&batch=2",
+      "schedule": "10 15 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=reply&batch=0",
+      "schedule": "30 16 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=reply&batch=1",
+      "schedule": "50 17 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=reply&batch=2",
+      "schedule": "15 19 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=reply&batch=3",
+      "schedule": "35 12 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=reply&batch=4",
+      "schedule": "55 14 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=reply&batch=5",
+      "schedule": "25 16 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup?type=reply&batch=6",
+      "schedule": "45 18 * * *"
     },
     {
       "path": "/api/outreach/upgrade",

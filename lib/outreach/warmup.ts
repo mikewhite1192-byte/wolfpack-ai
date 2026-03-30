@@ -380,10 +380,12 @@ export async function sendWarmupEmail(
   }
 }
 
-// Run warmup cycle: each address sends ONE email to a random other address
-// Called multiple times throughout the day by cron to scatter sends naturally
-export async function runWarmupCycle(): Promise<{ sent: number; errors: number; completed: string[]; replied: number }> {
-  const addresses = await getWarmupAddresses();
+// Run warmup SEND cycle: each address in the batch sends ONE email
+// Fast — only uses SMTP, no IMAP. Should complete in under 30 seconds.
+export async function runWarmupSend(batch: number = 0, batchSize: number = 3): Promise<{ sent: number; errors: number; completed: string[] }> {
+  const allAddresses = await getWarmupAddresses();
+  const start = batch * batchSize;
+  const addresses = allAddresses.slice(start, start + batchSize);
   let sent = 0;
   let errors = 0;
   const newlyCompleted: string[] = [];
@@ -401,7 +403,7 @@ export async function runWarmupCycle(): Promise<{ sent: number; errors: number; 
     if (todayCount >= WARMUP_EMAILS_PER_DAY) continue;
 
     // Send ONE email to a random other address per cycle
-    const otherAddresses = addresses.filter(a => a.email !== addr.email);
+    const otherAddresses = allAddresses.filter(a => a.email !== addr.email);
     const target = otherAddresses[Math.floor(Math.random() * otherAddresses.length)];
     if (!target) continue;
 
@@ -418,12 +420,133 @@ export async function runWarmupCycle(): Promise<{ sent: number; errors: number; 
     }
   }
 
-  // Auto-reply to warmup emails we've received (also just 1 per address per cycle)
-  const replyResult = await autoReplyWarmupEmails();
+  console.log(`[warmup] Send batch ${batch}: ${sent} sent, ${errors} errors (addresses ${start}-${start + addresses.length - 1})`);
+  return { sent, errors, completed: newlyCompleted };
+}
 
-  console.log(`[warmup] Cycle: ${sent} new, ${replyResult.replied} auto-replies, ${errors + replyResult.errors} errors`);
+// Run warmup REPLY cycle: check ONE address for incoming warmup emails and auto-reply
+// Slower — uses IMAP. Each call handles one address only.
+export async function runWarmupReply(batch: number = 0): Promise<{ replied: number; errors: number }> {
+  const addresses = await getWarmupAddresses();
+  if (batch >= addresses.length) return { replied: 0, errors: 0 };
 
-  return { sent, errors, completed: newlyCompleted, replied: replyResult.replied };
+  const addr = addresses[batch];
+  let replied = 0;
+  let errors = 0;
+
+  try {
+    const ourEmails = addresses.map(a => a.email.toLowerCase());
+    const { ImapFlow } = await import("imapflow");
+    const imapHost = addr.imap_host || addr.smtp_host.replace("smtp.", "imap.");
+    const imapPort = addr.imap_port || 993;
+
+    const client = new ImapFlow({
+      host: imapHost,
+      port: imapPort,
+      secure: true,
+      auth: { user: addr.smtp_user, pass: addr.smtp_pass },
+      logger: false,
+    });
+
+    await client.connect();
+    const lock = await client.getMailboxLock("INBOX");
+
+    try {
+      const since = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      const messages = client.fetch({ since }, { envelope: true, source: true, uid: true });
+
+      for await (const msg of messages) {
+        const envelope = msg.envelope;
+        if (!envelope) continue;
+
+        const fromAddr = envelope.from?.[0]?.address?.toLowerCase() || "";
+        const fromName = envelope.from?.[0]?.name || fromAddr.split("@")[0];
+        const messageId = envelope.messageId || null;
+        const subject = envelope.subject || "";
+
+        if (!ourEmails.includes(fromAddr) || fromAddr === addr.email.toLowerCase()) continue;
+
+        // Mark as read and archive
+        try {
+          await client.messageFlagsAdd(msg.uid, ["\\Seen"], { uid: true });
+          await client.messageMove(msg.uid, "[Gmail]/All Mail", { uid: true });
+        } catch { /* ok */ }
+
+        // Check if already replied
+        if (messageId) {
+          const alreadyReplied = await sql`
+            SELECT id FROM outreach_emails
+            WHERE email_type = 'warmup_reply' AND ses_message_id = ${messageId} AND from_email = ${addr.email}
+            LIMIT 1
+          `;
+          if (alreadyReplied.length > 0) continue;
+        }
+
+        // Parse body
+        let originalBody = "";
+        if (msg.source) {
+          const { simpleParser } = await import("mailparser");
+          const parsed = await simpleParser(msg.source);
+          originalBody = parsed.text || "";
+        }
+        if (!originalBody.trim()) continue;
+
+        // 50% chance to reply
+        if (Math.random() > 0.5) continue;
+
+        const displayName = addr.display_name || addr.email.split("@")[0];
+        const reply = await generateWarmupEmail(displayName, fromName, true, originalBody);
+
+        const result = await sendWarmupEmail(
+          addr,
+          fromAddr,
+          subject.startsWith("Re:") ? subject : `Re: ${subject}`,
+          reply.body,
+          messageId || undefined,
+        );
+
+        if (result.success) {
+          if (messageId) {
+            await sql`
+              INSERT INTO outreach_emails (from_email, contact_id, step, subject, body, status, email_type, ses_message_id)
+              VALUES (${addr.email}, ${null}, ${0}, ${subject}, ${reply.body}, 'sent', 'warmup_reply', ${messageId})
+            `;
+          }
+          replied++;
+        } else {
+          errors++;
+        }
+      }
+    } finally {
+      lock.release();
+      await client.logout();
+    }
+  } catch (err) {
+    console.error(`[warmup] Reply error for ${addr.email}:`, err);
+    errors++;
+  }
+
+  if (replied > 0) console.log(`[warmup] Auto-replied ${replied} from ${addr.email}`);
+  return { replied, errors };
+}
+
+// Legacy wrapper for manual triggers from dashboard
+export async function runWarmupCycle(): Promise<{ sent: number; errors: number; completed: string[]; replied: number }> {
+  // Just do sends, skip replies (they timeout on Vercel)
+  const allAddresses = await getWarmupAddresses();
+  const batchCount = Math.ceil(allAddresses.length / 3);
+  let totalSent = 0;
+  let totalErrors = 0;
+  const allCompleted: string[] = [];
+
+  for (let i = 0; i < batchCount; i++) {
+    const result = await runWarmupSend(i, 3);
+    totalSent += result.sent;
+    totalErrors += result.errors;
+    allCompleted.push(...result.completed);
+  }
+
+  return { sent: totalSent, errors: totalErrors, completed: allCompleted, replied: 0 };
 }
 
 // Get warmup status for all addresses
