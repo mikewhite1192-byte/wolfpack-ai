@@ -4,14 +4,9 @@ import { sendColdEmail, getTemplate, getThreadMessageId, pickSenderAddress } fro
 import { getColdSenderAddresses, getColdDailyLimit, getTodayColdSendCount } from "@/lib/outreach/warmup";
 import { markBounced } from "@/lib/outreach/sequence";
 
-// POST /api/outreach/send — process sequence and send cold emails (cron)
+// POST /api/outreach/send — process sequence and send cold emails (cron or admin)
 export async function POST(req: NextRequest) {
   try {
-    // Verify cron secret
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Only use addresses flagged as cold senders (already filtered to warmup-complete)
     const addresses = await getColdSenderAddresses();

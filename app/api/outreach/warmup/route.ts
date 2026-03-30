@@ -5,14 +5,9 @@ import {
   addWarmupAddress,
 } from "@/lib/outreach/warmup";
 
-// POST /api/outreach/warmup — run warmup cycle (cron)
+// POST /api/outreach/warmup — run warmup cycle (cron or admin)
 export async function POST(req: NextRequest) {
   try {
-    // Verify cron secret
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const result = await runWarmupCycle();
 

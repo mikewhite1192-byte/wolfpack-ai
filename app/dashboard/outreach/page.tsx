@@ -123,10 +123,7 @@ export default function OutreachPage() {
   async function runSend() {
     setSending(true);
     setSendResult(null);
-    const res = await fetch("/api/outreach/send", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || ""}` },
-    });
+    const res = await fetch("/api/outreach/send", { method: "POST" });
     const data = await res.json();
     if (data.perAddress) {
       const details = Object.entries(data.perAddress as Record<string, { sent: number; limit: number }>)
@@ -183,10 +180,7 @@ export default function OutreachPage() {
   }
 
   async function runWarmup() {
-    const res = await fetch("/api/outreach/warmup", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || ""}` },
-    });
+    const res = await fetch("/api/outreach/warmup", { method: "POST" });
     const data = await res.json();
     setSendResult(`Warmup: ${data.sent} sent, ${data.errors} errors${data.completed?.length ? `, ${data.completed.join(", ")} completed warmup!` : ""}`);
     refreshStats();
