@@ -64,7 +64,7 @@ export default function DemoPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0D1426", color: "#e8eaf0" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#e8eaf0" }}>
       <style>{`
         .demo-wrap { max-width: 600px; margin: 0 auto; padding: 40px 24px; }
         .demo-logo { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; text-align: center; margin-bottom: 40px; }
@@ -98,7 +98,7 @@ export default function DemoPage() {
         .demo-live-title { font-size: 14px; font-weight: 700; color: #e8eaf0; }
         .demo-live-sub { font-size: 12px; color: #b0b4c8; }
 
-        .demo-phone { background: #0D1426; margin: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; min-height: 400px; display: flex; flex-direction: column; }
+        .demo-phone { background: #0a0a0a; margin: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; min-height: 400px; display: flex; flex-direction: column; }
         .demo-phone-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); text-align: center; }
         .demo-phone-name { font-size: 14px; font-weight: 700; color: #e8eaf0; }
         .demo-phone-number { font-size: 11px; color: #b0b4c8; }
@@ -135,8 +135,8 @@ export default function DemoPage() {
         {step === "intro" && (
           <>
             <div className="demo-hero">
-              <h1>See Your <span>AI Sales Agent</span> In Action</h1>
-              <p>Enter your phone number and experience exactly what your leads will experience. Our AI will text you, qualify you, handle objections, and book an appointment. All in real time.</p>
+              <h1>See Your <span>AI Appointment Setter</span> In Action</h1>
+              <p>Enter your number. Maya will text you in 3 seconds and show you exactly how the AI appointment setter works. Experience it as your leads would.</p>
             </div>
 
             <div className="demo-steps">
@@ -146,11 +146,11 @@ export default function DemoPage() {
               </div>
               <div className="demo-step">
                 <div className="demo-step-num">2</div>
-                <div className="demo-step-text">Get a text from our AI agent</div>
+                <div className="demo-step-text">Get a text from Maya in 3 seconds</div>
               </div>
               <div className="demo-step">
                 <div className="demo-step-num">3</div>
-                <div className="demo-step-text">Experience the full sales flow</div>
+                <div className="demo-step-text">See why it works</div>
               </div>
             </div>
 
@@ -202,7 +202,7 @@ export default function DemoPage() {
 
         {/* Live View — Full CRM experience */}
         {step === "live" && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#0D1426", zIndex: 1000, display: "flex" }}>
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#0a0a0a", zIndex: 1000, display: "flex" }}>
             {/* Sidebar */}
             <div style={{ width: 220, background: "#080f1e", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", flexShrink: 0 }}>
               <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
@@ -379,7 +379,7 @@ export default function DemoPage() {
               <div style={{ padding: "16px 18px", borderTop: "1px solid rgba(255,255,255,0.07)", textAlign: "center", background: "rgba(232,106,42,0.05)" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#e8eaf0", marginBottom: 6 }}>This is YOUR CRM</div>
                 <div style={{ fontSize: 12, color: "#b0b4c8", marginBottom: 12, lineHeight: 1.5 }}>Every lead gets this experience automatically</div>
-                <a href="/book/default" style={{ display: "inline-block", padding: "10px 28px", background: "#E86A2A", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Book a Call</a>
+                <a href="/book-demo" style={{ display: "inline-block", padding: "10px 28px", background: "#E86A2A", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Book a Call</a>
               </div>
             </div>
           </div>

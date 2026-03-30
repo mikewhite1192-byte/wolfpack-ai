@@ -31,18 +31,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "We already texted this number in the last 24 hours. Check your messages!" }, { status: 429 });
     }
 
-    // Send Message 1 — the opening (industry-specific)
-    const openers: Record<string, string> = {
-      insurance: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you currently looking for life, auto, or health insurance coverage?`,
-      real_estate: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you looking to buy, sell, or just exploring the market right now?`,
-      mortgage: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you looking to purchase a new home or refinance your current mortgage?`,
-      roofing: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, what's going on with your roof? Are you dealing with damage or just looking for an inspection?`,
-      fitness: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you looking to get started with a membership or checking out personal training?`,
-      med_spa: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you interested in a specific treatment or just exploring what we offer?`,
-      solar: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, have you looked into solar before or is this your first time exploring it?`,
-      other: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, what can I help you with today?`,
-    };
-    const msg1 = openers[industry || "insurance"] || openers.other;
+    // Send Message 1 — sell Wolf Pack AI directly
+    const msg1 = `Hey ${firstName}! This is Maya with Wolf Pack AI. I saw you were checking us out. Quick question, what kind of business are you in?`;
 
     let chatId: string | null = null;
     try {

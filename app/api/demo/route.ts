@@ -77,15 +77,9 @@ export async function POST(req: Request) {
       RETURNING *
     `;
 
-    // Route through Maya (Sonnet-powered) for better demo experience
-    const industry = businessType || "insurance";
-    const openers: Record<string, string> = {
-      insurance: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you currently looking for life, auto, or health insurance coverage?`,
-      real_estate: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, are you looking to buy, sell, or just exploring the market right now?`,
-      roofing: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, what's going on with your roof? Are you dealing with damage or just looking for an inspection?`,
-      default: `Hey ${firstName}! This is Maya with Wolf Pack. Thanks for reaching out. Quick question, what can I help you with today?`,
-    };
-    const msg1 = openers[industry] || openers.default;
+    // Route through Maya (Sonnet-powered) — sell Wolf Pack AI directly
+    const industry = businessType || "general";
+    const msg1 = `Hey ${firstName}! This is Maya with Wolf Pack AI. I saw you were checking us out. Quick question, what kind of business are you in?`;
 
     try {
       const chatResult = await createChat(FROM_NUMBER, formattedPhone, msg1);

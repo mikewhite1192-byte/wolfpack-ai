@@ -125,8 +125,16 @@ export default function Home() {
           .wp-outcomes-grid { grid-template-columns: 1fr !important; }
           .wp-price-grid { flex-direction: column !important; }
           .wp-nav-links { display: none !important; }
+          .wp-mobile-menu { display: flex !important; }
           .wp-stats { flex-direction: column !important; gap: 20px !important; }
           .wp-problem-stats { flex-direction: column !important; gap: 32px !important; }
+          .wp-hero h1 { font-size: 52px !important; }
+          .wp-hero p { font-size: 15px !important; }
+          .wp-section-title { font-size: 36px !important; }
+        }
+        @media (max-width: 480px) {
+          .wp-hero h1 { font-size: 42px !important; }
+          .wp-problem-num { font-size: 44px !important; }
         }
       `}</style>
 
@@ -140,15 +148,20 @@ export default function Home() {
           <a href="#pricing">Pricing</a>
           <a href="#faq">FAQ</a>
           <Link href="/demo" style={{ color: "#E86A2A" }}>Live Demo</Link>
-          <Link href="/sign-in" className="wp-cta" style={{ padding: "8px 20px", fontSize: 12 }}>Get Started</Link>
+          <Link href="/sign-in" style={{ color: "rgba(232,230,227,0.4)" }}>Sign In</Link>
+          <Link href="/sign-up" className="wp-cta" style={{ padding: "8px 20px", fontSize: 12 }}>Get Started</Link>
+        </div>
+        <div className="wp-mobile-menu" style={{ display: "none", gap: 12, alignItems: "center" }}>
+          <Link href="/sign-in" style={{ color: "rgba(232,230,227,0.5)", textDecoration: "none", fontSize: 13, fontWeight: 500 }}>Sign In</Link>
+          <Link href="/sign-up" className="wp-cta" style={{ padding: "8px 16px", fontSize: 12 }}>Get Started</Link>
         </div>
       </nav>
 
       {/* Hero */}
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "100px 40px 60px", textAlign: "center" }}>
         <div style={{ animation: "heroIn 0.6s ease 0.2s both" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(0,122,255,0.08)", border: "1px solid rgba(0,122,255,0.2)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#007AFF", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#007AFF", display: "inline-block" }} />
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.1)", border: "1px solid rgba(232,106,42,0.25)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E86A2A", display: "inline-block" }} />
             AI Appointment Setter
           </div>
         </div>
@@ -160,8 +173,8 @@ export default function Home() {
         <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both" }}>
           Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
         </p>
-        <p style={{ fontSize: 14, color: "#007AFF", maxWidth: 520, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.6 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.12)", border: "1px solid rgba(0,122,255,0.25)", borderRadius: 20, padding: "3px 12px", fontSize: 13, fontWeight: 700, color: "#007AFF", marginRight: 6 }}>🔵 iMessage</span>
+        <p style={{ fontSize: 14, color: "rgba(232,230,227,0.55)", maxWidth: 520, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.6 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.12)", border: "1px solid rgba(0,122,255,0.25)", borderRadius: 20, padding: "3px 12px", fontSize: 13, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle" }}>🔵 iMessage</span>
           texts. No A2P registration. No carrier filtering. Your leads actually hear from you first.
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
