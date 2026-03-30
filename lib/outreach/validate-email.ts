@@ -18,7 +18,8 @@ const DEAD_DOMAINS = new Set([
   "columbus.rr.com", "stx.rr.com", "san.rr.com",
   "bellsouth.net", "att.net", "sbcglobal.net", "worldnet.att.net",
   "prodigy.net", "juno.com", "netzero.net", "earthlink.net",
-  "mindspring.com", "compuserve.com",
+  "mindspring.com", "compuserve.com", "earthlink.net",
+  "axa-advisors.com", "wfafinet.com",
 ]);
 
 // Disposable email domains
