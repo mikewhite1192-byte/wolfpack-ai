@@ -54,7 +54,7 @@ export async function getDueContacts(senderEmail: string, limit: number = 100): 
       AND bounced = FALSE
       AND unsubscribed = FALSE
       AND sequence_step <= ${MAX_STEPS}
-      AND (assigned_sender = ${senderEmail} OR assigned_sender IS NULL)
+      AND assigned_sender = ${senderEmail}
     ORDER BY next_email_at ASC
     LIMIT ${limit}
   `;

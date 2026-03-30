@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { neon } from "@neondatabase/serverless";
 import { getDueContacts, advanceContact } from "@/lib/outreach/sequence";
 import { sendColdEmail, getTemplate, getThreadMessageId, pickSenderAddress } from "@/lib/outreach/send-email";
 import { getColdSenderAddresses, getColdDailyLimit, getTodayColdSendCount } from "@/lib/outreach/warmup";
 import { markBounced } from "@/lib/outreach/sequence";
+
+const sql = neon(process.env.DATABASE_URL!);
 
 // POST /api/outreach/send — process sequence and send cold emails (cron or admin)
 export async function POST(req: NextRequest) {
@@ -27,7 +30,23 @@ export async function POST(req: NextRequest) {
       // Send max 2 per address per cron call — scattered across multiple calls throughout the day
       const batchSize = Math.min(remaining, 2);
 
-      // Get contacts due for this sender
+      // Assign unassigned contacts to this sender (round-robin across senders)
+      await sql`
+        UPDATE outreach_contacts SET assigned_sender = ${addr.email}
+        WHERE id IN (
+          SELECT id FROM outreach_contacts
+          WHERE assigned_sender IS NULL AND sequence_status = 'active'
+          ORDER BY created_at ASC
+          LIMIT ${batchSize}
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM outreach_contacts oc2
+          WHERE oc2.email = outreach_contacts.email
+            AND oc2.assigned_sender IS NOT NULL
+        )
+      `;
+
+      // Get contacts due for this sender ONLY (no more unassigned pickup)
       const dueContacts = await getDueContacts(addr.email, batchSize);
 
       for (const contact of dueContacts) {
