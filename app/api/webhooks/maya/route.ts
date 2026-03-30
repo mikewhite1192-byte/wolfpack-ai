@@ -150,12 +150,14 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     } else if (step === 4) {
       agencyStepInstruction = "VALUE DROP 1: Tell them you run exclusive Meta and Google ads that bring leads only to THEM. No shared leads, no vendors selling to 5 agents. Ask if that would change things for them.";
     } else if (step === 5) {
-      agencyStepInstruction = "VALUE DROP 2: Tell them every client also gets Wolf Pack AI included free. It's an AI that texts their leads in 3 seconds through blue iMessage texts, qualifies them, and books appointments on their calendar automatically. Ask if they've ever had something respond to leads that fast.";
+      agencyStepInstruction = "VALUE DROP 2: Tell them you also create AI generated video ads for their campaigns. Most agents run boring static ads. You create scroll stopping video creative using AI that performs way better. Ask if they're running any video ads right now.";
     } else if (step === 6) {
-      agencyStepInstruction = "VALUE DROP 3: Tell them you guarantee you hit their lead numbers or they don't pay. No long term contracts. Ask if they want to hop on a quick 15 min call to see how it would work for their business.";
-    } else if (step >= 7 && timeMatch) {
+      agencyStepInstruction = "VALUE DROP 3: Tell them every client also gets Wolf Pack AI included free. It's an AI that texts their leads in 3 seconds through blue iMessage texts, qualifies them, and books appointments on their calendar automatically while they sleep. Ask if they've ever had something respond to leads that fast.";
+    } else if (step === 7) {
+      agencyStepInstruction = "VALUE DROP 4: Tell them you guarantee you hit their lead numbers or they don't pay. No long term contracts. Ask if they want to hop on a quick 15 min call to see how it would work for their business.";
+    } else if (step >= 8 && timeMatch) {
       agencyStepInstruction = "They suggested a time. Confirm it and ask for their email to send the calendar invite.";
-    } else if (step >= 7) {
+    } else if (step >= 8) {
       agencyStepInstruction = "They haven't committed yet. Try a softer approach. No pressure, just ask what day works best this week for a quick call.";
     }
 
@@ -189,7 +191,7 @@ RULES:
 - If they object on price, reframe: "Most of our clients make back their investment in the first month from the leads alone"
 - If they say not interested, be graceful
 - NEVER guess or make up an answer. If you don't know, push for a call.
-- Do NOT push for a demo call until you've delivered at least 2 value drops (steps 4 and 5)
+- Do NOT push for a demo call until you've delivered at least 3 value drops (exclusive leads, AI video, Wolf Pack AI)
 
 Write ONLY the text message. Nothing else.`;
 
