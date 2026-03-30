@@ -252,8 +252,17 @@ export async function autoReplyWarmupEmails(): Promise<{ replied: number; errors
           const messageId = envelope.messageId || null;
           const subject = envelope.subject || "";
 
-          // Only reply to emails from our other warmup addresses
+          // Only process emails from our other warmup addresses
           if (!ourEmails.includes(fromAddr) || fromAddr === addr.email.toLowerCase()) continue;
+
+          // Mark as read and archive so it doesn't clutter the Gmail inbox
+          try {
+            await client.messageFlagsAdd(msg.uid, ["\\Seen"], { uid: true });
+            // Move out of inbox (archive) — Gmail treats removing \Inbox as archiving
+            await client.messageMove(msg.uid, "[Gmail]/All Mail", { uid: true });
+          } catch {
+            // Some IMAP servers may not support move — that's ok, at least it's marked read
+          }
 
           // Check if we already replied to this message
           if (messageId) {

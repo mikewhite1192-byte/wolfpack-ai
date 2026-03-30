@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS campaign_inbox (
   in_reply_to TEXT, -- for threading
   contact_id UUID, -- matched CRM contact
   outreach_contact_id UUID, -- matched outreach contact
+  email_category TEXT DEFAULT 'other', -- 'cold_reply', 'warmup', 'other'
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

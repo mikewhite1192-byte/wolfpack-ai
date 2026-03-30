@@ -16,6 +16,7 @@ export interface CampaignReply {
   outreach_contact_id: string | null;
   message_id: string | null;
   in_reply_to: string | null;
+  email_category: "cold_reply" | "warmup" | "other"; // categorize for filtering
 }
 
 // Fetch new emails from all warmup addresses via IMAP
@@ -129,16 +130,21 @@ async function pollInbox(
         SELECT id FROM contacts WHERE email = ${fromAddr.toLowerCase()} LIMIT 1
       `;
 
+      // Categorize: warmup (from our own addresses) vs cold reply vs other
+      // Note: warmup emails from our addresses are already filtered out above,
+      // but this catches any edge cases and tags outreach replies correctly
+      const category = outreachContact.length > 0 ? "cold_reply" : "other";
+
       // Store
       await sql`
         INSERT INTO campaign_inbox (
           from_email, from_name, to_address, subject, body,
           received_at, message_id, in_reply_to,
-          outreach_contact_id, contact_id
+          outreach_contact_id, contact_id, email_category
         ) VALUES (
           ${fromAddr}, ${fromName}, ${address}, ${subject}, ${body},
           ${new Date(date).toISOString()}, ${messageId}, ${inReplyTo},
-          ${outreachContact[0]?.id || null}, ${crmContact[0]?.id || null}
+          ${outreachContact[0]?.id || null}, ${crmContact[0]?.id || null}, ${category}
         )
       `;
 
