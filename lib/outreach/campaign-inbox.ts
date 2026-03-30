@@ -19,10 +19,10 @@ export interface CampaignReply {
   email_category: "cold_reply" | "warmup" | "other"; // categorize for filtering
 }
 
-// Fetch new emails from all warmup addresses via IMAP
+// Fetch new emails from cold sender addresses only via IMAP
 export async function pollAllInboxes(): Promise<{ fetched: number; errors: number }> {
   const addresses = await sql`
-    SELECT * FROM warmup_addresses WHERE is_active = TRUE
+    SELECT * FROM warmup_addresses WHERE is_active = TRUE AND cold_sender = TRUE
   `;
 
   let fetched = 0;
