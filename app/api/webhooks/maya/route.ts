@@ -160,7 +160,7 @@ ${step >= 4 && !timeMatch ? "Time to close. Suggest getting on a quick 15 minute
 ${step >= 4 && timeMatch ? "They suggested a time. Confirm it and ask for their email to send the calendar invite. Say something like 'Perfect, what's the best email to send the invite to?'" : ""}
 
 RULES:
-- Max 2 sentences. This is texting.
+- MAX 2 SHORT SENTENCES. This is texting, not email. Keep it tight. If your message is more than 2 sentences, cut it down.
 - Sound like a real 28 year old sales rep. Casual but professional.
 - NEPQ: ask questions that make them feel, never pitch features
 - Acknowledge what they said with genuine empathy before your question
@@ -175,7 +175,7 @@ Write ONLY the text message. Nothing else.`;
 
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-5",
-      max_tokens: 80,
+      max_tokens: 120,
       temperature: 0.8,
       system: systemPrompt,
       messages: conversation.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
@@ -278,7 +278,7 @@ CONVERSATION STATE: Message ${step}
 ${stepInstruction}
 
 RULES:
-- Max 2 sentences. This is texting.
+- MAX 2 SHORT SENTENCES. This is texting, not email. Keep it tight. If your message is more than 2 sentences, cut it down.
 - Sound like a real 25 year old sales rep. Casual but sharp.
 - NEPQ style: ask questions that make them feel the pain of their current situation
 - Acknowledge what they said before asking your next question
@@ -302,7 +302,7 @@ Write ONLY the text message. Nothing else.`;
 
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-5",
-      max_tokens: 80,
+      max_tokens: 120,
       temperature: 0.8,
       system: systemPrompt,
       messages: conversation.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
