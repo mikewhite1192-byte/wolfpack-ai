@@ -24,8 +24,11 @@ export async function POST(req: NextRequest) {
 
       if (remaining === 0) continue;
 
+      // Send max 2 per address per cron call — scattered across multiple calls throughout the day
+      const batchSize = Math.min(remaining, 2);
+
       // Get contacts due for this sender
-      const dueContacts = await getDueContacts(addr.email, remaining);
+      const dueContacts = await getDueContacts(addr.email, batchSize);
 
       for (const contact of dueContacts) {
         const step = contact.sequence_step as number;

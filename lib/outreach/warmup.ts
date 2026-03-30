@@ -380,7 +380,8 @@ export async function sendWarmupEmail(
   }
 }
 
-// Run warmup cycle: each address sends to other addresses + auto-replies to received warmup emails
+// Run warmup cycle: each address sends ONE email to a random other address
+// Called multiple times throughout the day by cron to scatter sends naturally
 export async function runWarmupCycle(): Promise<{ sent: number; errors: number; completed: string[]; replied: number }> {
   const addresses = await getWarmupAddresses();
   let sent = 0;
@@ -395,34 +396,29 @@ export async function runWarmupCycle(): Promise<{ sent: number; errors: number; 
       console.log(`[warmup] ${addr.email} completed 30-day warmup, ready for cold outreach`);
     }
 
-    // Even after warmup is complete, keep sending warmup emails to maintain reputation
+    // Check if we've hit the daily limit already
     const todayCount = await getTodayWarmupSendCount(addr.email);
     if (todayCount >= WARMUP_EMAILS_PER_DAY) continue;
 
-    const remaining = WARMUP_EMAILS_PER_DAY - todayCount;
+    // Send ONE email to a random other address per cycle
     const otherAddresses = addresses.filter(a => a.email !== addr.email);
+    const target = otherAddresses[Math.floor(Math.random() * otherAddresses.length)];
+    if (!target) continue;
 
-    // Shuffle targets so it's not always the same order
-    const shuffled = otherAddresses.sort(() => Math.random() - 0.5);
+    const fromName = addr.display_name || addr.email.split("@")[0];
+    const toName = target.display_name || target.email.split("@")[0];
 
-    for (let i = 0; i < Math.min(remaining, shuffled.length); i++) {
-      const target = shuffled[i];
-      const fromName = addr.display_name || addr.email.split("@")[0];
-      const toName = target.display_name || target.email.split("@")[0];
+    const { subject, body } = await generateWarmupEmail(fromName, toName, false);
+    const result = await sendWarmupEmail(addr, target.email, subject, body);
 
-      // Use Haiku to generate unique, natural emails
-      const { subject, body } = await generateWarmupEmail(fromName, toName, false);
-      const result = await sendWarmupEmail(addr, target.email, subject, body);
-
-      if (result.success) {
-        sent++;
-      } else {
-        errors++;
-      }
+    if (result.success) {
+      sent++;
+    } else {
+      errors++;
     }
   }
 
-  // Auto-reply to warmup emails we've received from other addresses
+  // Auto-reply to warmup emails we've received (also just 1 per address per cycle)
   const replyResult = await autoReplyWarmupEmails();
 
   console.log(`[warmup] Cycle: ${sent} new, ${replyResult.replied} auto-replies, ${errors + replyResult.errors} errors`);

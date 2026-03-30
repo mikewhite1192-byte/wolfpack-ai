@@ -19,7 +19,39 @@
     },
     {
       "path": "/api/outreach/send",
-      "schedule": "0 13 * * *"
+      "schedule": "15 13 * * 1-5"
+    },
+    {
+      "path": "/api/outreach/send",
+      "schedule": "45 14 * * 1-5"
+    },
+    {
+      "path": "/api/outreach/send",
+      "schedule": "20 16 * * 1-5"
+    },
+    {
+      "path": "/api/outreach/send",
+      "schedule": "50 17 * * 1-5"
+    },
+    {
+      "path": "/api/outreach/send",
+      "schedule": "10 19 * * 1-5"
+    },
+    {
+      "path": "/api/outreach/warmup",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/outreach/warmup",
+      "schedule": "45 17 * * *"
+    },
+    {
+      "path": "/api/outreach/upgrade",
+      "schedule": "0 14 * * *"
     },
     {
       "path": "/api/webhooks/maya",
