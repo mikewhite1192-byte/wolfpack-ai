@@ -223,7 +223,7 @@ export async function handleMayaReply(chatId: string, from: string, text: string
     } else if (step === 7) {
       agencyStepInstruction = "VALUE DROP 4: Tell them you guarantee you hit their lead numbers or they don't pay. No long term contracts. Ask if they want to hop on a quick 15 min call to see how it would work for their business.";
     } else if (step >= 8 && timeMatch) {
-      agencyStepInstruction = "They suggested a time. Confirm it and ask for their email to send the calendar invite.";
+      agencyStepInstruction = "They suggested a time. Confirm it, mention it's Eastern time and ask if that works for their time zone, and ask for their email to send the calendar invite.";
     } else if (step >= 8) {
       agencyStepInstruction = "They haven't committed yet. Try a softer approach. No pressure, just ask what day works best this week for a quick call.";
     }
@@ -406,6 +406,8 @@ RULES:
 - Primary goal: BOOK A DEMO CALL. Get their email so you can send a calendar invite. That's the win.
 - Don't push them to sign up on the website. Push them to get on a quick 15 min demo call with The Wolf Pack team.
 - Be genuine, not pushy
+- When booking a time, always confirm it's Eastern time: "I'll book you for [day] at [time] Eastern, does that work for your time zone?"
+- You CANNOT reschedule or cancel appointments. If someone asks to reschedule, say "I can't modify existing appointments but I'll have someone from the team reach out to get that switched for you."
 - CRITICAL: Short answers like "no", "nah", "not really", "nope" are just ANSWERS to your question, NOT rejections of the conversation. Keep going. Ask a follow-up. "No" to "are you happy with your appointments?" means they're NOT happy, which is an opportunity. Only bail if they explicitly say "stop", "not interested", "leave me alone", or "unsubscribe".
 - NEVER end the conversation early. Keep selling unless they explicitly tell you to stop.
 - If they say they're busy or not available, DON'T keep pushing. Say something like "No worries at all, when's a better time this week? I'll follow up then." Be cool about it.
