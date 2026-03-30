@@ -36,7 +36,8 @@ export async function handleMayaReply(chatId: string, from: string, text: string
   conversation.push({ role: "user", content: text });
 
   // Check for negative/stop
-  const isNegative = /not interested|no thanks|stop|unsubscribe|remove me|leave me alone|fuck off/i.test(text);
+  // Only bail if they're clearly telling US to stop — not if they mention the word "stop" in conversation
+  const isNegative = /^(stop|unsubscribe|remove me|leave me alone|fuck off|not interested|no thanks)$/i.test(text.trim()) || /^stop$/i.test(text.trim());
   if (isNegative) {
     const reply = `No worries at all! Appreciate you giving it a try. If you ever want to see how it could work for your business, we're at thewolfpack.ai. Have a great day ${firstName}!`;
     await sendMessage(demo.phone as string, reply);
