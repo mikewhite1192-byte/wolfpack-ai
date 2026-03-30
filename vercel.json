@@ -19,23 +19,23 @@
     },
     {
       "path": "/api/outreach/send",
-      "schedule": "15 13 * * 1-5"
+      "schedule": "15 13 * * *"
     },
     {
       "path": "/api/outreach/send",
-      "schedule": "45 14 * * 1-5"
+      "schedule": "45 14 * * *"
     },
     {
       "path": "/api/outreach/send",
-      "schedule": "20 16 * * 1-5"
+      "schedule": "20 16 * * *"
     },
     {
       "path": "/api/outreach/send",
-      "schedule": "50 17 * * 1-5"
+      "schedule": "50 17 * * *"
     },
     {
       "path": "/api/outreach/send",
-      "schedule": "10 19 * * 1-5"
+      "schedule": "10 19 * * *"
     },
     {
       "path": "/api/outreach/warmup",
