@@ -192,6 +192,19 @@ export async function handleMayaReply(chatId: string, from: string, text: string
       await sendMessage(demo.phone as string, reply);
       conversation.push({ role: "assistant", content: reply });
       await sql`UPDATE maya_demos SET step = 99, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
+
+      // Notify Mike
+      const notifyPhone = process.env.OWNER_PHONE;
+      if (notifyPhone) {
+        try {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(14, 0, 0, 0);
+          const timeStr = tomorrow.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) + " at 2:00 PM";
+          await sendMessage(notifyPhone, `New demo booked by Maya!\n\nName: ${firstName}\nEmail: ${email}\nPhone: ${demo.phone}\nIndustry: ${actualIndustry}\nTime: ${timeStr}\n\nThey came through The Wolf Pack Co.`);
+        } catch { /* silent */ }
+      }
+
       return true;
     }
 
@@ -327,6 +340,18 @@ Write ONLY the text message. Nothing else.`;
           await syncMayaToCRM(demo.phone as string, firstName, email, industry, conversation);
         } catch (syncErr) {
           console.error("[maya] CRM sync failed:", syncErr);
+        }
+
+        // Notify Mike via text that a demo was booked
+        const notifyPhone = process.env.OWNER_PHONE;
+        if (notifyPhone) {
+          try {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(14, 0, 0, 0);
+            const timeStr = tomorrow.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) + " at 2:00 PM";
+            await sendMessage(notifyPhone, `New demo booked by Maya!\n\nName: ${firstName}\nEmail: ${email}\nPhone: ${demo.phone}\nIndustry: ${industry}\nTime: ${timeStr}\n\nThey came through the Wolf Pack AI demo.`);
+          } catch { /* silent */ }
         }
 
         return true;
