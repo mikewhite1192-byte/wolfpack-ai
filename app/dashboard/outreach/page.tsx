@@ -89,6 +89,7 @@ export default function OutreachPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingTemplates, setEditingTemplates] = useState<string | null>(null);
   const [templateDrafts, setTemplateDrafts] = useState<Record<number, { subject: string; body: string }>>({});
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const DEFAULT_TEMPLATES: Record<number, { subject: string; body: string }> = {
     1: {
@@ -1033,42 +1034,60 @@ export default function OutreachPage() {
 
                       {/* Senders */}
                       <div style={{ marginTop: 14, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1, marginBottom: 8 }}>SENDERS</div>
-                        {senders.map(s => (
-                          <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 6, marginBottom: 4 }}>
-                            <span style={{ fontSize: 13, color: T.text }}>{s.email}</span>
-                            <button onClick={() => removeSender(c.id as string, s.id)} style={{ fontSize: 11, color: T.red, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Remove</button>
-                          </div>
-                        ))}
-                        {/* Dropdown to add a sender */}
-                        {(() => {
-                          const assignedEmails = senders.map(s => s.email);
-                          const available = warmupAddresses.filter((wa: Record<string, unknown>) =>
-                            wa.role === "cold_sender" && !assignedEmails.includes(wa.address as string)
-                          );
-                          if (available.length === 0 && senders.length === 0) {
-                            return <div style={{ fontSize: 12, color: T.muted }}>No cold sender addresses available. Add one in the Email Addresses tab first.</div>;
-                          }
-                          if (available.length === 0) return null;
-                          return (
-                            <select
-                              value=""
-                              onChange={e => { if (e.target.value) assignSender(c.id as string, e.target.value); }}
-                              style={{ ...inputStyle, marginTop: 6, cursor: "pointer" }}
-                            >
-                              <option value="">+ Add a sender...</option>
-                              {available.map((wa: Record<string, unknown>) => (
-                                <option key={wa.id as string} value={wa.id as string}>{wa.address as string}</option>
-                              ))}
-                            </select>
-                          );
-                        })()}
+                        <button
+                          onClick={() => setExpandedSections(s => ({ ...s, [`senders-${c.id}`]: !s[`senders-${c.id}`] }))}
+                          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        >
+                          <span style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1 }}>SENDERS ({senders.length})</span>
+                          <span style={{ fontSize: 12, color: T.muted }}>{expandedSections[`senders-${c.id}`] ? "▲" : "▼"}</span>
+                        </button>
+                        {!expandedSections[`senders-${c.id}`] && senders.length > 0 && (
+                          <div style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>{senders.map(s => s.email.split("@")[0]).join(", ")}</div>
+                        )}
+                        {expandedSections[`senders-${c.id}`] && (
+                          <>
+                            {senders.map(s => (
+                              <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 6, marginBottom: 4 }}>
+                                <span style={{ fontSize: 13, color: T.text }}>{s.email}</span>
+                                <button onClick={() => removeSender(c.id as string, s.id)} style={{ fontSize: 11, color: T.red, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Remove</button>
+                              </div>
+                            ))}
+                            {(() => {
+                              const assignedEmails = senders.map(s => s.email);
+                              const available = warmupAddresses.filter((wa: Record<string, unknown>) =>
+                                wa.role === "cold_sender" && !assignedEmails.includes(wa.address as string)
+                              );
+                              if (available.length === 0 && senders.length === 0) {
+                                return <div style={{ fontSize: 12, color: T.muted }}>No cold sender addresses available. Add one in the Email Addresses tab first.</div>;
+                              }
+                              if (available.length === 0) return null;
+                              return (
+                                <select
+                                  value=""
+                                  onChange={e => { if (e.target.value) assignSender(c.id as string, e.target.value); }}
+                                  style={{ ...inputStyle, marginTop: 6, cursor: "pointer" }}
+                                >
+                                  <option value="">+ Add a sender...</option>
+                                  {available.map((wa: Record<string, unknown>) => (
+                                    <option key={wa.id as string} value={wa.id as string}>{wa.address as string}</option>
+                                  ))}
+                                </select>
+                              );
+                            })()}
+                          </>
+                        )}
                       </div>
 
                       {/* Templates */}
                       <div style={{ marginTop: 14, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1 }}>TEMPLATES ({templates.length}/4)</div>
+                          <button
+                            onClick={() => setExpandedSections(s => ({ ...s, [`templates-${c.id}`]: !s[`templates-${c.id}`] }))}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 8 }}
+                          >
+                            <span style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1 }}>TEMPLATES (4)</span>
+                            <span style={{ fontSize: 12, color: T.muted }}>{expandedSections[`templates-${c.id}`] ? "▲" : "▼"}</span>
+                          </button>
                           <button
                             onClick={() => {
                               if (isEditing) {
@@ -1088,37 +1107,41 @@ export default function OutreachPage() {
                             {isEditing ? "Save Templates" : "Edit Templates"}
                           </button>
                         </div>
-                        {!isEditing && [1, 2, 3, 4].map(step => {
-                          const t = templates.find(t => t.step === step) || DEFAULT_TEMPLATES[step];
-                          const isDefault = !templates.find(t => t.step === step);
-                          return (
-                            <div key={step} style={{ marginBottom: 8, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
-                              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                <span style={{ fontSize: 11, color: T.orange, fontWeight: 700 }}>STEP {step}</span>
-                                {isDefault && <span style={{ fontSize: 9, color: T.muted, background: "rgba(255,255,255,0.05)", padding: "1px 6px", borderRadius: 4 }}>DEFAULT</span>}
+                        {(expandedSections[`templates-${c.id}`] || isEditing) && (
+                          <>
+                            {!isEditing && [1, 2, 3, 4].map(step => {
+                              const t = templates.find(t => t.step === step) || DEFAULT_TEMPLATES[step];
+                              const isDefault = !templates.find(t => t.step === step);
+                              return (
+                                <div key={step} style={{ marginBottom: 8, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
+                                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                    <span style={{ fontSize: 11, color: T.orange, fontWeight: 700 }}>STEP {step}</span>
+                                    {isDefault && <span style={{ fontSize: 9, color: T.muted, background: "rgba(255,255,255,0.05)", padding: "1px 6px", borderRadius: 4 }}>DEFAULT</span>}
+                                  </div>
+                                  <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>{t.subject}</div>
+                                  <div style={{ fontSize: 11, color: T.muted, marginTop: 2, whiteSpace: "pre-wrap", maxHeight: 60, overflow: "hidden" }}>{t.body}</div>
+                                </div>
+                              );
+                            })}
+                            {isEditing && [1, 2, 3, 4].map(step => (
+                              <div key={step} style={{ marginBottom: 12, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
+                                <div style={{ fontSize: 11, color: T.orange, fontWeight: 700, marginBottom: 6 }}>STEP {step}</div>
+                                <input
+                                  style={{ ...inputStyle, marginBottom: 6 }}
+                                  placeholder={`Step ${step} subject (use {{firstName}}, {{company}})`}
+                                  value={templateDrafts[step]?.subject || ""}
+                                  onChange={e => setTemplateDrafts({ ...templateDrafts, [step]: { ...templateDrafts[step], subject: e.target.value } })}
+                                />
+                                <textarea
+                                  style={{ ...inputStyle, minHeight: 80, resize: "vertical", fontFamily: "inherit" }}
+                                  placeholder={`Step ${step} body (use {{firstName}}, {{company}}, {{state}})`}
+                                  value={templateDrafts[step]?.body || ""}
+                                  onChange={e => setTemplateDrafts({ ...templateDrafts, [step]: { ...templateDrafts[step], body: e.target.value } })}
+                                />
                               </div>
-                              <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>{t.subject}</div>
-                              <div style={{ fontSize: 11, color: T.muted, marginTop: 2, whiteSpace: "pre-wrap", maxHeight: 60, overflow: "hidden" }}>{t.body}</div>
-                            </div>
-                          );
-                        })}
-                        {isEditing && [1, 2, 3, 4].map(step => (
-                          <div key={step} style={{ marginBottom: 12, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
-                            <div style={{ fontSize: 11, color: T.orange, fontWeight: 700, marginBottom: 6 }}>STEP {step}</div>
-                            <input
-                              style={{ ...inputStyle, marginBottom: 6 }}
-                              placeholder={`Step ${step} subject (use {{firstName}}, {{company}})`}
-                              value={templateDrafts[step]?.subject || ""}
-                              onChange={e => setTemplateDrafts({ ...templateDrafts, [step]: { ...templateDrafts[step], subject: e.target.value } })}
-                            />
-                            <textarea
-                              style={{ ...inputStyle, minHeight: 80, resize: "vertical", fontFamily: "inherit" }}
-                              placeholder={`Step ${step} body (use {{firstName}}, {{company}}, {{state}})`}
-                              value={templateDrafts[step]?.body || ""}
-                              onChange={e => setTemplateDrafts({ ...templateDrafts, [step]: { ...templateDrafts[step], body: e.target.value } })}
-                            />
-                          </div>
-                        ))}
+                            ))}
+                          </>
+                        )}
                       </div>
                     </div>
                   );
