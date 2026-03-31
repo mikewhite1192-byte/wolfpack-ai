@@ -533,6 +533,7 @@ export async function scanForBounces(batch: number = 0): Promise<{ bounced: numb
 
 // Get warmup status for all addresses
 export async function getWarmupStatus(): Promise<{
+  id: string;
   address: string;
   role: "cold_sender" | "warmup_only";
   daysActive: number;
@@ -552,6 +553,7 @@ export async function getWarmupStatus(): Promise<{
     const warmupSentToday = await getTodayWarmupSendCount(addr.email);
 
     statuses.push({
+      id: addr.id,
       address: addr.email,
       role: (addr.cold_sender ? "cold_sender" : "warmup_only") as "cold_sender" | "warmup_only",
       daysActive: days,

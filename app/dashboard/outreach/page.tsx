@@ -89,7 +89,6 @@ export default function OutreachPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingTemplates, setEditingTemplates] = useState<string | null>(null);
   const [templateDrafts, setTemplateDrafts] = useState<Record<number, { subject: string; body: string }>>({});
-  const [assigningSender, setAssigningSender] = useState<string | null>(null);
 
   // Scraper state
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -125,6 +124,10 @@ export default function OutreachPage() {
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
 
+  // Warmup addresses (with IDs for sender assignment)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [warmupAddresses, setWarmupAddresses] = useState<any[]>([]);
+
   // Add email form
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEmail, setNewEmail] = useState({ email: "", displayName: "Mike", smtpHost: "", smtpPort: "587", smtpUser: "", smtpPass: "", coldSender: true });
@@ -153,6 +156,7 @@ export default function OutreachPage() {
         setCampaigns(data.campaigns || []);
         setScraperConfigs(data.scraperConfigs || []);
         setScraperStats(data.scraperStats || null);
+        setWarmupAddresses(data.warmupStatus || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -259,6 +263,7 @@ export default function OutreachPage() {
         setCampaigns(data.campaigns || []);
         setScraperConfigs(data.scraperConfigs || []);
         setScraperStats(data.scraperStats || null);
+        setWarmupAddresses(data.warmupStatus || []);
       });
   }
 
@@ -308,7 +313,6 @@ export default function OutreachPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "assign-sender", campaignId, senderId }),
     });
-    setAssigningSender(null);
     refreshStats();
   }
 
@@ -924,7 +928,6 @@ export default function OutreachPage() {
                   const templates = (c.templates || []) as { step: number; subject: string; body: string }[];
                   const cStats = (c.stats || {}) as Record<string, string>;
                   const isEditing = editingTemplates === c.id;
-                  const isAssigning = assigningSender === c.id;
 
                   return (
                     <div key={c.id as string} className="out-card" style={{ marginBottom: 14 }}>
@@ -966,47 +969,36 @@ export default function OutreachPage() {
 
                       {/* Senders */}
                       <div style={{ marginTop: 14, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1 }}>SENDERS</div>
-                          <button
-                            onClick={() => setAssigningSender(isAssigning ? null : c.id as string)}
-                            style={{ fontSize: 11, color: T.orange, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
-                          >
-                            {isAssigning ? "Done" : "+ Assign"}
-                          </button>
-                        </div>
-                        {senders.length === 0 && !isAssigning && (
-                          <div style={{ fontSize: 12, color: T.muted }}>No senders assigned yet</div>
-                        )}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1, marginBottom: 8 }}>SENDERS</div>
                         {senders.map(s => (
-                          <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                          <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 6, marginBottom: 4 }}>
                             <span style={{ fontSize: 13, color: T.text }}>{s.email}</span>
-                            <button onClick={() => removeSender(c.id as string, s.id)} style={{ fontSize: 10, color: T.red, background: "none", border: "none", cursor: "pointer" }}>Remove</button>
+                            <button onClick={() => removeSender(c.id as string, s.id)} style={{ fontSize: 11, color: T.red, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Remove</button>
                           </div>
                         ))}
-                        {isAssigning && (
-                          <div style={{ marginTop: 8 }}>
-                            {emailHealth.filter(h => h.role === "cold_sender" && !senders.find(s => s.email === h.address)).map(h => (
-                              <button
-                                key={h.address}
-                                onClick={() => {
-                                  const match = emailHealth.find(eh => eh.address === h.address);
-                                  if (match) {
-                                    // Need the warmup address ID — fetch from health data isn't ideal, but we can use the email
-                                    fetch("/api/outreach/warmup").then(r => r.json()).then(data => {
-                                      const addr = (data.addresses || []).find((a: Record<string, unknown>) => a.address === h.address);
-                                      // We don't have the UUID here easily — let's use a different approach
-                                    });
-                                  }
-                                }}
-                                style={{ display: "block", padding: "6px 12px", fontSize: 12, color: T.text, background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 6, cursor: "pointer", marginBottom: 4, width: "100%" }}
-                              >
-                                {h.address}
-                              </button>
-                            ))}
-                            <div style={{ fontSize: 10, color: T.muted, marginTop: 4 }}>Use the API to assign senders by ID for now</div>
-                          </div>
-                        )}
+                        {/* Dropdown to add a sender */}
+                        {(() => {
+                          const assignedEmails = senders.map(s => s.email);
+                          const available = warmupAddresses.filter((wa: Record<string, unknown>) =>
+                            wa.role === "cold_sender" && !assignedEmails.includes(wa.address as string)
+                          );
+                          if (available.length === 0 && senders.length === 0) {
+                            return <div style={{ fontSize: 12, color: T.muted }}>No cold sender addresses available. Add one in the Email Addresses tab first.</div>;
+                          }
+                          if (available.length === 0) return null;
+                          return (
+                            <select
+                              value=""
+                              onChange={e => { if (e.target.value) assignSender(c.id as string, e.target.value); }}
+                              style={{ ...inputStyle, marginTop: 6, cursor: "pointer" }}
+                            >
+                              <option value="">+ Add a sender...</option>
+                              {available.map((wa: Record<string, unknown>) => (
+                                <option key={wa.id as string} value={wa.id as string}>{wa.address as string}</option>
+                              ))}
+                            </select>
+                          );
+                        })()}
                       </div>
 
                       {/* Templates */}
