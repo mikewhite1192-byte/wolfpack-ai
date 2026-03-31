@@ -28,18 +28,24 @@ export async function pollAllInboxes(): Promise<{ fetched: number; errors: numbe
   let fetched = 0;
   let errors = 0;
 
+  console.log(`[inbox] Starting poll for ${addresses.length} cold sender addresses`);
+
   for (const addr of addresses) {
+    const email = addr.email as string;
+    const imapHost = addr.imap_host as string || (addr.smtp_host as string).replace("smtp.", "imap.");
+    console.log(`[inbox] Polling ${email} via ${imapHost}:993`);
     try {
       const count = await pollInbox(
-        addr.email as string,
-        addr.imap_host as string || (addr.smtp_host as string).replace("smtp.", "imap."),
+        email,
+        imapHost,
         (addr.imap_port as number) || 993,
         addr.smtp_user as string,
         addr.smtp_pass as string,
       );
       fetched += count;
+      console.log(`[inbox] ${email}: fetched ${count}`);
     } catch (err) {
-      console.error(`[inbox] Failed to poll ${addr.email}:`, err);
+      console.error(`[inbox] Failed to poll ${email}:`, err instanceof Error ? err.message : err);
       errors++;
     }
   }
