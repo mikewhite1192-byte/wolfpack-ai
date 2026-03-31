@@ -122,9 +122,37 @@ export async function GET(req: NextRequest) {
       warmupStatus = await getWarmupStatus();
     } catch { /* ok */ }
 
+    // Today's totals across all senders
+    let todayTotals = { cold: 0, warmup: 0 };
+    try {
+      const tt = await sql`
+        SELECT
+          COUNT(*) FILTER (WHERE email_type = 'cold') as cold,
+          COUNT(*) FILTER (WHERE email_type IN ('warmup', 'warmup_reply')) as warmup
+        FROM outreach_emails WHERE sent_at >= CURRENT_DATE
+      `;
+      todayTotals = { cold: parseInt(tt[0].cold as string || "0"), warmup: parseInt(tt[0].warmup as string || "0") };
+    } catch { /* ok */ }
+
+    // Unread replies count (per campaign)
+    let unreadByCampaign: Record<string, number> = {};
+    try {
+      const unreadRows = await sql`
+        SELECT oc.campaign_id, COUNT(*) as count
+        FROM campaign_inbox ci
+        JOIN outreach_contacts oc ON oc.id = ci.outreach_contact_id
+        WHERE ci.is_read = FALSE AND ci.email_category = 'cold_reply'
+        GROUP BY oc.campaign_id
+      `;
+      for (const r of unreadRows) {
+        if (r.campaign_id) unreadByCampaign[r.campaign_id as string] = parseInt(r.count as string);
+      }
+    } catch { /* ok */ }
+
     return NextResponse.json({
       stats, recentEmails, emailHealth, outreachContacts,
       campaigns, scraperConfigs, scraperStats, warmupStatus,
+      todayTotals, unreadByCampaign,
     });
   } catch (e: unknown) {
     console.error("[outreach/stats]", e);

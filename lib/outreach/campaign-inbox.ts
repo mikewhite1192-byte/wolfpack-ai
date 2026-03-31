@@ -148,6 +148,29 @@ async function pollInbox(
         )
       `;
 
+      // Auto-detect replies and unsubscribes
+      if (outreachContact.length > 0) {
+        const bodyLower = body.toLowerCase().trim();
+        const isUnsub = /^(stop|unsubscribe|remove me|remove|opt out|take me off|cancel)$/i.test(bodyLower)
+          || bodyLower.includes("unsubscribe me")
+          || bodyLower.includes("remove me from")
+          || bodyLower.includes("stop emailing");
+
+        if (isUnsub) {
+          await sql`
+            UPDATE outreach_contacts SET sequence_status = 'unsubscribed', unsubscribed = TRUE, unsubscribed_at = NOW()
+            WHERE id = ${outreachContact[0].id} AND unsubscribed = FALSE
+          `;
+          console.log(`[inbox] Auto-unsubscribed ${fromAddr} (detected stop/unsubscribe)`);
+        } else {
+          // Mark as replied (stops further cold emails)
+          await sql`
+            UPDATE outreach_contacts SET replied = TRUE, replied_at = NOW(), sequence_status = 'replied'
+            WHERE id = ${outreachContact[0].id} AND replied = FALSE
+          `;
+        }
+      }
+
       fetched++;
     }
 

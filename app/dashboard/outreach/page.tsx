@@ -122,6 +122,18 @@ export default function OutreachPage() {
   const [massScrapeQuery, setMassScrapeQuery] = useState("");
   const [massScrapeCount, setMassScrapeCount] = useState("50");
 
+  // Today's totals & unread per campaign
+  const [todayTotals, setTodayTotals] = useState({ cold: 0, warmup: 0 });
+  const [unreadByCampaign, setUnreadByCampaign] = useState<Record<string, number>>({});
+
+  // Contact detail panel
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [contactEmails, setContactEmails] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [contactReplies, setContactReplies] = useState<any[]>([]);
+
   // Outreach contacts
   const [outreachContacts, setOutreachContacts] = useState<Array<{
     id: string; email: string; first_name: string | null; last_name: string | null;
@@ -177,10 +189,18 @@ export default function OutreachPage() {
         setScraperConfigs(data.scraperConfigs || []);
         setScraperStats(data.scraperStats || null);
         setWarmupAddresses(data.warmupStatus || []);
+        setTodayTotals(data.todayTotals || { cold: 0, warmup: 0 });
+        setUnreadByCampaign(data.unreadByCampaign || {});
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => refreshStats(contactSearch || undefined), 30000);
+    return () => clearInterval(interval);
+  }, [contactSearch]);
 
   async function runSend() {
     setSending(true);
@@ -295,6 +315,8 @@ export default function OutreachPage() {
         setScraperConfigs(data.scraperConfigs || []);
         setScraperStats(data.scraperStats || null);
         setWarmupAddresses(data.warmupStatus || []);
+        setTodayTotals(data.todayTotals || { cold: 0, warmup: 0 });
+        setUnreadByCampaign(data.unreadByCampaign || {});
       });
   }
 
@@ -451,6 +473,45 @@ export default function OutreachPage() {
     refreshStats();
   }
 
+  async function viewContact(contactId: string) {
+    const res = await fetch(`/api/outreach/sequence?contactId=${contactId}`);
+    const data = await res.json();
+    setSelectedContact(data.contact);
+    setContactEmails(data.emails || []);
+    setContactReplies(data.replies || []);
+  }
+
+  async function pauseContact(contactId: string) {
+    await fetch("/api/outreach/sequence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "pause", contactId }),
+    });
+    setSelectedContact(null);
+    refreshStats();
+  }
+
+  async function resumeContact(contactId: string) {
+    await fetch("/api/outreach/sequence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resume", contactId }),
+    });
+    setSelectedContact(null);
+    refreshStats();
+  }
+
+  async function unsubContact(contactId: string) {
+    if (!confirm("Mark this contact as unsubscribed?")) return;
+    await fetch("/api/outreach/sequence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "unsubscribe", contactId }),
+    });
+    setSelectedContact(null);
+    refreshStats();
+  }
+
   async function linkScraperToCampaign(scraperConfigId: string, campaignId: string) {
     await fetch("/api/outreach/campaigns", {
       method: "POST",
@@ -583,7 +644,14 @@ export default function OutreachPage() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${T.border}`, marginBottom: 20 }}>
         <button className={`out-tab ${tab === "overview" ? "active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
-        <button className={`out-tab ${tab === "campaigns" ? "active" : ""}`} onClick={() => setTab("campaigns")}>Campaigns ({campaigns.length})</button>
+        <button className={`out-tab ${tab === "campaigns" ? "active" : ""}`} onClick={() => setTab("campaigns")} style={{ position: "relative" }}>
+          Campaigns ({campaigns.length})
+          {Object.values(unreadByCampaign).reduce((a, b) => a + b, 0) > 0 && (
+            <span style={{ position: "absolute", top: 2, right: -4, background: T.red, color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 8, padding: "1px 5px", minWidth: 16, textAlign: "center" }}>
+              {Object.values(unreadByCampaign).reduce((a, b) => a + b, 0)}
+            </span>
+          )}
+        </button>
         <button className={`out-tab ${tab === "scraper" ? "active" : ""}`} onClick={() => setTab("scraper")}>Scraper</button>
         <button className={`out-tab ${tab === "emails" ? "active" : ""}`} onClick={() => setTab("emails")}>Email Addresses</button>
         <button className={`out-tab ${tab === "contacts" ? "active" : ""}`} onClick={() => setTab("contacts")}>Contacts ({outreachContacts.length})</button>
@@ -605,75 +673,149 @@ export default function OutreachPage() {
           {/* ============= OVERVIEW TAB ============= */}
           {tab === "overview" && (
             <>
-              <div className="out-stats">
-                {stats && [
-                  { label: "Total Contacts", value: stats.total, color: T.text },
-                  { label: "Active in Sequence", value: stats.active, color: T.orange },
-                  { label: "Completed", value: stats.completed, color: T.muted },
-                  { label: "Replied", value: stats.replied, color: T.green },
-                  { label: "Bounced", value: stats.bounced, color: T.red },
-                  { label: "Invalid", value: stats.invalid || "0", color: T.muted },
-                  { label: "Unsubscribed", value: stats.unsubscribed, color: T.yellow },
-                  { label: "Converted", value: stats.converted, color: T.green },
-                  { label: "Reply Rate", value: parseInt(stats.total) > 0 ? `${Math.round((parseInt(stats.replied) / parseInt(stats.total)) * 100)}%` : "0%", color: T.blue },
-                ].map(s => (
-                  <div key={s.label} className="out-stat">
-                    <div className="out-stat-val" style={{ color: s.color }}>{s.value}</div>
-                    <div className="out-stat-label">{s.label}</div>
+              {/* Today at a glance */}
+              <div className="out-card" style={{ marginBottom: 14, borderColor: `${T.orange}20` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div className="out-label" style={{ marginBottom: 0 }}>TODAY</div>
+                  <div style={{ fontSize: 10, color: T.muted }}>Auto-refreshes every 30s</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 32, fontWeight: 700, color: T.orange, fontFamily: "'Bebas Neue', sans-serif" }}>{todayTotals.cold}</div>
+                    <div style={{ fontSize: 11, color: T.muted, fontWeight: 600 }}>Cold Emails Sent</div>
                   </div>
-                ))}
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 32, fontWeight: 700, color: T.blue, fontFamily: "'Bebas Neue', sans-serif" }}>{todayTotals.warmup}</div>
+                    <div style={{ fontSize: 11, color: T.muted, fontWeight: 600 }}>Warmup Emails Sent</div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 32, fontWeight: 700, color: T.green, fontFamily: "'Bebas Neue', sans-serif" }}>{stats?.replied || "0"}</div>
+                    <div style={{ fontSize: 11, color: T.muted, fontWeight: 600 }}>Total Replies</div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 32, fontWeight: 700, color: T.text, fontFamily: "'Bebas Neue', sans-serif" }}>{stats?.active || "0"}</div>
+                    <div style={{ fontSize: 11, color: T.muted, fontWeight: 600 }}>Active in Sequence</div>
+                  </div>
+                </div>
               </div>
 
+              {/* Warmup ramp progress */}
+              <div className="out-card" style={{ marginBottom: 14 }}>
+                <div className="out-label">Email Address Ramp Progress</div>
+                {warmupAddresses.map((wa: Record<string, unknown>) => {
+                  const day = wa.daysActive as number;
+                  const limits = wa.dailyLimits as { total: number; cold: number; warmup: number };
+                  const pct = Math.min((day / 25) * 100, 100);
+                  const atSteady = day >= 25;
+                  return (
+                    <div key={wa.address as string} style={{ marginBottom: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>{(wa.address as string).split("@")[0]}@...</span>
+                        <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
+                          <span style={{ color: T.muted }}>Day {day}</span>
+                          <span style={{ color: T.orange }}>{limits.cold} cold</span>
+                          <span style={{ color: T.blue }}>{limits.warmup} warmup</span>
+                          <span style={{ color: atSteady ? T.green : T.yellow }}>{atSteady ? "FULL" : `${limits.total}/50`}</span>
+                        </div>
+                      </div>
+                      <div className="health-bar">
+                        <div className="health-fill" style={{ width: `${pct}%`, background: atSteady ? T.green : T.orange }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Stats + Controls side by side */}
               <div className="out-row">
-                <div className="out-card">
-                  <div className="out-label">Controls</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 6 }}>Scrape New Contacts</div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input className="out-input" type="number" value={scrapeCount} onChange={e => setScrapeCount(parseInt(e.target.value) || 30)} min={1} max={500} />
-                        <button className="out-btn" onClick={runScrape} disabled={scraping}>{scraping ? "Scraping..." : "Scrape NIPR"}</button>
+                <div>
+                  <div className="out-stats" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                    {stats && [
+                      { label: "Total Contacts", value: stats.total, color: T.text },
+                      { label: "Completed", value: stats.completed, color: T.muted },
+                      { label: "Reply Rate", value: parseInt(stats.total) > 0 ? `${Math.round((parseInt(stats.replied) / parseInt(stats.total)) * 100)}%` : "0%", color: T.green },
+                      { label: "Bounced", value: stats.bounced, color: T.red },
+                      { label: "Invalid", value: stats.invalid || "0", color: T.muted },
+                      { label: "Unsubscribed", value: stats.unsubscribed, color: T.yellow },
+                    ].map(s => (
+                      <div key={s.label} className="out-stat">
+                        <div className="out-stat-val" style={{ color: s.color }}>{s.value}</div>
+                        <div className="out-stat-label">{s.label}</div>
                       </div>
-                      {scrapeState && <div style={{ fontSize: 12, color: T.green, marginTop: 6 }}>{scrapeState}</div>}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 6 }}>Cold Outreach</div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button className="out-btn" onClick={runSend} disabled={sending}>{sending ? "Sending..." : "Send Cold Emails"}</button>
-                        <button className="out-btn-ghost" onClick={runWarmup}>Run Warmup</button>
-                        <button className="out-btn-ghost" onClick={revalidateContacts}>Revalidate</button>
-                      </div>
-                      {sendResult && <div style={{ fontSize: 12, color: T.green, marginTop: 6 }}>{sendResult}</div>}
-                    </div>
+                    ))}
+                  </div>
+
+                  <div className="out-card">
+                    <div className="out-label">Recent Sends</div>
+                    {recentEmails.length === 0 ? (
+                      <div style={{ color: T.muted, fontSize: 13, padding: "20px 0", textAlign: "center" }}>No emails sent yet</div>
+                    ) : (
+                      <table className="out-table">
+                        <thead><tr><th>Contact</th><th>From</th><th>Step</th><th>Status</th></tr></thead>
+                        <tbody>
+                          {recentEmails.slice(0, 10).map((e, i) => (
+                            <tr key={i}>
+                              <td>{e.first_name || e.email?.split("@")[0] || "—"}</td>
+                              <td className="muted" style={{ fontSize: 11 }}>{e.from_email?.split("@")[0] || "—"}</td>
+                              <td className="muted">#{e.step}</td>
+                              <td style={{ color: e.status === "sent" ? T.green : T.red }}>{e.status}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 </div>
 
-                <div className="out-card">
-                  <div className="out-label">Recent Sends</div>
-                  {recentEmails.length === 0 ? (
-                    <div style={{ color: T.muted, fontSize: 13, padding: "20px 0", textAlign: "center" }}>No emails sent yet</div>
-                  ) : (
-                    <table className="out-table">
-                      <thead>
-                        <tr>
-                          <th>Contact</th>
-                          <th>From</th>
-                          <th>Step</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentEmails.map((e, i) => (
-                          <tr key={i}>
-                            <td>{e.first_name || e.email?.split("@")[0] || "—"}</td>
-                            <td className="muted" style={{ fontSize: 11 }}>{e.from_email?.split("@")[0] || "—"}</td>
-                            <td className="muted">#{e.step}</td>
-                            <td style={{ color: e.status === "sent" ? T.green : T.red }}>{e.status}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+                <div>
+                  <div className="out-card">
+                    <div className="out-label">Controls</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 6 }}>Scrape New Contacts</div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input className="out-input" type="number" value={scrapeCount} onChange={e => setScrapeCount(parseInt(e.target.value) || 30)} min={1} max={500} />
+                          <button className="out-btn" onClick={runScrape} disabled={scraping}>{scraping ? "Scraping..." : "Scrape NIPR"}</button>
+                        </div>
+                        {scrapeState && <div style={{ fontSize: 12, color: T.green, marginTop: 6 }}>{scrapeState}</div>}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 6 }}>Manual Actions</div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button className="out-btn" onClick={runSend} disabled={sending}>{sending ? "Sending..." : "Send Cold Emails"}</button>
+                          <button className="out-btn-ghost" onClick={runWarmup}>Run Warmup</button>
+                          <button className="out-btn-ghost" onClick={revalidateContacts}>Revalidate</button>
+                        </div>
+                        {sendResult && <div style={{ fontSize: 12, color: T.green, marginTop: 6 }}>{sendResult}</div>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active campaigns summary */}
+                  <div className="out-card">
+                    <div className="out-label">Active Campaigns</div>
+                    {campaigns.filter((c: Record<string, unknown>) => c.enabled).map((c: Record<string, unknown>) => {
+                      const cStats = (c.stats || {}) as Record<string, string>;
+                      const unread = unreadByCampaign[c.id as string] || 0;
+                      return (
+                        <div key={c.id as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{c.name as string}</div>
+                            <div style={{ fontSize: 11, color: T.muted }}>{cStats.active || 0} active · {cStats.replied || 0} replied</div>
+                          </div>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            {unread > 0 && (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 8, background: `${T.red}20`, color: T.red }}>{unread} new</span>
+                            )}
+                            <span style={{ fontSize: 12, color: T.orange, fontWeight: 700 }}>{String((c as Record<string, unknown>).coldToday || 0)} sent today</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {campaigns.filter((c: Record<string, unknown>) => c.enabled).length === 0 && (
+                      <div style={{ fontSize: 12, color: T.muted, textAlign: "center", padding: 20 }}>No active campaigns</div>
+                    )}
+                  </div>
                 </div>
               </div>
             </>
@@ -851,7 +993,7 @@ export default function OutreachPage() {
                       </thead>
                       <tbody>
                         {outreachContacts.map(c => (
-                          <tr key={c.id}>
+                          <tr key={c.id} onClick={() => viewContact(c.id)} style={{ cursor: "pointer" }}>
                             <td style={{ fontWeight: 600 }}>{[c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}</td>
                             <td style={{ fontSize: 12 }}>{c.email}</td>
                             <td className="muted" style={{ fontSize: 12 }}>{c.company || "—"}</td>
@@ -862,11 +1004,13 @@ export default function OutreachPage() {
                                 background: c.sequence_status === "active" ? "rgba(232,106,42,0.15)" :
                                   c.sequence_status === "replied" ? "rgba(46,204,113,0.15)" :
                                   c.sequence_status === "bounced" ? "rgba(231,76,60,0.15)" :
+                                  c.sequence_status === "paused" ? "rgba(245,166,35,0.15)" :
                                   c.sequence_status === "completed" ? "rgba(176,180,200,0.1)" :
                                   "rgba(255,255,255,0.05)",
                                 color: c.sequence_status === "active" ? T.orange :
                                   c.sequence_status === "replied" ? T.green :
                                   c.sequence_status === "bounced" ? T.red :
+                                  c.sequence_status === "paused" ? T.yellow :
                                   T.muted,
                                 textTransform: "uppercase",
                               }}>
@@ -1510,6 +1654,95 @@ export default function OutreachPage() {
             </>
           )}
         </>
+      )}
+
+      {/* ============= CONTACT DETAIL PANEL ============= */}
+      {selectedContact && (
+        <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 440, background: T.bg, borderLeft: `1px solid ${T.border}`, zIndex: 1000, overflowY: "auto", padding: 24 }}>
+          {/* Backdrop */}
+          <div onClick={() => setSelectedContact(null)} style={{ position: "fixed", top: 0, left: 0, right: 440, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: -1 }} />
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: T.text }}>CONTACT DETAIL</div>
+            <button onClick={() => setSelectedContact(null)} style={{ background: "none", border: "none", color: T.muted, fontSize: 18, cursor: "pointer" }}>✕</button>
+          </div>
+
+          {/* Contact info */}
+          <div className="out-card" style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>
+              {[selectedContact.first_name, selectedContact.last_name].filter(Boolean).join(" ") || selectedContact.email}
+            </div>
+            <div style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>{selectedContact.email}</div>
+            {selectedContact.company && <div style={{ fontSize: 12, color: T.muted }}>{selectedContact.company}</div>}
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6, textTransform: "uppercase",
+                background: selectedContact.sequence_status === "active" ? "rgba(232,106,42,0.15)" :
+                  selectedContact.sequence_status === "replied" ? "rgba(46,204,113,0.15)" :
+                  selectedContact.sequence_status === "paused" ? "rgba(245,166,35,0.15)" :
+                  "rgba(255,255,255,0.05)",
+                color: selectedContact.sequence_status === "active" ? T.orange :
+                  selectedContact.sequence_status === "replied" ? T.green :
+                  selectedContact.sequence_status === "paused" ? T.yellow :
+                  selectedContact.sequence_status === "bounced" ? T.red : T.muted,
+              }}>
+                {selectedContact.sequence_status}
+              </span>
+              <span style={{ fontSize: 11, color: T.muted }}>Step {selectedContact.sequence_step}/4</span>
+              {selectedContact.assigned_sender && <span style={{ fontSize: 11, color: T.muted }}>via {selectedContact.assigned_sender.split("@")[0]}</span>}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              {selectedContact.sequence_status === "active" && (
+                <button className="out-btn-ghost" style={{ fontSize: 11, padding: "5px 12px" }} onClick={() => pauseContact(selectedContact.id)}>Pause</button>
+              )}
+              {selectedContact.sequence_status === "paused" && (
+                <button className="out-btn" style={{ fontSize: 11, padding: "5px 12px" }} onClick={() => resumeContact(selectedContact.id)}>Resume</button>
+              )}
+              {!["unsubscribed", "bounced"].includes(selectedContact.sequence_status) && (
+                <button style={{ fontSize: 11, padding: "5px 12px", background: "none", border: `1px solid ${T.red}30`, color: T.red, borderRadius: 6, cursor: "pointer" }} onClick={() => unsubContact(selectedContact.id)}>
+                  Unsubscribe
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Email thread */}
+          <div className="out-label">Email Thread</div>
+          {contactEmails.length === 0 && contactReplies.length === 0 ? (
+            <div style={{ color: T.muted, fontSize: 12, textAlign: "center", padding: 20 }}>No emails sent yet</div>
+          ) : (
+            <>
+              {/* Merge and sort emails + replies by date */}
+              {(() => {
+                const thread = [
+                  ...contactEmails.map((e: Record<string, unknown>) => ({ step: e.step as number, subject: e.subject as string, body: e.body as string, type: "sent" as const, date: e.sent_at as string })),
+                  ...contactReplies.map((r: Record<string, unknown>) => ({ step: 0, subject: r.subject as string, body: r.body as string, type: "reply" as const, date: r.received_at as string })),
+                ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                return thread.map((item, i) => (
+                  <div key={i} style={{
+                    marginBottom: 10, padding: 12, borderRadius: 8,
+                    background: item.type === "reply" ? "rgba(46,204,113,0.06)" : "rgba(255,255,255,0.02)",
+                    borderLeft: `3px solid ${item.type === "reply" ? T.green : T.orange}`,
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: item.type === "reply" ? T.green : T.orange }}>
+                        {item.type === "reply" ? "REPLY" : `STEP ${item.step}`}
+                      </span>
+                      <span style={{ fontSize: 10, color: T.muted }}>
+                        {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    {item.subject && <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 4 }}>{item.subject}</div>}
+                    <div style={{ fontSize: 12, color: T.text, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{item.body}</div>
+                  </div>
+                ));
+              })()}
+            </>
+          )}
+        </div>
       )}
     </div>
   );
