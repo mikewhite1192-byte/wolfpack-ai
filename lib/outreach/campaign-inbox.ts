@@ -253,7 +253,7 @@ export async function getInboxReplies(opts: {
   if (opts.toAddress) {
     const replies = await sql`
       SELECT * FROM campaign_inbox
-      WHERE to_address = ${opts.toAddress}
+      WHERE to_address = ${opts.toAddress} AND email_category = 'cold_reply'
       ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
       ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
       ORDER BY received_at DESC
@@ -261,7 +261,7 @@ export async function getInboxReplies(opts: {
     `;
     const countResult = await sql`
       SELECT COUNT(*) as count FROM campaign_inbox
-      WHERE to_address = ${opts.toAddress}
+      WHERE to_address = ${opts.toAddress} AND email_category = 'cold_reply'
       ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
       ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
     `;
@@ -272,7 +272,7 @@ export async function getInboxReplies(opts: {
   if (opts.toAddresses && opts.toAddresses.length > 0) {
     const replies = await sql`
       SELECT * FROM campaign_inbox
-      WHERE to_address = ANY(${opts.toAddresses})
+      WHERE to_address = ANY(${opts.toAddresses}) AND email_category = 'cold_reply'
       ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
       ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
       ORDER BY received_at DESC
@@ -280,23 +280,28 @@ export async function getInboxReplies(opts: {
     `;
     const countResult = await sql`
       SELECT COUNT(*) as count FROM campaign_inbox
-      WHERE to_address = ANY(${opts.toAddresses})
+      WHERE to_address = ANY(${opts.toAddresses}) AND email_category = 'cold_reply'
       ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
       ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
     `;
     return { replies: replies as unknown as CampaignReply[], total: parseInt(countResult[0].count as string) };
   }
 
+  // Default: only show cold replies (not Google notifications, warmup, etc.)
   const replies = await sql`
     SELECT * FROM campaign_inbox
-    ${opts.unreadOnly ? sql`WHERE is_read = FALSE` : opts.starredOnly ? sql`WHERE is_starred = TRUE` : sql``}
+    WHERE email_category = 'cold_reply'
+    ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
+    ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
     ORDER BY received_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
 
   const countResult = await sql`
     SELECT COUNT(*) as count FROM campaign_inbox
-    ${opts.unreadOnly ? sql`WHERE is_read = FALSE` : opts.starredOnly ? sql`WHERE is_starred = TRUE` : sql``}
+    WHERE email_category = 'cold_reply'
+    ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
+    ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
   `;
 
   return { replies: replies as unknown as CampaignReply[], total: parseInt(countResult[0].count as string) };
@@ -314,7 +319,7 @@ export async function toggleStar(replyId: string) {
 
 // Get unread count
 export async function getUnreadCount(): Promise<number> {
-  const result = await sql`SELECT COUNT(*) as count FROM campaign_inbox WHERE is_read = FALSE`;
+  const result = await sql`SELECT COUNT(*) as count FROM campaign_inbox WHERE is_read = FALSE AND email_category = 'cold_reply'`;
   return parseInt(result[0].count as string);
 }
 
