@@ -267,13 +267,23 @@ export async function runWarmupSend(batch: number = 0, batchSize: number = 3): P
       const target = targets[Math.floor(Math.random() * targets.length)];
       if (!target) break;
 
-      const fromName = addr.display_name || addr.email.split("@")[0];
-      const toName = target.display_name || target.email.split("@")[0];
+      try {
+        const fromName = addr.display_name || addr.email.split("@")[0];
+        const toName = target.display_name || target.email.split("@")[0];
 
-      const { subject, body } = await generateWarmupEmail(fromName, toName, false);
-      const result = await sendWarmupEmail(addr, target.email, subject, body);
+        const { subject, body } = await generateWarmupEmail(fromName, toName, false);
+        const result = await sendWarmupEmail(addr, target.email, subject, body);
 
-      if (result.success) { sent++; } else { errors++; }
+        if (result.success) {
+          sent++;
+        } else {
+          console.error(`[warmup] Send failed ${addr.email} → ${target.email}: ${result.error}`);
+          errors++;
+        }
+      } catch (err) {
+        console.error(`[warmup] Exception sending from ${addr.email}:`, err);
+        errors++;
+      }
     }
   }
 
