@@ -90,6 +90,25 @@ export default function OutreachPage() {
   const [editingTemplates, setEditingTemplates] = useState<string | null>(null);
   const [templateDrafts, setTemplateDrafts] = useState<Record<number, { subject: string; body: string }>>({});
 
+  const DEFAULT_TEMPLATES: Record<number, { subject: string; body: string }> = {
+    1: {
+      subject: "quick question {{firstName}}",
+      body: "Hey {{firstName}},\n\nQuick question — are your follow-ups still going through SMS or have you moved away from A2P yet?\n\nWe built something that handles lead follow-up instantly without touching A2P at all. Curious if that's even on your radar.\n\nMike, The Wolf Pack AI",
+    },
+    2: {
+      subject: "quick question {{firstName}}",
+      body: "Hey {{firstName}},\n\nJust wanted to bump this — curious how you're handling follow-ups right now.\n\nMike, The Wolf Pack AI",
+    },
+    3: {
+      subject: "quick question {{firstName}}",
+      body: "Hey {{firstName}},\n\nMost agents we've talked to are losing deals just from slow follow-up — have you found a way around that?\n\nMike, The Wolf Pack AI",
+    },
+    4: {
+      subject: "quick question {{firstName}}",
+      body: "Hey {{firstName}},\n\nNot sure if this is relevant right now — should I close this out or is follow-up something you're still trying to improve?\n\nMike, The Wolf Pack AI",
+    },
+  };
+
   // Scraper state
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scraperConfigs, setScraperConfigs] = useState<any[]>([]);
@@ -1056,8 +1075,10 @@ export default function OutreachPage() {
                                 saveCampaignTemplates(c.id as string);
                               } else {
                                 const drafts: Record<number, { subject: string; body: string }> = {};
-                                templates.forEach(t => { drafts[t.step] = { subject: t.subject, body: t.body }; });
-                                for (let i = 1; i <= 4; i++) { if (!drafts[i]) drafts[i] = { subject: "", body: "" }; }
+                                for (let i = 1; i <= 4; i++) {
+                                  const existing = templates.find(t => t.step === i);
+                                  drafts[i] = existing ? { subject: existing.subject, body: existing.body } : { ...DEFAULT_TEMPLATES[i] };
+                                }
                                 setTemplateDrafts(drafts);
                                 setEditingTemplates(c.id as string);
                               }
@@ -1067,13 +1088,20 @@ export default function OutreachPage() {
                             {isEditing ? "Save Templates" : "Edit Templates"}
                           </button>
                         </div>
-                        {!isEditing && templates.map(t => (
-                          <div key={t.step} style={{ marginBottom: 8, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
-                            <div style={{ fontSize: 11, color: T.orange, fontWeight: 700 }}>STEP {t.step}</div>
-                            <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>{t.subject}</div>
-                            <div style={{ fontSize: 11, color: T.muted, marginTop: 2, whiteSpace: "pre-wrap", maxHeight: 60, overflow: "hidden" }}>{t.body}</div>
-                          </div>
-                        ))}
+                        {!isEditing && [1, 2, 3, 4].map(step => {
+                          const t = templates.find(t => t.step === step) || DEFAULT_TEMPLATES[step];
+                          const isDefault = !templates.find(t => t.step === step);
+                          return (
+                            <div key={step} style={{ marginBottom: 8, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
+                              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                <span style={{ fontSize: 11, color: T.orange, fontWeight: 700 }}>STEP {step}</span>
+                                {isDefault && <span style={{ fontSize: 9, color: T.muted, background: "rgba(255,255,255,0.05)", padding: "1px 6px", borderRadius: 4 }}>DEFAULT</span>}
+                              </div>
+                              <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>{t.subject}</div>
+                              <div style={{ fontSize: 11, color: T.muted, marginTop: 2, whiteSpace: "pre-wrap", maxHeight: 60, overflow: "hidden" }}>{t.body}</div>
+                            </div>
+                          );
+                        })}
                         {isEditing && [1, 2, 3, 4].map(step => (
                           <div key={step} style={{ marginBottom: 12, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
                             <div style={{ fontSize: 11, color: T.orange, fontWeight: 700, marginBottom: 6 }}>STEP {step}</div>
