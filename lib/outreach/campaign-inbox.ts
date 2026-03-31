@@ -195,21 +195,12 @@ export async function getInboxReplies(opts: {
   unreadOnly?: boolean;
   starredOnly?: boolean;
   toAddress?: string;
+  toAddresses?: string[];
 }): Promise<{ replies: CampaignReply[]; total: number }> {
   const limit = opts.limit || 50;
   const offset = opts.offset || 0;
 
-  let whereClause = "1=1";
-  const params: unknown[] = [];
-
-  if (opts.unreadOnly) {
-    whereClause += " AND is_read = FALSE";
-  }
-  if (opts.starredOnly) {
-    whereClause += " AND is_starred = TRUE";
-  }
-
-  // Build queries based on filters
+  // Filter by single address
   if (opts.toAddress) {
     const replies = await sql`
       SELECT * FROM campaign_inbox
@@ -222,6 +213,25 @@ export async function getInboxReplies(opts: {
     const countResult = await sql`
       SELECT COUNT(*) as count FROM campaign_inbox
       WHERE to_address = ${opts.toAddress}
+      ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
+      ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
+    `;
+    return { replies: replies as unknown as CampaignReply[], total: parseInt(countResult[0].count as string) };
+  }
+
+  // Filter by multiple addresses (campaign filter)
+  if (opts.toAddresses && opts.toAddresses.length > 0) {
+    const replies = await sql`
+      SELECT * FROM campaign_inbox
+      WHERE to_address = ANY(${opts.toAddresses})
+      ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
+      ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
+      ORDER BY received_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+    const countResult = await sql`
+      SELECT COUNT(*) as count FROM campaign_inbox
+      WHERE to_address = ANY(${opts.toAddresses})
       ${opts.unreadOnly ? sql`AND is_read = FALSE` : sql``}
       ${opts.starredOnly ? sql`AND is_starred = TRUE` : sql``}
     `;

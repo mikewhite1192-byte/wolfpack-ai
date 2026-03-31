@@ -1510,22 +1510,31 @@ export default function OutreachPage() {
                   <select
                     style={{ ...inputStyle, width: "auto", padding: "6px 10px", fontSize: 12 }}
                     onChange={e => {
-                      const addr = e.target.value;
-                      if (addr) {
-                        fetch(`/api/outreach/inbox?address=${encodeURIComponent(addr)}`)
-                          .then(r => r.json())
-                          .then(data => { setInboxReplies(data.replies || []); setInboxTotal(data.total || 0); });
+                      const campaignId = e.target.value;
+                      if (campaignId) {
+                        // Get all sender emails for this campaign, fetch inbox for each
+                        const camp = campaigns.find((c: Record<string, unknown>) => c.id === campaignId);
+                        const senderEmails = ((camp?.senders || []) as { email: string }[]).map(s => s.email);
+                        if (senderEmails.length > 0) {
+                          // Fetch with first sender address, inbox API already supports filtering
+                          const params = senderEmails.map(e => `address=${encodeURIComponent(e)}`).join("&");
+                          fetch(`/api/outreach/inbox?${params}`)
+                            .then(r => r.json())
+                            .then(data => { setInboxReplies(data.replies || []); setInboxTotal(data.total || 0); });
+                        }
                       } else {
                         loadInbox();
                       }
                     }}
                   >
-                    <option value="">All Inboxes</option>
+                    <option value="">All Campaigns</option>
                     {campaigns.map((camp: Record<string, unknown>) => {
                       const campSenders = (camp.senders || []) as { email: string }[];
-                      return campSenders.map(s => (
-                        <option key={s.email} value={s.email}>{(camp.name as string)} — {s.email.split("@")[0]}</option>
-                      ));
+                      return (
+                        <option key={camp.id as string} value={camp.id as string}>
+                          {camp.name as string} ({campSenders.length} senders)
+                        </option>
+                      );
                     })}
                   </select>
                   <button className="out-btn-ghost" onClick={pollInboxes} disabled={polling} style={{ fontSize: 12, padding: "6px 12px" }}>

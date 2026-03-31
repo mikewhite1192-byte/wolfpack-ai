@@ -24,9 +24,14 @@ export async function GET(req: NextRequest) {
     const offset = parseInt(url.searchParams.get("offset") || "0");
     const unreadOnly = url.searchParams.get("unread") === "true";
     const starredOnly = url.searchParams.get("starred") === "true";
-    const toAddress = url.searchParams.get("address") || undefined;
+    const toAddresses = url.searchParams.getAll("address").filter(Boolean);
+    const toAddress = toAddresses.length === 1 ? toAddresses[0] : undefined;
 
-    const { replies, total } = await getInboxReplies({ limit, offset, unreadOnly, starredOnly, toAddress });
+    const { replies, total } = await getInboxReplies({
+      limit, offset, unreadOnly, starredOnly,
+      toAddress,
+      toAddresses: toAddresses.length > 1 ? toAddresses : undefined,
+    });
     const unreadCount = await getUnreadCount();
 
     return NextResponse.json({ replies, total, unreadCount });
