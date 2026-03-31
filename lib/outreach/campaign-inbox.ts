@@ -135,24 +135,34 @@ async function pollInbox(
       console.log(`[inbox] Found email in ${folder}: from=${fromAddr} subject="${subject}" date=${new Date(date).toISOString()}`);
 
       // Check if already stored
-      const existing = await sql`
-        SELECT id FROM campaign_inbox WHERE message_id = ${messageId} AND to_address = ${address}
-        LIMIT 1
-      `;
-      if (existing.length > 0) continue;
+      if (messageId) {
+        const existing = await sql`
+          SELECT id FROM campaign_inbox WHERE message_id = ${messageId} AND to_address = ${address}
+          LIMIT 1
+        `;
+        if (existing.length > 0) {
+          console.log(`[inbox] Skipping ${fromAddr} — already stored (messageId: ${messageId})`);
+          continue;
+        }
+      }
 
       // Parse body from source
       let body = "";
-      if (msg.source) {
-        const { simpleParser } = await import("mailparser");
-        const parsed = await simpleParser(msg.source);
-        body = parsed.text || (parsed.html ? parsed.html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "");
+      try {
+        if (msg.source) {
+          const { simpleParser } = await import("mailparser");
+          const parsed = await simpleParser(msg.source);
+          body = parsed.text || (parsed.html ? parsed.html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "");
+        }
+      } catch (parseErr) {
+        console.error(`[inbox] Failed to parse email from ${fromAddr}:`, parseErr);
       }
 
       // Try to match to an outreach contact
       const outreachContact = await sql`
         SELECT id FROM outreach_contacts WHERE email = ${fromAddr.toLowerCase()} LIMIT 1
       `;
+      console.log(`[inbox] Processing ${fromAddr}: body=${body.length}chars, outreachMatch=${outreachContact.length > 0}, messageId=${messageId}`);
 
       // Try to match to a CRM contact
       const crmContact = await sql`
@@ -165,17 +175,23 @@ async function pollInbox(
       const category = outreachContact.length > 0 ? "cold_reply" : "other";
 
       // Store
-      await sql`
-        INSERT INTO campaign_inbox (
-          from_email, from_name, to_address, subject, body,
-          received_at, message_id, in_reply_to,
-          outreach_contact_id, contact_id, email_category
-        ) VALUES (
-          ${fromAddr}, ${fromName}, ${address}, ${subject}, ${body},
-          ${new Date(date).toISOString()}, ${messageId}, ${inReplyTo},
-          ${outreachContact[0]?.id || null}, ${crmContact[0]?.id || null}, ${category}
-        )
-      `;
+      try {
+        await sql`
+          INSERT INTO campaign_inbox (
+            from_email, from_name, to_address, subject, body,
+            received_at, message_id, in_reply_to,
+            outreach_contact_id, contact_id, email_category
+          ) VALUES (
+            ${fromAddr}, ${fromName}, ${address}, ${subject}, ${body},
+            ${new Date(date).toISOString()}, ${messageId}, ${inReplyTo},
+            ${outreachContact[0]?.id || null}, ${crmContact[0]?.id || null}, ${category}
+          )
+        `;
+        console.log(`[inbox] Stored reply from ${fromAddr} (${category})`);
+      } catch (insertErr) {
+        console.error(`[inbox] Failed to store reply from ${fromAddr}:`, insertErr instanceof Error ? insertErr.message : insertErr);
+        continue;
+      }
 
       // Auto-detect replies and unsubscribes
       if (outreachContact.length > 0) {
