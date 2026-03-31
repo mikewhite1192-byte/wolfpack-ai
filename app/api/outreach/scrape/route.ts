@@ -36,16 +36,25 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-// POST /api/outreach/scrape — pull insurance agents from Florida DOI
+// GET /api/outreach/scrape — Vercel cron handler (crons always use GET)
+export async function GET() {
+  return handleScrape(15);
+}
+
+// POST /api/outreach/scrape — manual trigger with custom count
 export async function POST(req: NextRequest) {
+  let count = 15;
   try {
-    let count = 15;
-    try {
-      const body = await req.json();
-      count = body.count || 15;
-    } catch {
-      // Cron calls with no body — default to 15
-    }
+    const body = await req.json();
+    count = body.count || 15;
+  } catch {
+    // No body — default to 15
+  }
+  return handleScrape(count);
+}
+
+async function handleScrape(count: number) {
+  try {
 
     console.log(`[scrape] Starting Florida DOI scrape for ${count} contacts`);
 

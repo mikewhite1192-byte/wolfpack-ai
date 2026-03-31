@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { getDailyLimits } from "./warmup";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -165,12 +166,9 @@ export async function getAllEmailHealth(): Promise<EmailHealth[]> {
     const warmupComplete = (addr.warmup_completed as boolean) || daysInWarmup >= 30;
     const coldSender = addr.cold_sender as boolean;
 
-    // Calculate cold daily limit
-    let coldDailyLimit = 0;
-    if (coldSender) {
-      const week = Math.floor(daysInWarmup / 7) + 1;
-      coldDailyLimit = Math.min(week * 5, 40);
-    }
+    // Calculate daily limits using the combined ramp system
+    const limits = getDailyLimits(daysInWarmup);
+    const coldDailyLimit = coldSender ? limits.cold : 0;
 
     const { score, status, issues } = calculateHealth({
       sent7d,

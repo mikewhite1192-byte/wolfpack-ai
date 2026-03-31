@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // Full cycle (manual trigger from dashboard)
     const result = await runWarmupCycle();
-    console.log(`[warmup] Cycle complete: ${result.sent} sent, ${result.errors} errors, ${result.completed.length} newly completed warmup`);
+    console.log(`[warmup] Cycle complete: ${result.sent} sent, ${result.errors} errors`);
 
     return NextResponse.json(result);
   } catch (err) {
@@ -43,13 +43,34 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/outreach/warmup — get warmup status for all addresses
-export async function GET() {
+// GET /api/outreach/warmup — Vercel cron handler (crons always use GET)
+// Query params: ?type=send&batch=0, ?type=reply&batch=0, ?type=bounce&batch=0
+// No type param = return status (dashboard)
+export async function GET(req: NextRequest) {
   try {
+    const url = new URL(req.url);
+    const type = url.searchParams.get("type");
+    const batch = parseInt(url.searchParams.get("batch") || "0");
+
+    // If type is specified, this is a cron call — execute the work
+    if (type === "send") {
+      const result = await runWarmupSend(batch, 3);
+      return NextResponse.json(result);
+    }
+    if (type === "reply") {
+      const result = await runWarmupReply(batch);
+      return NextResponse.json(result);
+    }
+    if (type === "bounce") {
+      const result = await scanForBounces(batch);
+      return NextResponse.json(result);
+    }
+
+    // No type = status request (dashboard)
     const status = await getWarmupStatus();
     return NextResponse.json({ addresses: status });
   } catch (err) {
-    console.error("[warmup] Status error:", err);
+    console.error("[warmup] Error:", err);
     return NextResponse.json({ error: err instanceof Error ? err.message : "Error" }, { status: 500 });
   }
 }

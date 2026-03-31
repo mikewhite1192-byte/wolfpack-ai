@@ -1,105 +1,53 @@
 {
   "alias": ["thewolfpack.ai", "thewolfpack-ai.vercel.app"],
   "crons": [
-    {
-      "path": "/api/ai-agent/follow-up",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/ai-agent/reminders",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/ai-agent/learn",
-      "schedule": "0 22 * * *"
-    },
-    {
-      "path": "/api/dashboard/recommendations",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/outreach/send",
-      "schedule": "15 13 * * *"
-    },
-    {
-      "path": "/api/outreach/send",
-      "schedule": "45 14 * * *"
-    },
-    {
-      "path": "/api/outreach/send",
-      "schedule": "20 16 * * *"
-    },
-    {
-      "path": "/api/outreach/send",
-      "schedule": "50 17 * * *"
-    },
-    {
-      "path": "/api/outreach/send",
-      "schedule": "10 19 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=send&batch=0",
-      "schedule": "20 12 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=send&batch=1",
-      "schedule": "40 13 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=send&batch=2",
-      "schedule": "10 15 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=reply&batch=0",
-      "schedule": "30 16 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=reply&batch=1",
-      "schedule": "50 17 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=reply&batch=2",
-      "schedule": "15 19 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=reply&batch=3",
-      "schedule": "35 12 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=reply&batch=4",
-      "schedule": "55 14 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=reply&batch=5",
-      "schedule": "25 16 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=reply&batch=6",
-      "schedule": "45 18 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=bounce&batch=0",
-      "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=bounce&batch=1",
-      "schedule": "0 17 * * *"
-    },
-    {
-      "path": "/api/outreach/warmup?type=bounce&batch=2",
-      "schedule": "0 21 * * *"
-    },
-    {
-      "path": "/api/outreach/scrape",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/outreach/upgrade",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/webhooks/maya",
-      "schedule": "*/10 * * * *"
-    }
+    { "path": "/api/ai-agent/reminders", "schedule": "0 7 * * *" },
+    { "path": "/api/ai-agent/follow-up", "schedule": "0 8 * * *" },
+
+    { "path": "/api/outreach/scrape", "schedule": "0 11 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "20 11 * * *" },
+
+    { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "40 11 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=1", "schedule": "50 11 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=2", "schedule": "5 12 * * *" },
+    { "path": "/api/dashboard/recommendations", "schedule": "15 12 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=emails&batch=3", "schedule": "30 12 * * *" },
+    { "path": "/api/outreach/warmup?type=bounce&batch=0", "schedule": "45 12 * * *" },
+
+    { "path": "/api/outreach/send", "schedule": "5 13 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "25 13 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=1", "schedule": "35 13 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=2", "schedule": "50 13 * * *" },
+
+    { "path": "/api/outreach/upgrade", "schedule": "5 14 * * *" },
+    { "path": "/api/outreach/warmup?type=reply&batch=0", "schedule": "20 14 * * *" },
+    { "path": "/api/outreach/send", "schedule": "40 14 * * *" },
+    { "path": "/api/outreach/warmup?type=reply&batch=1", "schedule": "55 14 * * *" },
+
+    { "path": "/api/outreach/scrape-maps?phase=emails&batch=3", "schedule": "10 15 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "25 15 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=1", "schedule": "35 15 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=2", "schedule": "50 15 * * *" },
+
+    { "path": "/api/outreach/warmup?type=reply&batch=2", "schedule": "5 16 * * *" },
+    { "path": "/api/outreach/send", "schedule": "20 16 * * *" },
+    { "path": "/api/outreach/warmup?type=reply&batch=3", "schedule": "35 16 * * *" },
+    { "path": "/api/outreach/warmup?type=bounce&batch=1", "schedule": "50 16 * * *" },
+
+    { "path": "/api/outreach/scrape-maps?phase=verify&batch=5", "schedule": "5 17 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "20 17 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=1", "schedule": "30 17 * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=2", "schedule": "45 17 * * *" },
+
+    { "path": "/api/outreach/send", "schedule": "0 18 * * *" },
+    { "path": "/api/outreach/warmup?type=reply&batch=4", "schedule": "15 18 * * *" },
+    { "path": "/api/outreach/warmup?type=reply&batch=5", "schedule": "30 18 * * *" },
+    { "path": "/api/outreach/warmup?type=reply&batch=6", "schedule": "50 18 * * *" },
+
+    { "path": "/api/outreach/send", "schedule": "10 19 * * *" },
+
+    { "path": "/api/outreach/warmup?type=bounce&batch=2", "schedule": "0 21 * * *" },
+    { "path": "/api/ai-agent/learn", "schedule": "0 22 * * *" },
+    { "path": "/api/webhooks/maya", "schedule": "*/10 * * * *" }
   ]
 }
