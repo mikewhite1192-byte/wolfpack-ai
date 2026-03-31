@@ -116,7 +116,7 @@ export default function OutreachPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scraperStats, setScraperStats] = useState<any>(null);
   const [showScraperForm, setShowScraperForm] = useState(false);
-  const [newScraper, setNewScraper] = useState({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "" });
+  const [newScraper, setNewScraper] = useState({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "", campaignId: "" });
   const [addingScraper, setAddingScraper] = useState(false);
   const [massScraping, setMassScraping] = useState(false);
   const [massScrapeQuery, setMassScrapeQuery] = useState("");
@@ -395,7 +395,16 @@ export default function OutreachPage() {
         categoryFilter: catFilter || null,
       }),
     });
-    setNewScraper({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "" });
+    // Link to campaign if selected
+    if (newScraper.campaignId) {
+      const res2 = await fetch("/api/outreach/scrape-maps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "status" }) });
+      const data = await res2.json();
+      const latest = (data.configs || []).find((c: Record<string, unknown>) => (c.name as string) === newScraper.name);
+      if (latest) {
+        await linkScraperToCampaign(latest.id as string, newScraper.campaignId);
+      }
+    }
+    setNewScraper({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "", campaignId: "" });
     setShowScraperForm(false);
     setAddingScraper(false);
     refreshStats();
@@ -1456,6 +1465,17 @@ export default function OutreachPage() {
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>CUSTOM CATEGORY</div>
                       <input style={inputStyle} placeholder="e.g. Pool cleaning, Pest control" value={newScraper.customCategory} onChange={e => setNewScraper({ ...newScraper, customCategory: e.target.value })} />
+                    </div>
+                  )}
+                  {campaigns.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>ADD TO CAMPAIGN</div>
+                      <select style={inputStyle} value={newScraper.campaignId} onChange={e => setNewScraper({ ...newScraper, campaignId: e.target.value })}>
+                        <option value="">No campaign (unassigned pool)</option>
+                        {campaigns.map((camp: Record<string, unknown>) => (
+                          <option key={camp.id as string} value={camp.id as string}>{camp.name as string}</option>
+                        ))}
+                      </select>
                     </div>
                   )}
                   <button className="out-btn" onClick={addScraperConfig} disabled={addingScraper || !newScraper.name || !newScraper.query}>

@@ -76,14 +76,16 @@ async function pollInbox(
     let lock;
     try {
       lock = await client.getMailboxLock(folder);
-    } catch {
-      continue; // folder doesn't exist
+    } catch (err) {
+      console.log(`[inbox] Folder ${folder} not available for ${address}:`, err instanceof Error ? err.message : err);
+      continue;
     }
 
   try {
     // Always look back at least 3 days to catch replies we might have missed
     // The dedup check (message_id) prevents storing duplicates
     const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    console.log(`[inbox] Polling ${address} folder=${folder} since=${since.toISOString()}`);
 
     // Search for messages since last poll
     const messages = client.fetch(
@@ -109,7 +111,11 @@ async function pollInbox(
       // Skip emails from our own addresses (warmup emails between ourselves)
       const ourAddresses = await sql`SELECT email FROM warmup_addresses WHERE is_active = TRUE`;
       const ourEmails = ourAddresses.map(a => (a.email as string).toLowerCase());
-      if (ourEmails.includes(fromAddr.toLowerCase())) continue;
+      if (ourEmails.includes(fromAddr.toLowerCase())) {
+        continue;
+      }
+
+      console.log(`[inbox] Found email in ${folder}: from=${fromAddr} subject="${subject}" date=${new Date(date).toISOString()}`);
 
       // Check if already stored
       const existing = await sql`
