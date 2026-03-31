@@ -87,6 +87,9 @@ async function pollInbox(
     const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
     console.log(`[inbox] Polling ${address} folder=${folder} since=${since.toISOString()}`);
 
+    // Debug: count total messages in folder
+    let msgCount = 0;
+
     // Search for messages since last poll
     const messages = client.fetch(
       { since },
@@ -115,6 +118,7 @@ async function pollInbox(
         continue;
       }
 
+      msgCount++;
       console.log(`[inbox] Found email in ${folder}: from=${fromAddr} subject="${subject}" date=${new Date(date).toISOString()}`);
 
       // Check if already stored
@@ -186,6 +190,7 @@ async function pollInbox(
       fetched++;
     }
 
+    console.log(`[inbox] ${address} ${folder}: scanned ${msgCount} messages, stored ${fetched} new replies`);
   } finally {
     lock.release();
   }
