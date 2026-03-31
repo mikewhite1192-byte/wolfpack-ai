@@ -19,18 +19,25 @@ export interface CampaignReply {
   email_category: "cold_reply" | "warmup" | "other"; // categorize for filtering
 }
 
-// Fetch new emails from cold sender addresses only via IMAP
-export async function pollAllInboxes(): Promise<{ fetched: number; errors: number }> {
+// Fetch new emails from ONE cold sender address via IMAP
+// Pass batch number to rotate through addresses (one per cron call to avoid timeouts)
+export async function pollAllInboxes(batch?: number): Promise<{ fetched: number; errors: number }> {
   const addresses = await sql`
     SELECT * FROM warmup_addresses WHERE is_active = TRUE AND cold_sender = TRUE
+    ORDER BY email ASC
   `;
 
+  if (addresses.length === 0) return { fetched: 0, errors: 0 };
+
+  // If batch specified, poll just that one address. Otherwise poll all (for manual triggers, one at a time)
   let fetched = 0;
   let errors = 0;
 
-  console.log(`[inbox] Starting poll for ${addresses.length} cold sender addresses`);
+  const toPoll = batch != null
+    ? [addresses[batch % addresses.length]]
+    : addresses;
 
-  for (const addr of addresses) {
+  for (const addr of toPoll) {
     const email = addr.email as string;
     const imapHost = addr.imap_host as string || (addr.smtp_host as string).replace("smtp.", "imap.");
     console.log(`[inbox] Polling ${email} via ${imapHost}:993`);
@@ -75,8 +82,8 @@ async function pollInbox(
 
   let fetched = 0;
 
-  // Check both INBOX and All Mail (in case emails were read/archived in Gmail)
-  const foldersToCheck = ["INBOX", "[Gmail]/All Mail"];
+  // Check INBOX only — All Mail is too slow and causes timeouts
+  const foldersToCheck = ["INBOX"];
 
   for (const folder of foldersToCheck) {
     let lock;

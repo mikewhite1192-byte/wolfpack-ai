@@ -46,10 +46,18 @@
 
     { "path": "/api/outreach/send", "schedule": "10 19 * * *" },
 
-    { "path": "/api/outreach/inbox?poll=true", "schedule": "0 12 * * *" },
-    { "path": "/api/outreach/inbox?poll=true", "schedule": "0 16 * * *" },
-    { "path": "/api/outreach/inbox?poll=true", "schedule": "0 20 * * *" },
-    { "path": "/api/outreach/inbox?poll=true", "schedule": "0 0 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=0", "schedule": "0 12 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=1", "schedule": "5 12 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=2", "schedule": "10 12 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=0", "schedule": "0 16 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=1", "schedule": "5 16 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=2", "schedule": "10 16 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=0", "schedule": "0 20 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=1", "schedule": "5 20 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=2", "schedule": "10 20 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=0", "schedule": "0 0 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=1", "schedule": "5 0 * * *" },
+    { "path": "/api/outreach/inbox?poll=true&batch=2", "schedule": "10 0 * * *" },
 
     { "path": "/api/outreach/warmup?type=bounce&batch=2", "schedule": "0 21 * * *" },
     { "path": "/api/ai-agent/learn", "schedule": "0 22 * * *" },

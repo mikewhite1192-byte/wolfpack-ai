@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
     const isPoll = url.searchParams.get("poll") === "true";
 
     if (isPoll) {
-      const result = await pollAllInboxes();
+      const batchParam = url.searchParams.get("batch");
+      const batch = batchParam != null ? parseInt(batchParam) : undefined;
+      const result = await pollAllInboxes(batch);
       return NextResponse.json(result);
     }
 
@@ -49,11 +51,7 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case "poll": {
-        // Can be called by cron or manually
-        const auth = req.headers.get("authorization");
-        const isCron = auth === `Bearer ${process.env.CRON_SECRET}`;
-        // Allow both cron and manual admin triggers
-        const result = await pollAllInboxes();
+        const result = await pollAllInboxes(body.batch ?? undefined);
         return NextResponse.json(result);
       }
 
