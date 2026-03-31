@@ -254,7 +254,18 @@ export default function OutreachPage() {
     });
     const data = await res.json();
     if (data.id) {
-      setAddResult(`Added: ${data.email} (${data.role})`);
+      // If campaign selected, assign sender to it
+      const campaignId = (newEmail as Record<string, unknown>).campaignId as string;
+      if (campaignId && data.id) {
+        await fetch("/api/outreach/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "assign-sender", campaignId, senderId: data.id }),
+        });
+        setAddResult(`Added: ${data.email} (${data.role}) → assigned to campaign`);
+      } else {
+        setAddResult(`Added: ${data.email} (${data.role})`);
+      }
       setNewEmail({ email: "", displayName: "Mike", smtpHost: "", smtpPort: "587", smtpUser: "", smtpPass: "", coldSender: true });
       setShowAddForm(false);
       refreshStats();
@@ -716,9 +727,24 @@ export default function OutreachPage() {
                       Cold Sender
                     </label>
                     <span style={{ fontSize: 11, color: T.muted }}>
-                      {newEmail.coldSender ? "Sends cold + warmup from day 1, ramps to 40 cold / 10 warmup at day 25" : "Warmup only — helps build reputation but won't send cold emails"}
+                      {newEmail.coldSender ? "Sends cold + warmup from day 1, ramps to 40 cold / 10 warmup at day 25" : "Warmup only — builds reputation only"}
                     </span>
                   </div>
+                  {newEmail.coldSender && campaigns.length > 0 && (
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>ASSIGN TO CAMPAIGN</div>
+                      <select
+                        style={{ ...inputStyle, width: "auto" }}
+                        value={(newEmail as Record<string, unknown>).campaignId as string || ""}
+                        onChange={e => setNewEmail({ ...newEmail, campaignId: e.target.value } as typeof newEmail)}
+                      >
+                        <option value="">No campaign (unassigned)</option>
+                        {campaigns.map((camp: Record<string, unknown>) => (
+                          <option key={camp.id as string} value={camp.id as string}>{camp.name as string}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <button className="out-btn" onClick={addEmailAddress} disabled={addingEmail || !newEmail.email || !newEmail.smtpHost}>
                     {addingEmail ? "Adding..." : "Add to Warmup"}
                   </button>
@@ -1010,19 +1036,59 @@ export default function OutreachPage() {
                       </div>
 
                       {/* Campaign stats */}
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginTop: 14 }}>
+                      <div className="out-stats" style={{ marginTop: 14, gridTemplateColumns: "repeat(4, 1fr)" }}>
                         {[
-                          { label: "Total", value: cStats.total || "0", color: T.text },
-                          { label: "Active", value: cStats.active || "0", color: T.orange },
+                          { label: "Total Contacts", value: cStats.total || "0", color: T.text },
+                          { label: "Active in Sequence", value: cStats.active || "0", color: T.orange },
                           { label: "Replied", value: cStats.replied || "0", color: T.green },
                           { label: "Bounced", value: cStats.bounced || "0", color: T.red },
-                          { label: "Completed", value: cStats.completed || "0", color: T.muted },
                         ].map(s => (
-                          <div key={s.label} style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>{s.value}</div>
-                            <div style={{ fontSize: 10, color: T.muted }}>{s.label}</div>
+                          <div key={s.label} className="out-stat">
+                            <div className="out-stat-val" style={{ color: s.color }}>{s.value}</div>
+                            <div className="out-stat-label">{s.label}</div>
                           </div>
                         ))}
+                      </div>
+
+                      {/* Activity summary */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                        <div style={{ padding: 12, background: "rgba(255,255,255,0.02)", borderRadius: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1, marginBottom: 8 }}>TODAY</div>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, color: T.muted }}>Cold emails sent</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{(c as Record<string, unknown>).coldToday as number || 0}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, color: T.muted }}>Warmup emails sent</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{(c as Record<string, unknown>).warmupToday as number || 0}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ fontSize: 12, color: T.muted }}>New contacts added</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{cStats.added_today || "0"}</span>
+                          </div>
+                        </div>
+                        <div style={{ padding: 12, background: "rgba(255,255,255,0.02)", borderRadius: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1, marginBottom: 8 }}>SEQUENCE STAGES</div>
+                          {[
+                            { label: "Step 1 — Hook", value: cStats.step1 || "0" },
+                            { label: "Step 2 — Bump", value: cStats.step2 || "0" },
+                            { label: "Step 3 — Angle", value: cStats.step3 || "0" },
+                            { label: "Step 4 — Close", value: cStats.step4 || "0" },
+                          ].map(s => (
+                            <div key={s.label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                              <span style={{ fontSize: 12, color: T.muted }}>{s.label}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{s.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Secondary stats */}
+                      <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 11, color: T.muted }}>
+                        <span>Completed: {cStats.completed || "0"}</span>
+                        <span>Invalid: {cStats.invalid || "0"}</span>
+                        <span>Unsubscribed: {cStats.unsubscribed || "0"}</span>
+                        <span style={{ color: T.green }}>Scraping 15 contacts/day automatically</span>
                       </div>
 
                       {/* Quick actions */}
@@ -1296,7 +1362,28 @@ export default function OutreachPage() {
                     <span style={{ fontSize: 12, color: T.red, fontWeight: 700 }}>{unreadCount} unread</span>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <select
+                    style={{ ...inputStyle, width: "auto", padding: "6px 10px", fontSize: 12 }}
+                    onChange={e => {
+                      const addr = e.target.value;
+                      if (addr) {
+                        fetch(`/api/outreach/inbox?address=${encodeURIComponent(addr)}`)
+                          .then(r => r.json())
+                          .then(data => { setInboxReplies(data.replies || []); setInboxTotal(data.total || 0); });
+                      } else {
+                        loadInbox();
+                      }
+                    }}
+                  >
+                    <option value="">All Inboxes</option>
+                    {campaigns.map((camp: Record<string, unknown>) => {
+                      const campSenders = (camp.senders || []) as { email: string }[];
+                      return campSenders.map(s => (
+                        <option key={s.email} value={s.email}>{(camp.name as string)} — {s.email.split("@")[0]}</option>
+                      ));
+                    })}
+                  </select>
                   <button className="out-btn-ghost" onClick={pollInboxes} disabled={polling} style={{ fontSize: 12, padding: "6px 12px" }}>
                     {polling ? "Checking..." : "Check Mail"}
                   </button>

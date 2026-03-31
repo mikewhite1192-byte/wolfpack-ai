@@ -67,10 +67,32 @@ export async function GET(req: NextRequest) {
             COUNT(*) FILTER (WHERE sequence_status = 'active') as active,
             COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied,
             COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced,
-            COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed
+            COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed,
+            COUNT(*) FILTER (WHERE sequence_status = 'invalid') as invalid,
+            COUNT(*) FILTER (WHERE sequence_status = 'unsubscribed') as unsubscribed,
+            COUNT(*) FILTER (WHERE sequence_step = 1 AND sequence_status = 'active') as step1,
+            COUNT(*) FILTER (WHERE sequence_step = 2 AND sequence_status = 'active') as step2,
+            COUNT(*) FILTER (WHERE sequence_step = 3 AND sequence_status = 'active') as step3,
+            COUNT(*) FILTER (WHERE sequence_step = 4 AND sequence_status = 'active') as step4,
+            COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE) as added_today
           FROM outreach_contacts WHERE campaign_id = ${c.id}
         `;
-        campaigns.push({ ...c, senders, templates, stats: cStats[0] });
+        // Today's cold sends for this campaign's senders
+        const senderEmails = senders.map(s => s.email as string);
+        let coldToday = 0;
+        let warmupToday = 0;
+        if (senderEmails.length > 0) {
+          const todaySends = await sql`
+            SELECT
+              COUNT(*) FILTER (WHERE email_type = 'cold') as cold,
+              COUNT(*) FILTER (WHERE email_type IN ('warmup', 'warmup_reply')) as warmup
+            FROM outreach_emails
+            WHERE from_email = ANY(${senderEmails}) AND sent_at >= CURRENT_DATE
+          `;
+          coldToday = parseInt(todaySends[0].cold as string || "0");
+          warmupToday = parseInt(todaySends[0].warmup as string || "0");
+        }
+        campaigns.push({ ...c, senders, templates, stats: cStats[0], coldToday, warmupToday });
       }
     } catch { /* tables may not exist */ }
 
