@@ -67,8 +67,18 @@ async function pollInbox(
 
   await client.connect();
 
-  const lock = await client.getMailboxLock("INBOX");
   let fetched = 0;
+
+  // Check both INBOX and All Mail (in case emails were read/archived in Gmail)
+  const foldersToCheck = ["INBOX", "[Gmail]/All Mail"];
+
+  for (const folder of foldersToCheck) {
+    let lock;
+    try {
+      lock = await client.getMailboxLock(folder);
+    } catch {
+      continue; // folder doesn't exist
+    }
 
   try {
     // Always look back at least 3 days to catch replies we might have missed
@@ -170,12 +180,15 @@ async function pollInbox(
       fetched++;
     }
 
-    // Update last polled time
-    await sql`UPDATE warmup_addresses SET last_polled_at = NOW() WHERE email = ${address}`;
   } finally {
     lock.release();
-    await client.logout();
   }
+  } // end folder loop
+
+  // Update last polled time
+  await sql`UPDATE warmup_addresses SET last_polled_at = NOW() WHERE email = ${address}`;
+
+  await client.logout();
 
   if (fetched > 0) {
     console.log(`[inbox] Fetched ${fetched} new replies from ${address}`);
