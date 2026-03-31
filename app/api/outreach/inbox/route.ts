@@ -8,10 +8,18 @@ import {
   getUnreadCount,
 } from "@/lib/outreach/campaign-inbox";
 
-// GET /api/outreach/inbox — get replies
+// GET /api/outreach/inbox — get replies OR cron-triggered poll
+// ?poll=true triggers inbox polling (for Vercel cron which uses GET)
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
+    const isPoll = url.searchParams.get("poll") === "true";
+
+    if (isPoll) {
+      const result = await pollAllInboxes();
+      return NextResponse.json(result);
+    }
+
     const limit = parseInt(url.searchParams.get("limit") || "50");
     const offset = parseInt(url.searchParams.get("offset") || "0");
     const unreadOnly = url.searchParams.get("unread") === "true";

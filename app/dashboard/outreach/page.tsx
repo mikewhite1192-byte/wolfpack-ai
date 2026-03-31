@@ -76,7 +76,32 @@ export default function OutreachPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeState, setScrapeState] = useState("");
   const [scrapeCount, setScrapeCount] = useState(30);
-  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts">("overview");
+  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts" | "campaigns" | "scraper">("overview");
+  const [contactSearch, setContactSearch] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Campaigns state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
+  const [newCampaign, setNewCampaign] = useState({ name: "", niche: "" });
+  const [creatingCampaign, setCreatingCampaign] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editingTemplates, setEditingTemplates] = useState<string | null>(null);
+  const [templateDrafts, setTemplateDrafts] = useState<Record<number, { subject: string; body: string }>>({});
+  const [assigningSender, setAssigningSender] = useState<string | null>(null);
+
+  // Scraper state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [scraperConfigs, setScraperConfigs] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [scraperStats, setScraperStats] = useState<any>(null);
+  const [showScraperForm, setShowScraperForm] = useState(false);
+  const [newScraper, setNewScraper] = useState({ name: "", query: "", dailyCount: "15" });
+  const [addingScraper, setAddingScraper] = useState(false);
+  const [massScraping, setMassScraping] = useState(false);
+  const [massScrapeQuery, setMassScrapeQuery] = useState("");
+  const [massScrapeCount, setMassScrapeCount] = useState("50");
 
   // Outreach contacts
   const [outreachContacts, setOutreachContacts] = useState<Array<{
@@ -125,6 +150,9 @@ export default function OutreachPage() {
         setRecentEmails(data.recentEmails || []);
         setEmailHealth(data.emailHealth || []);
         setOutreachContacts(data.outreachContacts || []);
+        setCampaigns(data.campaigns || []);
+        setScraperConfigs(data.scraperConfigs || []);
+        setScraperStats(data.scraperStats || null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -219,15 +247,150 @@ export default function OutreachPage() {
     refreshStats();
   }
 
-  function refreshStats() {
-    fetch("/api/outreach/stats")
+  function refreshStats(search?: string) {
+    const params = search ? `?search=${encodeURIComponent(search)}` : "";
+    fetch(`/api/outreach/stats${params}`)
       .then(r => r.json())
       .then(data => {
         setStats(data.stats);
         setRecentEmails(data.recentEmails || []);
         setEmailHealth(data.emailHealth || []);
         setOutreachContacts(data.outreachContacts || []);
+        setCampaigns(data.campaigns || []);
+        setScraperConfigs(data.scraperConfigs || []);
+        setScraperStats(data.scraperStats || null);
       });
+  }
+
+  function searchContacts(query: string) {
+    setContactSearch(query);
+    if (searchTimeout) clearTimeout(searchTimeout);
+    setSearchTimeout(setTimeout(() => refreshStats(query), 300));
+  }
+
+  async function createCampaign() {
+    setCreatingCampaign(true);
+    await fetch("/api/outreach/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create", name: newCampaign.name, niche: newCampaign.niche }),
+    });
+    setNewCampaign({ name: "", niche: "" });
+    setShowCampaignForm(false);
+    setCreatingCampaign(false);
+    refreshStats();
+  }
+
+  async function toggleCampaign(id: string, enabled: boolean) {
+    await fetch("/api/outreach/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update", id, enabled }),
+    });
+    refreshStats();
+  }
+
+  async function saveCampaignTemplates(campaignId: string) {
+    const templates = Object.entries(templateDrafts).map(([step, t]) => ({ step: parseInt(step), ...t }));
+    await fetch("/api/outreach/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set-templates", campaignId, templates }),
+    });
+    setEditingTemplates(null);
+    setTemplateDrafts({});
+    refreshStats();
+  }
+
+  async function assignSender(campaignId: string, senderId: string) {
+    await fetch("/api/outreach/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "assign-sender", campaignId, senderId }),
+    });
+    setAssigningSender(null);
+    refreshStats();
+  }
+
+  async function removeSender(campaignId: string, senderId: string) {
+    await fetch("/api/outreach/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "remove-sender", campaignId, senderId }),
+    });
+    refreshStats();
+  }
+
+  async function addScraperConfig() {
+    setAddingScraper(true);
+    await fetch("/api/outreach/scrape-maps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "add", name: newScraper.name, query: newScraper.query, dailyCount: parseInt(newScraper.dailyCount) }),
+    });
+    setNewScraper({ name: "", query: "", dailyCount: "15" });
+    setShowScraperForm(false);
+    setAddingScraper(false);
+    refreshStats();
+  }
+
+  async function toggleScraper(id: string, enabled: boolean) {
+    await fetch("/api/outreach/scrape-maps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "toggle", id, enabled }),
+    });
+    refreshStats();
+  }
+
+  async function updateScraperCount(id: string, count: number) {
+    await fetch("/api/outreach/scrape-maps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set-count", id, dailyCount: count }),
+    });
+    refreshStats();
+  }
+
+  async function runMassScrape() {
+    setMassScraping(true);
+    const res = await fetch("/api/outreach/scrape-maps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mass-scrape", query: massScrapeQuery, maxResults: parseInt(massScrapeCount), format: "csv" }),
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `scrape-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setMassScraping(false);
+  }
+
+  async function exportCSV() {
+    const res = await fetch("/api/outreach/scrape-maps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "export-csv" }),
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `scraped-leads-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function linkScraperToCampaign(scraperConfigId: string, campaignId: string) {
+    await fetch("/api/outreach/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "link-scraper", scraperConfigId, campaignId }),
+    });
+    refreshStats();
   }
 
   // Inbox functions
@@ -353,6 +516,8 @@ export default function OutreachPage() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${T.border}`, marginBottom: 20 }}>
         <button className={`out-tab ${tab === "overview" ? "active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
+        <button className={`out-tab ${tab === "campaigns" ? "active" : ""}`} onClick={() => setTab("campaigns")}>Campaigns ({campaigns.length})</button>
+        <button className={`out-tab ${tab === "scraper" ? "active" : ""}`} onClick={() => setTab("scraper")}>Scraper</button>
         <button className={`out-tab ${tab === "emails" ? "active" : ""}`} onClick={() => setTab("emails")}>Email Addresses</button>
         <button className={`out-tab ${tab === "contacts" ? "active" : ""}`} onClick={() => setTab("contacts")}>Contacts ({outreachContacts.length})</button>
         <button className={`out-tab ${tab === "health" ? "active" : ""}`} onClick={() => setTab("health")}>Health Monitor</button>
@@ -495,7 +660,7 @@ export default function OutreachPage() {
                       Cold Sender
                     </label>
                     <span style={{ fontSize: 11, color: T.muted }}>
-                      {newEmail.coldSender ? "Will send cold outreach after 30-day warmup" : "Warmup only — helps build reputation but won't send cold emails"}
+                      {newEmail.coldSender ? "Sends cold + warmup from day 1, ramps to 40 cold / 10 warmup at day 25" : "Warmup only — helps build reputation but won't send cold emails"}
                     </span>
                   </div>
                   <button className="out-btn" onClick={addEmailAddress} disabled={addingEmail || !newEmail.email || !newEmail.smtpHost}>
@@ -518,8 +683,8 @@ export default function OutreachPage() {
                         <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>
                           {h.role === "cold_sender" ? "Cold Sender" : "Warmup Only"}
                           {" · "}
-                          {h.warmupComplete ? "Warmup Complete" : `Day ${h.daysInWarmup}/30`}
-                          {h.role === "cold_sender" && h.warmupComplete && ` · Limit: ${h.coldDailyLimit}/day`}
+                          Day {h.daysInWarmup}
+                          {h.role === "cold_sender" && ` · Limit: ${h.coldDailyLimit}/day`}
                         </div>
                       </div>
                       <div style={{
@@ -575,7 +740,15 @@ export default function OutreachPage() {
           {/* ============= CONTACTS TAB ============= */}
           {tab === "contacts" && (
             <>
-              <div className="out-label">Outreach Contacts ({outreachContacts.length})</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div className="out-label" style={{ marginBottom: 0 }}>Outreach Contacts ({outreachContacts.length})</div>
+                <input
+                  style={{ ...inputStyle, width: 260 }}
+                  placeholder="Search by name, email, company..."
+                  value={contactSearch}
+                  onChange={e => searchContacts(e.target.value)}
+                />
+              </div>
               <div className="out-card">
                 {outreachContacts.length === 0 ? (
                   <div style={{ color: T.muted, fontSize: 13, padding: "20px 0", textAlign: "center" }}>No contacts yet. Hit Scrape NIPR on the Overview tab.</div>
@@ -676,11 +849,9 @@ export default function OutreachPage() {
                         <td style={{ fontWeight: 600 }}>{h.address.split("@")[0]}@...</td>
                         <td className="muted" style={{ fontSize: 11 }}>{h.role === "cold_sender" ? "COLD" : "WARM"}</td>
                         <td>
-                          {h.warmupComplete ? (
-                            <span style={{ color: T.green, fontSize: 11 }}>Done</span>
-                          ) : (
-                            <span style={{ color: T.yellow, fontSize: 11 }}>Day {h.daysInWarmup}/30</span>
-                          )}
+                          <span style={{ color: h.daysInWarmup >= 25 ? T.green : T.yellow, fontSize: 11 }}>
+                            Day {h.daysInWarmup}{h.daysInWarmup >= 25 ? " (full)" : ""}
+                          </span>
                         </td>
                         <td>
                           <span style={{ color: healthColor(h.healthStatus), fontWeight: 700 }}>{h.healthScore}</span>
@@ -712,6 +883,312 @@ export default function OutreachPage() {
                   ))}
                 </div>
               )}
+            </>
+          )}
+
+          {/* ============= CAMPAIGNS TAB ============= */}
+          {tab === "campaigns" && (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div className="out-label" style={{ marginBottom: 0 }}>Campaigns</div>
+                <button className="out-btn out-btn-sm" onClick={() => setShowCampaignForm(!showCampaignForm)}>
+                  {showCampaignForm ? "Cancel" : "+ New Campaign"}
+                </button>
+              </div>
+
+              {showCampaignForm && (
+                <div className="out-card" style={{ marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>CAMPAIGN NAME</div>
+                      <input style={inputStyle} placeholder="FL Insurance Agents" value={newCampaign.name} onChange={e => setNewCampaign({ ...newCampaign, name: e.target.value })} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>NICHE</div>
+                      <input style={inputStyle} placeholder="insurance" value={newCampaign.niche} onChange={e => setNewCampaign({ ...newCampaign, niche: e.target.value })} />
+                    </div>
+                  </div>
+                  <button className="out-btn" onClick={createCampaign} disabled={creatingCampaign || !newCampaign.name}>
+                    {creatingCampaign ? "Creating..." : "Create Campaign"}
+                  </button>
+                </div>
+              )}
+
+              {campaigns.length === 0 ? (
+                <div className="out-card" style={{ textAlign: "center", color: T.muted, padding: 40 }}>
+                  No campaigns yet. Create one to separate niches with dedicated senders and templates.
+                </div>
+              ) : (
+                campaigns.map((c: Record<string, unknown>) => {
+                  const senders = (c.senders || []) as { id: string; email: string; display_name: string }[];
+                  const templates = (c.templates || []) as { step: number; subject: string; body: string }[];
+                  const cStats = (c.stats || {}) as Record<string, string>;
+                  const isEditing = editingTemplates === c.id;
+                  const isAssigning = assigningSender === c.id;
+
+                  return (
+                    <div key={c.id as string} className="out-card" style={{ marginBottom: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{c.name as string}</div>
+                          <div style={{ fontSize: 12, color: T.muted }}>{c.niche as string || "No niche set"}</div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <button
+                            onClick={() => toggleCampaign(c.id as string, !(c.enabled as boolean))}
+                            style={{
+                              padding: "4px 12px", fontSize: 11, fontWeight: 700, borderRadius: 12, cursor: "pointer",
+                              background: (c.enabled as boolean) ? `${T.green}15` : "rgba(255,255,255,0.05)",
+                              color: (c.enabled as boolean) ? T.green : T.muted,
+                              border: `1px solid ${(c.enabled as boolean) ? T.green + "30" : T.border}`,
+                            }}
+                          >
+                            {(c.enabled as boolean) ? "ACTIVE" : "PAUSED"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Campaign stats */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginTop: 14 }}>
+                        {[
+                          { label: "Total", value: cStats.total || "0", color: T.text },
+                          { label: "Active", value: cStats.active || "0", color: T.orange },
+                          { label: "Replied", value: cStats.replied || "0", color: T.green },
+                          { label: "Bounced", value: cStats.bounced || "0", color: T.red },
+                          { label: "Completed", value: cStats.completed || "0", color: T.muted },
+                        ].map(s => (
+                          <div key={s.label} style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>{s.value}</div>
+                            <div style={{ fontSize: 10, color: T.muted }}>{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Senders */}
+                      <div style={{ marginTop: 14, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1 }}>SENDERS</div>
+                          <button
+                            onClick={() => setAssigningSender(isAssigning ? null : c.id as string)}
+                            style={{ fontSize: 11, color: T.orange, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
+                          >
+                            {isAssigning ? "Done" : "+ Assign"}
+                          </button>
+                        </div>
+                        {senders.length === 0 && !isAssigning && (
+                          <div style={{ fontSize: 12, color: T.muted }}>No senders assigned yet</div>
+                        )}
+                        {senders.map(s => (
+                          <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                            <span style={{ fontSize: 13, color: T.text }}>{s.email}</span>
+                            <button onClick={() => removeSender(c.id as string, s.id)} style={{ fontSize: 10, color: T.red, background: "none", border: "none", cursor: "pointer" }}>Remove</button>
+                          </div>
+                        ))}
+                        {isAssigning && (
+                          <div style={{ marginTop: 8 }}>
+                            {emailHealth.filter(h => h.role === "cold_sender" && !senders.find(s => s.email === h.address)).map(h => (
+                              <button
+                                key={h.address}
+                                onClick={() => {
+                                  const match = emailHealth.find(eh => eh.address === h.address);
+                                  if (match) {
+                                    // Need the warmup address ID — fetch from health data isn't ideal, but we can use the email
+                                    fetch("/api/outreach/warmup").then(r => r.json()).then(data => {
+                                      const addr = (data.addresses || []).find((a: Record<string, unknown>) => a.address === h.address);
+                                      // We don't have the UUID here easily — let's use a different approach
+                                    });
+                                  }
+                                }}
+                                style={{ display: "block", padding: "6px 12px", fontSize: 12, color: T.text, background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 6, cursor: "pointer", marginBottom: 4, width: "100%" }}
+                              >
+                                {h.address}
+                              </button>
+                            ))}
+                            <div style={{ fontSize: 10, color: T.muted, marginTop: 4 }}>Use the API to assign senders by ID for now</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Templates */}
+                      <div style={{ marginTop: 14, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1 }}>TEMPLATES ({templates.length}/4)</div>
+                          <button
+                            onClick={() => {
+                              if (isEditing) {
+                                saveCampaignTemplates(c.id as string);
+                              } else {
+                                const drafts: Record<number, { subject: string; body: string }> = {};
+                                templates.forEach(t => { drafts[t.step] = { subject: t.subject, body: t.body }; });
+                                for (let i = 1; i <= 4; i++) { if (!drafts[i]) drafts[i] = { subject: "", body: "" }; }
+                                setTemplateDrafts(drafts);
+                                setEditingTemplates(c.id as string);
+                              }
+                            }}
+                            style={{ fontSize: 11, color: T.orange, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
+                          >
+                            {isEditing ? "Save Templates" : "Edit Templates"}
+                          </button>
+                        </div>
+                        {!isEditing && templates.map(t => (
+                          <div key={t.step} style={{ marginBottom: 8, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
+                            <div style={{ fontSize: 11, color: T.orange, fontWeight: 700 }}>STEP {t.step}</div>
+                            <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>{t.subject}</div>
+                            <div style={{ fontSize: 11, color: T.muted, marginTop: 2, whiteSpace: "pre-wrap", maxHeight: 60, overflow: "hidden" }}>{t.body}</div>
+                          </div>
+                        ))}
+                        {isEditing && [1, 2, 3, 4].map(step => (
+                          <div key={step} style={{ marginBottom: 12, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
+                            <div style={{ fontSize: 11, color: T.orange, fontWeight: 700, marginBottom: 6 }}>STEP {step}</div>
+                            <input
+                              style={{ ...inputStyle, marginBottom: 6 }}
+                              placeholder={`Step ${step} subject (use {{firstName}}, {{company}})`}
+                              value={templateDrafts[step]?.subject || ""}
+                              onChange={e => setTemplateDrafts({ ...templateDrafts, [step]: { ...templateDrafts[step], subject: e.target.value } })}
+                            />
+                            <textarea
+                              style={{ ...inputStyle, minHeight: 80, resize: "vertical", fontFamily: "inherit" }}
+                              placeholder={`Step ${step} body (use {{firstName}}, {{company}}, {{state}})`}
+                              value={templateDrafts[step]?.body || ""}
+                              onChange={e => setTemplateDrafts({ ...templateDrafts, [step]: { ...templateDrafts[step], body: e.target.value } })}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </>
+          )}
+
+          {/* ============= SCRAPER TAB ============= */}
+          {tab === "scraper" && (
+            <>
+              {/* Scraper stats */}
+              {scraperStats && (
+                <div className="out-stats">
+                  {[
+                    { label: "Total Scraped", value: scraperStats.total || "0", color: T.text },
+                    { label: "Pending Email", value: scraperStats.pending || "0", color: T.yellow },
+                    { label: "Email Found", value: scraperStats.found || "0", color: T.blue },
+                    { label: "Verified", value: scraperStats.verified || "0", color: T.green },
+                    { label: "Invalid", value: scraperStats.invalid || "0", color: T.red },
+                    { label: "Added to Sequence", value: scraperStats.added || "0", color: T.orange },
+                    { label: "No Email Found", value: scraperStats.not_found || "0", color: T.muted },
+                  ].map(s => (
+                    <div key={s.label} className="out-stat">
+                      <div className="out-stat-val" style={{ color: s.color }}>{s.value}</div>
+                      <div className="out-stat-label">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Scraper configs */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div className="out-label" style={{ marginBottom: 0 }}>Scraper Configs</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="out-btn-ghost" onClick={exportCSV} style={{ fontSize: 12, padding: "6px 12px" }}>Export CSV</button>
+                  <button className="out-btn out-btn-sm" onClick={() => setShowScraperForm(!showScraperForm)}>
+                    {showScraperForm ? "Cancel" : "+ Add Scraper"}
+                  </button>
+                </div>
+              </div>
+
+              {showScraperForm && (
+                <div className="out-card" style={{ marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 100px", gap: 10, marginBottom: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>NAME</div>
+                      <input style={inputStyle} placeholder="Tampa Roofers" value={newScraper.name} onChange={e => setNewScraper({ ...newScraper, name: e.target.value })} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>GOOGLE MAPS QUERY</div>
+                      <input style={inputStyle} placeholder="roofing contractors in Tampa FL" value={newScraper.query} onChange={e => setNewScraper({ ...newScraper, query: e.target.value })} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>DAILY</div>
+                      <input style={inputStyle} type="number" value={newScraper.dailyCount} onChange={e => setNewScraper({ ...newScraper, dailyCount: e.target.value })} />
+                    </div>
+                  </div>
+                  <button className="out-btn" onClick={addScraperConfig} disabled={addingScraper || !newScraper.name || !newScraper.query}>
+                    {addingScraper ? "Adding..." : "Add Scraper"}
+                  </button>
+                </div>
+              )}
+
+              {scraperConfigs.length === 0 ? (
+                <div className="out-card" style={{ textAlign: "center", color: T.muted, padding: 40 }}>
+                  No scraper configs yet. Add one to start scraping Google Maps for leads.
+                </div>
+              ) : (
+                scraperConfigs.map((sc: Record<string, unknown>) => (
+                  <div key={sc.id as string} className="health-card">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{sc.name as string}</div>
+                        <div style={{ fontSize: 12, color: T.muted }}>{sc.query as string}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          className="out-input"
+                          type="number"
+                          value={sc.daily_count as number}
+                          onChange={e => updateScraperCount(sc.id as string, parseInt(e.target.value) || 15)}
+                          style={{ width: 60, textAlign: "center" }}
+                          min={1}
+                          max={100}
+                        />
+                        <span style={{ fontSize: 10, color: T.muted }}>/day</span>
+                        <button
+                          onClick={() => toggleScraper(sc.id as string, !(sc.enabled as boolean))}
+                          style={{
+                            padding: "4px 12px", fontSize: 11, fontWeight: 700, borderRadius: 12, cursor: "pointer",
+                            background: (sc.enabled as boolean) ? `${T.green}15` : "rgba(255,255,255,0.05)",
+                            color: (sc.enabled as boolean) ? T.green : T.muted,
+                            border: `1px solid ${(sc.enabled as boolean) ? T.green + "30" : T.border}`,
+                          }}
+                        >
+                          {(sc.enabled as boolean) ? "ON" : "OFF"}
+                        </button>
+                      </div>
+                    </div>
+                    {/* Link to campaign */}
+                    <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, color: T.muted }}>Campaign:</span>
+                      <select
+                        value={(sc.campaign_id as string) || ""}
+                        onChange={e => linkScraperToCampaign(sc.id as string, e.target.value)}
+                        style={{ ...inputStyle, width: "auto", padding: "4px 8px", fontSize: 11 }}
+                      >
+                        <option value="">None (default pool)</option>
+                        {campaigns.map((camp: Record<string, unknown>) => (
+                          <option key={camp.id as string} value={camp.id as string}>{camp.name as string}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {/* Mass scrape */}
+              <div className="out-card" style={{ marginTop: 20 }}>
+                <div className="out-label">Mass Scrape + CSV Export</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px auto", gap: 10, alignItems: "end" }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>SEARCH QUERY</div>
+                    <input style={inputStyle} placeholder="HVAC companies in Orlando FL" value={massScrapeQuery} onChange={e => setMassScrapeQuery(e.target.value)} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MAX</div>
+                    <input style={inputStyle} type="number" value={massScrapeCount} onChange={e => setMassScrapeCount(e.target.value)} />
+                  </div>
+                  <button className="out-btn" onClick={runMassScrape} disabled={massScraping || !massScrapeQuery}>
+                    {massScraping ? "Scraping..." : "Scrape + Download CSV"}
+                  </button>
+                </div>
+              </div>
             </>
           )}
 
