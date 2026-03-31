@@ -388,6 +388,38 @@ export default function OutreachPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function migrateContacts(campaignId: string) {
+    if (!confirm("Move ALL unassigned contacts into this campaign?")) return;
+    const res = await fetch("/api/outreach/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "migrate-contacts", campaignId }),
+    });
+    const data = await res.json();
+    setSendResult(`Migrated ${data.migrated || 0} contacts into campaign`);
+    refreshStats();
+  }
+
+  async function deleteCampaign(id: string) {
+    if (!confirm("Delete this campaign? Contacts will be unassigned but not deleted.")) return;
+    await fetch("/api/outreach/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id }),
+    });
+    refreshStats();
+  }
+
+  async function deleteScraperConfig(id: string) {
+    if (!confirm("Delete this scraper config?")) return;
+    await fetch("/api/outreach/scrape-maps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id }),
+    });
+    refreshStats();
+  }
+
   async function linkScraperToCampaign(scraperConfigId: string, campaignId: string) {
     await fetch("/api/outreach/campaigns", {
       method: "POST",
@@ -948,6 +980,12 @@ export default function OutreachPage() {
                           >
                             {(c.enabled as boolean) ? "ACTIVE" : "PAUSED"}
                           </button>
+                          <button
+                            onClick={() => deleteCampaign(c.id as string)}
+                            style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, borderRadius: 8, cursor: "pointer", background: "none", color: T.red, border: `1px solid ${T.red}30` }}
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
 
@@ -965,6 +1003,13 @@ export default function OutreachPage() {
                             <div style={{ fontSize: 10, color: T.muted }}>{s.label}</div>
                           </div>
                         ))}
+                      </div>
+
+                      {/* Quick actions */}
+                      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                        <button className="out-btn-ghost" style={{ fontSize: 11, padding: "6px 12px" }} onClick={() => migrateContacts(c.id as string)}>
+                          Move All Unassigned Contacts Here
+                        </button>
                       </div>
 
                       {/* Senders */}
@@ -1143,6 +1188,12 @@ export default function OutreachPage() {
                           }}
                         >
                           {(sc.enabled as boolean) ? "ON" : "OFF"}
+                        </button>
+                        <button
+                          onClick={() => deleteScraperConfig(sc.id as string)}
+                          style={{ padding: "4px 8px", fontSize: 11, color: T.red, background: "none", border: `1px solid ${T.red}30`, borderRadius: 6, cursor: "pointer" }}
+                        >
+                          Delete
                         </button>
                       </div>
                     </div>

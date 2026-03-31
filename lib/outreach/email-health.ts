@@ -109,7 +109,7 @@ export async function getAllEmailHealth(): Promise<EmailHealth[]> {
   for (const addr of addresses) {
     const email = addr.email as string;
     const started = new Date(addr.warmup_started_at as string);
-    const daysInWarmup = Math.floor((Date.now() - started.getTime()) / (1000 * 60 * 60 * 24));
+    const daysInWarmup = Math.floor((Date.now() - started.getTime()) / (1000 * 60 * 60 * 24)) + 1; // Day 1 = first day
 
     // 7-day stats
     const stats7d = await sql`
@@ -163,7 +163,7 @@ export async function getAllEmailHealth(): Promise<EmailHealth[]> {
     const replyRate = sent7d > 0 ? (replied7d / sent7d) * 100 : 0;
     const complaintRate = sent7d > 0 ? (complained7d / sent7d) * 100 : 0;
 
-    const warmupComplete = (addr.warmup_completed as boolean) || daysInWarmup >= 30;
+    const warmupComplete = daysInWarmup >= 25; // At steady state (40 cold + 10 warmup)
     const coldSender = addr.cold_sender as boolean;
 
     // Calculate daily limits using the combined ramp system

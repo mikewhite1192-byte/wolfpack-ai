@@ -556,7 +556,7 @@ export async function getWarmupStatus(): Promise<{
       id: addr.id,
       address: addr.email,
       role: (addr.cold_sender ? "cold_sender" : "warmup_only") as "cold_sender" | "warmup_only",
-      daysActive: days,
+      daysActive: days + 1, // Day 1 = first day
       dailyLimits: limits,
       coldSentToday,
       warmupSentToday,

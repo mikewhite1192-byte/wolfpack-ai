@@ -109,6 +109,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Scraper linked to campaign" });
     }
 
+    // ── Move all unassigned contacts into this campaign ──
+    if (action === "migrate-contacts") {
+      const { neon } = await import("@neondatabase/serverless");
+      const sql = neon(process.env.DATABASE_URL!);
+      const result = await sql`
+        UPDATE outreach_contacts SET campaign_id = ${body.campaignId}
+        WHERE campaign_id IS NULL
+      `;
+      const count = (result as unknown as { count?: number }).count || 0;
+      return NextResponse.json({ migrated: count, message: `${count} contacts moved to campaign` });
+    }
+
     // ── Get single campaign details ──
     if (action === "get") {
       const campaign = await getCampaignWithDetails(body.id);
