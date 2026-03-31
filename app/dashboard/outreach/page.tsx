@@ -116,7 +116,7 @@ export default function OutreachPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scraperStats, setScraperStats] = useState<any>(null);
   const [showScraperForm, setShowScraperForm] = useState(false);
-  const [newScraper, setNewScraper] = useState({ name: "", query: "", dailyCount: "15" });
+  const [newScraper, setNewScraper] = useState({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "" });
   const [addingScraper, setAddingScraper] = useState(false);
   const [massScraping, setMassScraping] = useState(false);
   const [massScrapeQuery, setMassScrapeQuery] = useState("");
@@ -380,12 +380,22 @@ export default function OutreachPage() {
 
   async function addScraperConfig() {
     setAddingScraper(true);
+    const catFilter = newScraper.categoryFilter === "other" ? newScraper.customCategory : newScraper.categoryFilter;
     await fetch("/api/outreach/scrape-maps", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "add", name: newScraper.name, query: newScraper.query, dailyCount: parseInt(newScraper.dailyCount) }),
+      body: JSON.stringify({
+        action: "add",
+        name: newScraper.name,
+        query: newScraper.query,
+        dailyCount: parseInt(newScraper.dailyCount),
+        maxReviews: newScraper.maxReviews ? parseInt(newScraper.maxReviews) : null,
+        minRating: newScraper.minRating ? parseFloat(newScraper.minRating) : null,
+        maxRating: newScraper.maxRating ? parseFloat(newScraper.maxRating) : null,
+        categoryFilter: catFilter || null,
+      }),
     });
-    setNewScraper({ name: "", query: "", dailyCount: "15" });
+    setNewScraper({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "" });
     setShowScraperForm(false);
     setAddingScraper(false);
     refreshStats();
@@ -1406,10 +1416,48 @@ export default function OutreachPage() {
                       <input style={inputStyle} placeholder="roofing contractors in Tampa FL" value={newScraper.query} onChange={e => setNewScraper({ ...newScraper, query: e.target.value })} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>DAILY</div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>DAILY COUNT</div>
                       <input style={inputStyle} type="number" value={newScraper.dailyCount} onChange={e => setNewScraper({ ...newScraper, dailyCount: e.target.value })} />
                     </div>
                   </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MAX REVIEWS</div>
+                      <input style={inputStyle} type="number" placeholder="e.g. 20" value={newScraper.maxReviews} onChange={e => setNewScraper({ ...newScraper, maxReviews: e.target.value })} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MIN RATING</div>
+                      <input style={inputStyle} type="number" step="0.5" placeholder="e.g. 3.0" value={newScraper.minRating} onChange={e => setNewScraper({ ...newScraper, minRating: e.target.value })} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MAX RATING</div>
+                      <input style={inputStyle} type="number" step="0.5" placeholder="e.g. 5.0" value={newScraper.maxRating} onChange={e => setNewScraper({ ...newScraper, maxRating: e.target.value })} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>CATEGORY</div>
+                      <select style={inputStyle} value={newScraper.categoryFilter} onChange={e => setNewScraper({ ...newScraper, categoryFilter: e.target.value })}>
+                        <option value="">Any category</option>
+                        <option value="Roofing contractor">Roofing</option>
+                        <option value="HVAC contractor">HVAC</option>
+                        <option value="Plumber">Plumbing</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Real estate">Real Estate</option>
+                        <option value="Dentist">Dental</option>
+                        <option value="Medical spa">Med Spa</option>
+                        <option value="Gym">Fitness / Gym</option>
+                        <option value="Solar">Solar</option>
+                        <option value="Landscaping">Landscaping</option>
+                        <option value="Auto repair">Auto Repair</option>
+                        <option value="other">Other (type below)</option>
+                      </select>
+                    </div>
+                  </div>
+                  {newScraper.categoryFilter === "other" && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>CUSTOM CATEGORY</div>
+                      <input style={inputStyle} placeholder="e.g. Pool cleaning, Pest control" value={newScraper.customCategory} onChange={e => setNewScraper({ ...newScraper, customCategory: e.target.value })} />
+                    </div>
+                  )}
                   <button className="out-btn" onClick={addScraperConfig} disabled={addingScraper || !newScraper.name || !newScraper.query}>
                     {addingScraper ? "Adding..." : "Add Scraper"}
                   </button>
@@ -1427,6 +1475,14 @@ export default function OutreachPage() {
                       <div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{sc.name as string}</div>
                         <div style={{ fontSize: 12, color: T.muted }}>{sc.query as string}</div>
+                        {((sc.max_reviews as number) || (sc.min_rating as number) || (sc.category_filter as string)) && (
+                          <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                            {(sc.max_reviews as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≤{sc.max_reviews as number} reviews</span>}
+                            {(sc.min_rating as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≥{sc.min_rating as number}★</span>}
+                            {(sc.max_rating as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≤{sc.max_rating as number}★</span>}
+                            {(sc.category_filter as string) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>{sc.category_filter as string}</span>}
+                          </div>
+                        )}
                       </div>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <input

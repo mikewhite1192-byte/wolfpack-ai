@@ -21,6 +21,10 @@ export interface ScraperConfig {
   source: string;
   enabled: boolean;
   daily_count: number;
+  max_reviews: number | null;
+  min_rating: number | null;
+  max_rating: number | null;
+  category_filter: string | null;
 }
 
 // ─── SCRAPER CONFIG MANAGEMENT ───────────────────────────────────────────────
@@ -39,14 +43,23 @@ export async function upsertScraperConfig(config: {
   source?: string;
   enabled?: boolean;
   dailyCount?: number;
+  maxReviews?: number | null;
+  minRating?: number | null;
+  maxRating?: number | null;
+  categoryFilter?: string | null;
 }): Promise<string> {
   const result = await sql`
-    INSERT INTO scraper_config (name, query, source, enabled, daily_count)
-    VALUES (${config.name}, ${config.query}, ${config.source || "google_maps"}, ${config.enabled ?? true}, ${config.dailyCount || 15})
+    INSERT INTO scraper_config (name, query, source, enabled, daily_count, max_reviews, min_rating, max_rating, category_filter)
+    VALUES (${config.name}, ${config.query}, ${config.source || "google_maps"}, ${config.enabled ?? true}, ${config.dailyCount || 15},
+            ${config.maxReviews ?? null}, ${config.minRating ?? null}, ${config.maxRating ?? null}, ${config.categoryFilter ?? null})
     ON CONFLICT (query) DO UPDATE SET
       name = ${config.name},
       enabled = ${config.enabled ?? true},
       daily_count = ${config.dailyCount || 15},
+      max_reviews = ${config.maxReviews ?? null},
+      min_rating = ${config.minRating ?? null},
+      max_rating = ${config.maxRating ?? null},
+      category_filter = ${config.categoryFilter ?? null},
       updated_at = NOW()
     RETURNING id
   `;
@@ -112,7 +125,12 @@ async function launchBrowser(proxy?: string): Promise<Browser> {
 // Quick — just grabs names, phones, websites, addresses from search results
 // Stores in scraped_businesses with email_status = 'pending'
 
-export async function scrapeGoogleMapsPhase(configId: string, query: string, maxResults: number): Promise<number> {
+export async function scrapeGoogleMapsPhase(configId: string, query: string, maxResults: number, filters?: {
+  maxReviews?: number | null;
+  minRating?: number | null;
+  maxRating?: number | null;
+  categoryFilter?: string | null;
+}): Promise<number> {
   const proxies = getProxies();
   const proxy = getRandomProxy(proxies);
   const browser = await launchBrowser(proxy);
@@ -163,6 +181,14 @@ export async function scrapeGoogleMapsPhase(configId: string, query: string, max
 
         const biz = await extractBusinessDetails(page);
         if (!biz.name) continue;
+
+        // Apply filters
+        if (filters) {
+          if (filters.maxReviews != null && biz.reviewCount != null && biz.reviewCount > filters.maxReviews) continue;
+          if (filters.minRating != null && biz.rating != null && biz.rating < filters.minRating) continue;
+          if (filters.maxRating != null && biz.rating != null && biz.rating > filters.maxRating) continue;
+          if (filters.categoryFilter && biz.category && !biz.category.toLowerCase().includes(filters.categoryFilter.toLowerCase())) continue;
+        }
 
         // Store in staging table (dedup by name+address)
         await sql`

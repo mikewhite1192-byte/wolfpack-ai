@@ -68,6 +68,10 @@ export async function POST(req: NextRequest) {
         source: body.source,
         enabled: body.enabled,
         dailyCount: body.dailyCount,
+        maxReviews: body.maxReviews ?? null,
+        minRating: body.minRating ?? null,
+        maxRating: body.maxRating ?? null,
+        categoryFilter: body.categoryFilter ?? null,
       });
       return NextResponse.json({ id, message: `Scraper config ${action === "add" ? "added" : "updated"}` });
     }
@@ -145,7 +149,12 @@ async function runScrapePhase() {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const config = configs[dayOfYear % configs.length];
 
-  const stored = await scrapeGoogleMapsPhase(config.id, config.query, config.daily_count);
+  const stored = await scrapeGoogleMapsPhase(config.id, config.query, config.daily_count, {
+    maxReviews: config.max_reviews,
+    minRating: config.min_rating,
+    maxRating: config.max_rating,
+    categoryFilter: config.category_filter,
+  });
 
   return NextResponse.json({
     phase: "scrape",
