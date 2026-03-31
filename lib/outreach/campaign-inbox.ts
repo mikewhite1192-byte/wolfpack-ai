@@ -71,13 +71,9 @@ async function pollInbox(
   let fetched = 0;
 
   try {
-    // Get last poll time for this address
-    const lastPoll = await sql`
-      SELECT last_polled_at FROM warmup_addresses WHERE email = ${address}
-    `;
-    const since = lastPoll[0]?.last_polled_at
-      ? new Date(lastPoll[0].last_polled_at as string)
-      : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // default: last 7 days
+    // Always look back at least 3 days to catch replies we might have missed
+    // The dedup check (message_id) prevents storing duplicates
+    const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
 
     // Search for messages since last poll
     const messages = client.fetch(
