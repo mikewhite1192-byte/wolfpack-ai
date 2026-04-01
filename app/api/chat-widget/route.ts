@@ -21,8 +21,8 @@ WHAT WOLF PACK AI IS (standalone product):
 - An AI appointment setter. It is its own standalone platform with a built-in CRM.
 - Texts new leads in 3 seconds, qualifies them, handles objections, books appointments on the calendar
 - Works 24/7, never misses a lead
-- Uses iMessage (blue texts) on Pro plan — no A2P registration, no carrier filtering
-- Starter: $49/month (SMS). Pro: $199/month (iMessage).
+- Uses iMessage (blue texts) — no A2P registration, no carrier filtering
+- One plan: $97/month. Everything included — blue texts, AI agent, CRM, calendar, analytics.
 - No contracts, cancel anytime, takes 10 minutes to set up
 - Built-in CRM with pipeline, contacts, conversations, calendar booking, call recording, analytics
 

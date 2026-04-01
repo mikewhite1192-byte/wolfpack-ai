@@ -493,16 +493,15 @@ export default function Home() {
       <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 8px", letterSpacing: 1 }}>
-            YOUR APPOINTMENT SETTER.<br />
-            <span style={{ color: "#E86A2A" }}>STARTING AT $49/MONTH.</span>
+            YOUR AI APPOINTMENT SETTER.<br />
+            <span style={{ color: "#E86A2A" }}>$97/MONTH. EVERYTHING INCLUDED.</span>
           </h2>
-          <p style={{ fontSize: 14, color: "rgba(232,230,227,0.3)" }}>No contracts. Cancel anytime.</p>
+          <p style={{ fontSize: 14, color: "rgba(232,230,227,0.3)" }}>No contracts. Cancel anytime. Set up in 10 minutes.</p>
         </div>
         <div className="wp-price-grid" style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
           {[
-            { name: "STARTER", price: "$49", period: "/mo", desc: "Everything you need to start filling your calendar.", featured: false, plan: "starter", features: ["AI Appointment Setter", "1 Phone Number (SMS)", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Analytics"], cta: "Get Started" },
-            { name: "PRO", price: "$199", period: "/mo", desc: "Blue texts. Maximum deliverability. More appointments.", featured: true, badge: "MOST POPULAR", plan: "pro", features: ["Everything in Starter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Higher Deliverability", "Priority Support", "Self-Learning AI", "Google Review Automation", "CSV Import"], cta: "Get Started" },
-            { name: "AGENCY", price: "Custom", period: "", desc: "For agencies managing multiple clients.", featured: false, plan: null, features: ["Everything in Pro", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"], cta: "Contact Us" },
+            { name: "WOLF PACK AI", price: "$97", period: "/mo", desc: "Everything you need. Blue texts, AI agent, CRM. One price.", featured: true, badge: "ALL-IN-ONE", plan: "pro", features: ["AI Appointment Setter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Self-Learning AI", "Google Review Automation", "CSV Import", "Analytics"], cta: "Get Started" },
+            { name: "AGENCY", price: "Custom", period: "", desc: "For agencies managing multiple clients.", featured: false, plan: null, features: ["Everything in Wolf Pack AI", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"], cta: "Contact Us" },
           ].map((p, i) => (
             <div key={i} className={`wp-price-card ${p.featured ? "featured" : ""}`} style={{ flex: 1, minWidth: 260, maxWidth: 320, position: "relative" }}>
               {p.badge && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#E86A2A", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5 }}>{p.badge}</div>}
