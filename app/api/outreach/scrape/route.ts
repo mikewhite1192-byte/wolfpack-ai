@@ -167,8 +167,17 @@ async function handleScrape(count: number) {
 
     console.log(`[scrape] ${validContacts.length} valid emails out of ${emailsToValidate.length} checked`);
 
-    // Add to sequence
-    const { added, skipped } = await addToSequence(validContacts);
+    // Find the campaign to assign contacts to (first enabled campaign, or FL Insurance)
+    let campaignId: string | undefined;
+    try {
+      const campaign = await sql`
+        SELECT id FROM campaigns WHERE enabled = TRUE ORDER BY created_at ASC LIMIT 1
+      `;
+      if (campaign.length > 0) campaignId = campaign[0].id as string;
+    } catch { /* campaigns table may not exist */ }
+
+    // Add to sequence with campaign assignment
+    const { added, skipped } = await addToSequence(validContacts, undefined, campaignId);
 
     console.log(`[scrape] Added ${added}, skipped ${skipped}`);
 
