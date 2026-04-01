@@ -367,7 +367,30 @@ export async function replyCampaignEmail(
   }
 
   try {
-    await transporter.sendMail(mailOptions);
+    const result = await transporter.sendMail(mailOptions);
+    const messageId = result.messageId || null;
+
+    // Log in campaign_inbox so it shows in the inbox thread
+    await sql`
+      INSERT INTO campaign_inbox (
+        from_email, from_name, to_address, subject, body,
+        received_at, message_id, in_reply_to,
+        outreach_contact_id, contact_id, email_category, is_read
+      ) VALUES (
+        ${toAddress}, ${addr[0].display_name as string || "Mike"}, ${reply.from_email as string}, ${subject}, ${body},
+        NOW(), ${messageId}, ${reply.message_id || null},
+        ${reply.outreach_contact_id || null}, ${reply.contact_id || null}, 'cold_reply', TRUE
+      )
+    `;
+
+    // Log in outreach_emails so it shows in contact detail panel
+    if (reply.outreach_contact_id) {
+      await sql`
+        INSERT INTO outreach_emails (from_email, contact_id, step, subject, body, status, email_type, ses_message_id, message_id_header)
+        VALUES (${toAddress}, ${reply.outreach_contact_id}, 0, ${subject}, ${body}, 'sent', 'cold', ${messageId}, ${messageId})
+      `;
+    }
+
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Send failed" };

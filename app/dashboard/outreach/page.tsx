@@ -118,6 +118,8 @@ export default function OutreachPage() {
   const [showScraperForm, setShowScraperForm] = useState(false);
   const [newScraper, setNewScraper] = useState({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "", campaignId: "" });
   const [addingScraper, setAddingScraper] = useState(false);
+  const [editingScraperId, setEditingScraperId] = useState<string | null>(null);
+  const [editScraper, setEditScraper] = useState({ name: "", query: "", dailyCount: "", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "" });
   const [massScraping, setMassScraping] = useState(false);
   const [massScrapeQuery, setMassScrapeQuery] = useState("");
   const [massScrapeCount, setMassScrapeCount] = useState("50");
@@ -479,6 +481,26 @@ export default function OutreachPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "delete", id }),
     });
+    refreshStats();
+  }
+
+  async function saveScraperEdit() {
+    if (!editingScraperId) return;
+    await fetch("/api/outreach/scrape-maps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update",
+        name: editScraper.name,
+        query: editScraper.query,
+        dailyCount: parseInt(editScraper.dailyCount) || 15,
+        maxReviews: editScraper.maxReviews ? parseInt(editScraper.maxReviews) : null,
+        minRating: editScraper.minRating ? parseFloat(editScraper.minRating) : null,
+        maxRating: editScraper.maxRating ? parseFloat(editScraper.maxRating) : null,
+        categoryFilter: editScraper.categoryFilter || null,
+      }),
+    });
+    setEditingScraperId(null);
     refreshStats();
   }
 
@@ -1489,67 +1511,105 @@ export default function OutreachPage() {
                   No scraper configs yet. Add one to start scraping Google Maps for leads.
                 </div>
               ) : (
-                scraperConfigs.map((sc: Record<string, unknown>) => (
+                scraperConfigs.map((sc: Record<string, unknown>) => {
+                  const isEditing = editingScraperId === sc.id;
+                  return (
                   <div key={sc.id as string} className="health-card">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{sc.name as string}</div>
-                        <div style={{ fontSize: 12, color: T.muted }}>{sc.query as string}</div>
-                        {((sc.max_reviews as number) || (sc.min_rating as number) || (sc.category_filter as string)) && (
-                          <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
-                            {(sc.max_reviews as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≤{sc.max_reviews as number} reviews</span>}
-                            {(sc.min_rating as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≥{sc.min_rating as number}★</span>}
-                            {(sc.max_rating as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≤{sc.max_rating as number}★</span>}
-                            {(sc.category_filter as string) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>{sc.category_filter as string}</span>}
+                    {!isEditing ? (
+                      <>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{sc.name as string}</div>
+                            <div style={{ fontSize: 12, color: T.muted }}>{sc.query as string}</div>
+                            {((sc.max_reviews as number) || (sc.min_rating as number) || (sc.category_filter as string)) && (
+                              <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                                {(sc.max_reviews as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≤{String(sc.max_reviews)} reviews</span>}
+                                {(sc.min_rating as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≥{String(sc.min_rating)}★</span>}
+                                {(sc.max_rating as number) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>≤{String(sc.max_rating)}★</span>}
+                                {(sc.category_filter as string) && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(232,106,42,0.1)", color: T.orange }}>{sc.category_filter as string}</span>}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input
-                          className="out-input"
-                          type="number"
-                          value={sc.daily_count as number}
-                          onChange={e => updateScraperCount(sc.id as string, parseInt(e.target.value) || 15)}
-                          style={{ width: 60, textAlign: "center" }}
-                          min={1}
-                          max={100}
-                        />
-                        <span style={{ fontSize: 10, color: T.muted }}>/day</span>
-                        <button
-                          onClick={() => toggleScraper(sc.id as string, !(sc.enabled as boolean))}
-                          style={{
-                            padding: "4px 12px", fontSize: 11, fontWeight: 700, borderRadius: 12, cursor: "pointer",
-                            background: (sc.enabled as boolean) ? `${T.green}15` : "rgba(255,255,255,0.05)",
-                            color: (sc.enabled as boolean) ? T.green : T.muted,
-                            border: `1px solid ${(sc.enabled as boolean) ? T.green + "30" : T.border}`,
-                          }}
-                        >
-                          {(sc.enabled as boolean) ? "ON" : "OFF"}
-                        </button>
-                        <button
-                          onClick={() => deleteScraperConfig(sc.id as string)}
-                          style={{ padding: "4px 8px", fontSize: 11, color: T.red, background: "none", border: `1px solid ${T.red}30`, borderRadius: 6, cursor: "pointer" }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                    {/* Link to campaign */}
-                    <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, color: T.muted }}>Campaign:</span>
-                      <select
-                        value={(sc.campaign_id as string) || ""}
-                        onChange={e => linkScraperToCampaign(sc.id as string, e.target.value)}
-                        style={{ ...inputStyle, width: "auto", padding: "4px 8px", fontSize: 11 }}
-                      >
-                        <option value="">None (default pool)</option>
-                        {campaigns.map((camp: Record<string, unknown>) => (
-                          <option key={camp.id as string} value={camp.id as string}>{camp.name as string}</option>
-                        ))}
-                      </select>
-                    </div>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <input className="out-input" type="number" value={sc.daily_count as number}
+                              onChange={e => updateScraperCount(sc.id as string, parseInt(e.target.value) || 15)}
+                              style={{ width: 60, textAlign: "center" }} min={1} max={100} />
+                            <span style={{ fontSize: 10, color: T.muted }}>/day</span>
+                            <button onClick={() => toggleScraper(sc.id as string, !(sc.enabled as boolean))}
+                              style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, borderRadius: 12, cursor: "pointer",
+                                background: (sc.enabled as boolean) ? `${T.green}15` : "rgba(255,255,255,0.05)",
+                                color: (sc.enabled as boolean) ? T.green : T.muted,
+                                border: `1px solid ${(sc.enabled as boolean) ? T.green + "30" : T.border}` }}>
+                              {(sc.enabled as boolean) ? "ON" : "OFF"}
+                            </button>
+                            <button onClick={() => {
+                              setEditingScraperId(sc.id as string);
+                              setEditScraper({
+                                name: sc.name as string, query: sc.query as string,
+                                dailyCount: String(sc.daily_count), maxReviews: sc.max_reviews ? String(sc.max_reviews) : "",
+                                minRating: sc.min_rating ? String(sc.min_rating) : "", maxRating: sc.max_rating ? String(sc.max_rating) : "",
+                                categoryFilter: (sc.category_filter as string) || "",
+                              });
+                            }} style={{ padding: "4px 8px", fontSize: 11, color: T.orange, background: "none", border: `1px solid ${T.orange}30`, borderRadius: 6, cursor: "pointer" }}>
+                              Edit
+                            </button>
+                            <button onClick={() => deleteScraperConfig(sc.id as string)}
+                              style={{ padding: "4px 8px", fontSize: 11, color: T.red, background: "none", border: `1px solid ${T.red}30`, borderRadius: 6, cursor: "pointer" }}>
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: T.muted }}>Campaign:</span>
+                          <select value={(sc.campaign_id as string) || ""} onChange={e => linkScraperToCampaign(sc.id as string, e.target.value)}
+                            style={{ ...inputStyle, width: "auto", padding: "4px 8px", fontSize: 11 }}>
+                            <option value="">None (default pool)</option>
+                            {campaigns.map((camp: Record<string, unknown>) => (
+                              <option key={camp.id as string} value={camp.id as string}>{camp.name as string}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="out-label">Edit Scraper</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                          <div>
+                            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>NAME</div>
+                            <input style={inputStyle} value={editScraper.name} onChange={e => setEditScraper({ ...editScraper, name: e.target.value })} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>QUERY</div>
+                            <input style={inputStyle} value={editScraper.query} onChange={e => setEditScraper({ ...editScraper, query: e.target.value })} />
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+                          <div>
+                            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>DAILY COUNT</div>
+                            <input style={inputStyle} type="number" value={editScraper.dailyCount} onChange={e => setEditScraper({ ...editScraper, dailyCount: e.target.value })} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MAX REVIEWS</div>
+                            <input style={inputStyle} type="number" placeholder="Any" value={editScraper.maxReviews} onChange={e => setEditScraper({ ...editScraper, maxReviews: e.target.value })} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MIN RATING</div>
+                            <input style={inputStyle} type="number" step="0.5" placeholder="Any" value={editScraper.minRating} onChange={e => setEditScraper({ ...editScraper, minRating: e.target.value })} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>CATEGORY</div>
+                            <input style={inputStyle} placeholder="Any" value={editScraper.categoryFilter} onChange={e => setEditScraper({ ...editScraper, categoryFilter: e.target.value })} />
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button className="out-btn" onClick={saveScraperEdit}>Save</button>
+                          <button className="out-btn-ghost" onClick={() => setEditingScraperId(null)}>Cancel</button>
+                        </div>
+                      </>
+                    )}
                   </div>
-                ))
+                  );
+                })
               )}
 
               {/* Mass scrape */}
