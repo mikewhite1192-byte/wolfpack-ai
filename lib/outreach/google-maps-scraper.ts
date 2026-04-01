@@ -94,14 +94,22 @@ function getRandomProxy(proxies: string[]): string | undefined {
 const SCRAPER_URL = process.env.SCRAPER_URL || "http://165.227.127.162:3001";
 const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY || "wolfpack-scraper-2026";
 
-async function callScraper(endpoint: string, body: Record<string, unknown>): Promise<unknown> {
-  const res = await fetch(`${SCRAPER_URL}${endpoint}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": SCRAPER_API_KEY },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Scraper error: ${res.status} ${await res.text()}`);
-  return res.json();
+async function callScraper(endpoint: string, body: Record<string, unknown>, timeoutMs: number = 55000): Promise<unknown> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(`${SCRAPER_URL}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": SCRAPER_API_KEY },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`Scraper error: ${res.status} ${await res.text()}`);
+    return res.json();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // ─── PHASE 1: SCRAPE GOOGLE MAPS (calls remote scraper) ─────────────────────

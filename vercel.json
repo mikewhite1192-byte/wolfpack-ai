@@ -6,6 +6,8 @@
 
     { "path": "/api/outreach/scrape", "schedule": "0 11 * * *" },
     { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "20 11 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "30 14 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "30 18 * * *" },
 
     { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "40 11 * * *" },
     { "path": "/api/outreach/warmup?type=send&batch=1", "schedule": "50 11 * * *" },

@@ -149,7 +149,9 @@ async function runScrapePhase() {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const config = configs[dayOfYear % configs.length];
 
-  const stored = await scrapeGoogleMapsPhase(config.id, config.query, config.daily_count, {
+  // Cap at 5 per cron call to stay within Vercel timeout — multiple cron calls per day add up
+  const batchSize = Math.min(config.daily_count, 5);
+  const stored = await scrapeGoogleMapsPhase(config.id, config.query, batchSize, {
     maxReviews: config.max_reviews,
     minRating: config.min_rating,
     maxRating: config.max_rating,
