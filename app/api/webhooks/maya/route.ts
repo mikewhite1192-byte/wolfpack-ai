@@ -101,6 +101,79 @@ export async function handleMayaReply(chatId: string, from: string, text: string
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // TRADE DEMO MODE — AI acts as the trade company, then pivots to Wolf Pack
+  // ═══════════════════════════════════════════════════════════════
+  const isTradeMode = (industry as string).startsWith("trade_");
+
+  if (isTradeMode && step < 99) {
+    const tradeType = (industry as string).replace("trade_", "");
+    console.log(`[maya-trade] Step ${step} for ${firstName}, trade: ${tradeType}`);
+
+    const tradeInfo: Record<string, { company: string; services: string; area: string }> = {
+      plumber: { company: "Metro Plumbing Co", services: "emergency repairs, drain cleaning, water heater installation, pipe repair, bathroom remodels, sewer line services", area: "Warren, MI" },
+      roofing: { company: "Summit Roofing & Exteriors", services: "roof replacement, storm damage repair, inspections, gutters, siding, emergency tarping", area: "Sterling Heights, MI" },
+      hvac: { company: "Comfort Zone Heating & Cooling", services: "AC repair/install, furnace repair/install, duct cleaning, thermostat install, maintenance plans, emergency HVAC", area: "Troy, MI" },
+      electrician: { company: "Volt Electric Services", services: "panel upgrades, outlet & wiring, EV charger install, lighting design, generator install, inspections", area: "Rochester Hills, MI" },
+    };
+
+    const info = tradeInfo[tradeType] || tradeInfo.plumber;
+    let systemPrompt: string;
+
+    if (step <= 3) {
+      systemPrompt = `You are the AI receptionist for ${info.company}, a ${tradeType} company in ${info.area}. You're texting ${firstName} who just reached out for help.
+
+SERVICES: ${info.services}
+
+RULES:
+- MAX 2 SHORT SENTENCES. This is texting.
+- Be warm, helpful, and professional like a real receptionist
+- Help them with scheduling, quotes, questions
+- If they describe a problem, acknowledge it and offer to send someone out
+- NEVER mention Wolf Pack, AI demos, or anything outside of being ${info.company}
+- Make the experience feel incredibly responsive and helpful`;
+    } else if (step <= 5) {
+      systemPrompt = `You were acting as ${info.company}'s AI receptionist for ${firstName}. Now reveal the magic.
+
+RULES:
+- MAX 2 SHORT SENTENCES. This is texting.
+- Reveal you're an AI assistant demo. Be excited, not salesy.
+- Say something like "Quick heads up, I'm actually an AI. This is what your customers would experience 24/7. Pretty wild right?"
+- Make them think about what this would mean for THEIR business
+- Don't hard sell yet`;
+    } else {
+      systemPrompt = `You revealed yourself as an AI demo to ${firstName} (a ${tradeType} business owner). Now sell Wolf Pack.
+
+WHAT WOLF PACK OFFERS:
+- Custom websites for trade businesses starting at $1,500
+- Wolf Pack AI: AI appointment setter + CRM for $97/mo
+- Texts leads in 3 seconds via blue iMessage, qualifies them, books appointments automatically
+- No contracts, cancel anytime
+
+RULES:
+- MAX 2 SHORT SENTENCES. This is texting.
+- Be excited about the tech, not pushy
+- If they want to learn more: text (586) 237-8743 or visit thewolfpackco.com
+- If they seem interested, try to get them on a quick demo call`;
+    }
+
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 120,
+      temperature: 0.8,
+      system: systemPrompt,
+      messages: conversation.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+    });
+
+    const reply = ((response.content[0] as { type: string; text: string }).text || "").trim().replace(/^["']|["']$/g, "");
+    console.log(`[maya-trade] Reply: "${reply}"`);
+
+    await sendMessage(demo.phone as string, reply);
+    conversation.push({ role: "assistant", content: reply });
+    await sql`UPDATE maya_demos SET step = ${step + 1}, responded = TRUE, conversation = ${JSON.stringify(conversation)}::jsonb WHERE id = ${demo.id}`;
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // AGENCY MODE — Maya is a real sales rep selling agency services
   // ═══════════════════════════════════════════════════════════════
   const isAgencyMode = (industry as string).startsWith("agency_");

@@ -6,8 +6,13 @@
 
     { "path": "/api/outreach/scrape", "schedule": "0 11 * * *" },
     { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "20 11 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "0 13 * * *" },
     { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "30 14 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "0 16 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "0 17 * * *" },
     { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "30 18 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "0 20 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=scrape", "schedule": "0 21 * * *" },
 
     { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "40 11 * * *" },
     { "path": "/api/outreach/warmup?type=send&batch=1", "schedule": "50 11 * * *" },
@@ -27,6 +32,8 @@
     { "path": "/api/outreach/warmup?type=reply&batch=1", "schedule": "55 14 * * *" },
 
     { "path": "/api/outreach/scrape-maps?phase=emails&batch=3", "schedule": "10 15 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=emails&batch=3", "schedule": "30 17 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=emails&batch=3", "schedule": "30 20 * * *" },
     { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "25 15 * * *" },
     { "path": "/api/outreach/warmup?type=send&batch=1", "schedule": "35 15 * * *" },
     { "path": "/api/outreach/warmup?type=send&batch=2", "schedule": "50 15 * * *" },
@@ -37,6 +44,7 @@
     { "path": "/api/outreach/warmup?type=bounce&batch=1", "schedule": "50 16 * * *" },
 
     { "path": "/api/outreach/scrape-maps?phase=verify&batch=5", "schedule": "5 17 * * *" },
+    { "path": "/api/outreach/scrape-maps?phase=verify&batch=5", "schedule": "30 19 * * *" },
     { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "20 17 * * *" },
     { "path": "/api/outreach/warmup?type=send&batch=1", "schedule": "30 17 * * *" },
     { "path": "/api/outreach/warmup?type=send&batch=2", "schedule": "45 17 * * *" },

@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
 
   try {
     if (phase === "scrape") {
-      return await runScrapePhase();
+      const configId = url.searchParams.get("configId");
+      return await runScrapePhase(configId || undefined);
     }
     if (phase === "emails") {
       const batch = parseInt(url.searchParams.get("batch") || "3");
@@ -137,17 +138,26 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Run Phase 1 for one enabled config (round-robin based on day)
-async function runScrapePhase() {
+// Run Phase 1 for one enabled config (round-robin based on day, or specific config if configId provided)
+async function runScrapePhase(configId?: string) {
   const configs = await getEnabledConfigs();
 
   if (configs.length === 0) {
     return NextResponse.json({ message: "No enabled scraper configs", phase: "scrape" });
   }
 
-  // Rotate through configs by day
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-  const config = configs[dayOfYear % configs.length];
+  // If configId provided, use that specific config
+  let config;
+  if (configId) {
+    config = configs.find((c: any) => c.id === configId);
+    if (!config) {
+      return NextResponse.json({ error: "Config not found or not enabled" }, { status: 404 });
+    }
+  } else {
+    // Rotate through configs by day
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    config = configs[dayOfYear % configs.length];
+  }
 
   // Cap at 5 per cron call to stay within Vercel timeout — multiple cron calls per day add up
   const batchSize = Math.min(config.daily_count, 5);

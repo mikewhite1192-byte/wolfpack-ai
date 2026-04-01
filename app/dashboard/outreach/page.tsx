@@ -123,6 +123,8 @@ export default function OutreachPage() {
   const [massScraping, setMassScraping] = useState(false);
   const [massScrapeQuery, setMassScrapeQuery] = useState("");
   const [massScrapeCount, setMassScrapeCount] = useState("50");
+  const [runningAllScrapers, setRunningAllScrapers] = useState(false);
+  const [scrapeProgress, setScrapeProgress] = useState("");
 
   // Today's totals & unread per campaign
   const [todayTotals, setTodayTotals] = useState({ cold: 0, warmup: 0 });
@@ -409,6 +411,23 @@ export default function OutreachPage() {
     setNewScraper({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "", campaignId: "" });
     setShowScraperForm(false);
     setAddingScraper(false);
+    refreshStats();
+  }
+
+  async function runAllScrapers() {
+    setRunningAllScrapers(true);
+    const enabledConfigs = scraperConfigs.filter((sc: Record<string, unknown>) => sc.enabled);
+    for (let i = 0; i < enabledConfigs.length; i++) {
+      const sc = enabledConfigs[i];
+      setScrapeProgress(`Scraping ${i + 1}/${enabledConfigs.length}: ${sc.name}...`);
+      try {
+        await fetch(`/api/outreach/scrape-maps?phase=scrape&configId=${sc.id}`);
+      } catch (e) {
+        console.error(`Failed to scrape ${sc.name}:`, e);
+      }
+    }
+    setScrapeProgress("");
+    setRunningAllScrapers(false);
     refreshStats();
   }
 
@@ -1432,7 +1451,11 @@ export default function OutreachPage() {
               {/* Scraper configs */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div className="out-label" style={{ marginBottom: 0 }}>Scraper Configs</div>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {scrapeProgress && <span style={{ fontSize: 11, color: T.orange }}>{scrapeProgress}</span>}
+                  <button className="out-btn-ghost" onClick={runAllScrapers} disabled={runningAllScrapers} style={{ fontSize: 12, padding: "6px 12px", color: runningAllScrapers ? T.muted : T.green, borderColor: runningAllScrapers ? T.border : T.green + "40" }}>
+                    {runningAllScrapers ? "Scraping..." : "Run All Scrapers"}
+                  </button>
                   <button className="out-btn-ghost" onClick={exportCSV} style={{ fontSize: 12, padding: "6px 12px" }}>Export CSV</button>
                   <button className="out-btn out-btn-sm" onClick={() => setShowScraperForm(!showScraperForm)}>
                     {showScraperForm ? "Cancel" : "+ Add Scraper"}
