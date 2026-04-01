@@ -483,8 +483,8 @@ export default function Home() {
       {/* Demo CTA */}
       <div style={{ padding: "60px 40px" }}>
         <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.3)", background: "#0a0a0a" }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>SEE IT SET AN APPOINTMENT <span style={{ color: "#E86A2A" }}>ON YOU</span></h2>
-          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your number. The AI texts you back in 3 seconds pretending to be an insurance agent. Play along — you'll understand exactly why it works.</p>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>SEE IT <span style={{ color: "#E86A2A" }}>WORK ON YOU</span></h2>
+          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your number. Wolf Pack AI texts you back in 3 seconds, qualifies you, and books an appointment on your calendar. Experience exactly what your leads will.</p>
           <button onClick={() => setDemoOpen(true)} className="wp-cta">Text Me Now →</button>
         </div>
       </div>
