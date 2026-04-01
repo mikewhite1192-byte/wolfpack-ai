@@ -792,7 +792,7 @@ export default function OutreachPage() {
                       <div style={{ color: T.muted, fontSize: 13, padding: "20px 0", textAlign: "center" }}>No emails sent yet</div>
                     ) : (
                       <table className="out-table">
-                        <thead><tr><th>Contact</th><th>From</th><th>Step</th><th>Status</th></tr></thead>
+                        <thead><tr><th>Contact</th><th>From</th><th>Step</th><th>Status</th><th>Date</th></tr></thead>
                         <tbody>
                           {recentEmails.slice(0, 10).map((e, i) => (
                             <tr key={i}>
@@ -800,6 +800,7 @@ export default function OutreachPage() {
                               <td className="muted" style={{ fontSize: 11 }}>{e.from_email?.split("@")[0] || "—"}</td>
                               <td className="muted">#{e.step}</td>
                               <td style={{ color: e.status === "sent" ? T.green : T.red }}>{e.status}</td>
+                              <td className="muted" style={{ fontSize: 11 }}>{e.sent_at ? new Date(e.sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1030,6 +1031,7 @@ export default function OutreachPage() {
                           <th>Step</th>
                           <th>Sender</th>
                           <th>Last Sent</th>
+                          <th>Added</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1062,6 +1064,9 @@ export default function OutreachPage() {
                             <td className="muted" style={{ fontSize: 11 }}>{c.assigned_sender?.split("@")[0] || "—"}</td>
                             <td className="muted" style={{ fontSize: 11 }}>
                               {c.last_email_sent_at ? new Date(c.last_email_sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                            </td>
+                            <td className="muted" style={{ fontSize: 11 }}>
+                              {c.created_at ? new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                             </td>
                           </tr>
                         ))}
