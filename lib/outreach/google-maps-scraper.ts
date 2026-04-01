@@ -1,5 +1,4 @@
 import { neon } from "@neondatabase/serverless";
-import type { Browser, Page } from "puppeteer-core";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -90,37 +89,22 @@ function getRandomProxy(proxies: string[]): string | undefined {
   return proxies[Math.floor(Math.random() * proxies.length)];
 }
 
-// ─── BROWSER MANAGEMENT (puppeteer-core + @sparticuz/chromium) ──────────────
+// ─── REMOTE SCRAPER (DigitalOcean droplet) ──────────────────────────────────
 
-async function launchBrowser(proxy?: string): Promise<Browser> {
-  const puppeteer = (await import("puppeteer-core")).default;
+const SCRAPER_URL = process.env.SCRAPER_URL || "http://165.227.127.162:3001";
+const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY || "wolfpack-scraper-2026";
 
-  let executablePath: string;
-  let args: string[];
-
-  try {
-    const chromium = (await import("@sparticuz/chromium")).default;
-    executablePath = await chromium.executablePath();
-    args = chromium.args;
-  } catch {
-    // Local dev fallback — use system Chrome
-    executablePath = process.platform === "darwin"
-      ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-      : "/usr/bin/google-chrome";
-    args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"];
-  }
-
-  if (proxy) args.push(`--proxy-server=${proxy}`);
-
-  return puppeteer.launch({
-    executablePath,
-    headless: true,
-    args,
-    defaultViewport: { width: 1280, height: 900 },
+async function callScraper(endpoint: string, body: Record<string, unknown>): Promise<unknown> {
+  const res = await fetch(`${SCRAPER_URL}${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": SCRAPER_API_KEY },
+    body: JSON.stringify(body),
   });
+  if (!res.ok) throw new Error(`Scraper error: ${res.status} ${await res.text()}`);
+  return res.json();
 }
 
-// ─── PHASE 1: SCRAPE GOOGLE MAPS ────────────────────────────────────────────
+// ─── PHASE 1: SCRAPE GOOGLE MAPS (calls remote scraper) ─────────────────────
 
 export async function scrapeGoogleMapsPhase(configId: string, query: string, maxResults: number, filters?: {
   maxReviews?: number | null;
@@ -130,78 +114,28 @@ export async function scrapeGoogleMapsPhase(configId: string, query: string, max
 }): Promise<number> {
   const proxies = getProxies();
   const proxy = getRandomProxy(proxies);
-  const browser = await launchBrowser(proxy);
+
+  const result = await callScraper("/scrape", {
+    query, maxResults, proxy,
+    filters: filters ? {
+      maxReviews: filters.maxReviews,
+      minRating: filters.minRating,
+      maxRating: filters.maxRating,
+      categoryFilter: filters.categoryFilter,
+    } : undefined,
+  }) as { businesses: ScrapedBusiness[]; count: number };
+
   let stored = 0;
-
-  try {
-    const page = await browser.newPage();
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-
-    const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
-    await delay(3000);
-
-    // Handle consent dialog
+  for (const biz of result.businesses) {
     try {
-      const consentBtn = await page.$('button[aria-label="Accept all"]');
-      if (consentBtn) { await consentBtn.click(); await delay(1000); }
-    } catch { /* no consent */ }
-
-    // Scroll results panel to load more
-    let previousCount = 0;
-    for (let scroll = 0; scroll < 8; scroll++) {
-      const items = await page.$$('div[role="feed"] > div > div > a[href*="/maps/place/"]');
-      if (items.length >= maxResults || items.length === previousCount) break;
-      previousCount = items.length;
-      await page.evaluate(() => {
-        const feed = document.querySelector('div[role="feed"]');
-        if (feed) feed.scrollTop = feed.scrollHeight;
-      });
-      await delay(2000);
-    }
-
-    // Click each result and extract details
-    const resultLinks = await page.$$('div[role="feed"] > div > div > a[href*="/maps/place/"]');
-    const count = Math.min(resultLinks.length, maxResults);
-
-    for (let i = 0; i < count; i++) {
-      try {
-        // Re-query links each time (DOM changes after navigation)
-        const links = await page.$$('div[role="feed"] > div > div > a[href*="/maps/place/"]');
-        if (i >= links.length) break;
-
-        await links[i].click();
-        await delay(2000);
-
-        const biz = await extractBusinessDetails(page);
-        if (!biz.name) continue;
-
-        // Apply filters
-        if (filters) {
-          if (filters.maxReviews != null && biz.reviewCount != null && biz.reviewCount > filters.maxReviews) continue;
-          if (filters.minRating != null && biz.rating != null && biz.rating < filters.minRating) continue;
-          if (filters.maxRating != null && biz.rating != null && biz.rating > filters.maxRating) continue;
-          if (filters.categoryFilter && biz.category && !biz.category.toLowerCase().includes(filters.categoryFilter.toLowerCase())) continue;
-        }
-
-        await sql`
-          INSERT INTO scraped_businesses (config_id, name, phone, website, address, rating, review_count, category, email_status)
-          VALUES (${configId}, ${biz.name}, ${biz.phone || null}, ${biz.website || null}, ${biz.address || null},
-                  ${biz.rating}, ${biz.reviewCount}, ${biz.category || null}, 'pending')
-          ON CONFLICT (name, address) DO NOTHING
-        `;
-        stored++;
-        console.log(`[maps-scraper] ${stored}/${count}: ${biz.name} | ${biz.phone} | ${biz.website}`);
-
-        // Go back to results
-        await page.goBack({ waitUntil: "domcontentloaded" });
-        await delay(1500);
-      } catch (err) {
-        console.error(`[maps-scraper] Error on result ${i}:`, err instanceof Error ? err.message : err);
-      }
-    }
-  } finally {
-    await browser.close();
+      await sql`
+        INSERT INTO scraped_businesses (config_id, name, phone, website, address, rating, review_count, category, email_status)
+        VALUES (${configId}, ${biz.name}, ${biz.phone || null}, ${biz.website || null}, ${biz.address || null},
+                ${biz.rating}, ${biz.reviewCount}, ${biz.category || null}, 'pending')
+        ON CONFLICT (name, address) DO NOTHING
+      `;
+      stored++;
+    } catch { /* dedup */ }
   }
 
   console.log(`[maps-scraper] Phase 1 done: ${stored} businesses stored for "${query}"`);
@@ -230,7 +164,9 @@ export async function findEmailsPhase(batchSize: number = 3): Promise<{ found: n
     const name = biz.name as string;
 
     try {
-      const emails = await findEmailsFromWebsite(website);
+      const proxy = getRandomProxy(getProxies());
+      const result = await callScraper("/find-emails", { website, proxy }) as { emails: string[] };
+      const emails = result.emails || [];
       if (emails.length > 0) {
         const bestEmail = emails.find(e => e.startsWith("info@") || e.startsWith("contact@")) || emails[0];
         await sql`
@@ -352,58 +288,9 @@ export async function verifyAndAddPhase(batchSize: number = 5): Promise<{ verifi
 // ─── MASS SCRAPE ────────────────────────────────────────────────────────────
 
 export async function massScrape(query: string, maxResults: number): Promise<ScrapedBusiness[]> {
-  const proxies = getProxies();
-  const proxy = getRandomProxy(proxies);
-  const browser = await launchBrowser(proxy);
-  const businesses: ScrapedBusiness[] = [];
-
-  try {
-    const page = await browser.newPage();
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-
-    const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
-    await delay(3000);
-
-    try {
-      const consentBtn = await page.$('button[aria-label="Accept all"]');
-      if (consentBtn) { await consentBtn.click(); await delay(1000); }
-    } catch { /* no consent */ }
-
-    let previousCount = 0;
-    for (let scroll = 0; scroll < 15; scroll++) {
-      const items = await page.$$('div[role="feed"] > div > div > a[href*="/maps/place/"]');
-      if (items.length >= maxResults || items.length === previousCount) break;
-      previousCount = items.length;
-      await page.evaluate(() => {
-        const feed = document.querySelector('div[role="feed"]');
-        if (feed) feed.scrollTop = feed.scrollHeight;
-      });
-      await delay(2000);
-    }
-
-    const resultLinks = await page.$$('div[role="feed"] > div > div > a[href*="/maps/place/"]');
-    const count = Math.min(resultLinks.length, maxResults);
-
-    for (let i = 0; i < count; i++) {
-      try {
-        const links = await page.$$('div[role="feed"] > div > div > a[href*="/maps/place/"]');
-        if (i >= links.length) break;
-        await links[i].click();
-        await delay(2000);
-        const biz = await extractBusinessDetails(page);
-        if (biz.name) businesses.push(biz);
-        await page.goBack({ waitUntil: "domcontentloaded" });
-        await delay(1500);
-      } catch (err) {
-        console.error(`[mass-scrape] Error on result ${i}:`, err instanceof Error ? err.message : err);
-      }
-    }
-  } finally {
-    await browser.close();
-  }
-
-  return businesses;
+  const proxy = getRandomProxy(getProxies());
+  const result = await callScraper("/scrape", { query, maxResults, proxy }) as { businesses: ScrapedBusiness[] };
+  return result.businesses || [];
 }
 
 // ─── CSV ─────────────────────────────────────────────────────────────────────
@@ -458,127 +345,6 @@ export async function getScraperStats() {
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
-
-function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
-
-async function extractBusinessDetails(page: Page): Promise<ScrapedBusiness> {
-  const biz: ScrapedBusiness = {
-    name: "", phone: "", email: "", website: "",
-    address: "", rating: null, reviewCount: null, category: "",
-  };
-
-  try {
-    // Business name
-    biz.name = await page.$eval("h1", el => el.textContent || "").catch(() => "");
-
-    // Rating
-    try {
-      const ratingLabel = await page.$eval('div[role="img"][aria-label*="stars"]', el => el.getAttribute("aria-label") || "");
-      const m = ratingLabel.match(/([\d.]+)/);
-      if (m) biz.rating = parseFloat(m[1]);
-    } catch { /* no rating */ }
-
-    // Review count
-    try {
-      const reviewLabel = await page.$eval('button[aria-label*="reviews"]', el => el.getAttribute("aria-label") || "");
-      const m = reviewLabel.match(/([\d,]+)/);
-      if (m) biz.reviewCount = parseInt(m[1].replace(",", ""));
-    } catch { /* no reviews */ }
-
-    // Category
-    try {
-      biz.category = await page.$eval('button[jsaction*="category"]', el => el.textContent || "");
-    } catch { /* no category */ }
-
-    // Phone
-    try {
-      biz.phone = await page.$eval('button[data-tooltip="Copy phone number"]', el => el.textContent || "");
-    } catch { /* no phone */ }
-
-    // Website
-    try {
-      biz.website = await page.$eval('a[data-tooltip="Open website"]', el => el.getAttribute("href") || "");
-    } catch { /* no website */ }
-
-    // Address
-    try {
-      biz.address = await page.$eval('button[data-tooltip="Copy address"]', el => el.textContent || "");
-    } catch { /* no address */ }
-  } catch (err) {
-    console.error(`[maps-scraper] Detail extraction error:`, err instanceof Error ? err.message : err);
-  }
-
-  return biz;
-}
-
-async function findEmailsFromWebsite(websiteUrl: string): Promise<string[]> {
-  const proxies = getProxies();
-  const proxy = getRandomProxy(proxies);
-  const browser = await launchBrowser(proxy);
-  const emails = new Set<string>();
-
-  try {
-    const page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(12000);
-
-    let url = websiteUrl.trim();
-    if (!url.startsWith("http")) url = `https://${url}`;
-
-    try {
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 12000 });
-      await extractEmailsFromPage(page, emails);
-    } catch { return []; }
-
-    const contactPaths = ["/contact", "/contact-us", "/about", "/about-us", "/team"];
-    const baseUrl = new URL(url).origin;
-
-    for (const path of contactPaths) {
-      if (emails.size >= 3) break;
-      try {
-        await page.goto(`${baseUrl}${path}`, { waitUntil: "domcontentloaded", timeout: 8000 });
-        await extractEmailsFromPage(page, emails);
-      } catch { /* page doesn't exist */ }
-    }
-
-    // Check mailto links
-    try {
-      const mailtos = await page.$$eval('a[href^="mailto:"]', links =>
-        links.map(a => a.getAttribute("href")?.replace("mailto:", "").split("?")[0]?.trim().toLowerCase() || "")
-      );
-      for (const email of mailtos) {
-        if (isValidBusinessEmail(email)) emails.add(email);
-      }
-    } catch { /* ok */ }
-  } finally {
-    await browser.close();
-  }
-
-  return Array.from(emails);
-}
-
-async function extractEmailsFromPage(page: Page, emails: Set<string>) {
-  try {
-    const content = await page.content();
-    const found = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
-    for (const email of found) {
-      const lower = email.toLowerCase();
-      if (isValidBusinessEmail(lower)) emails.add(lower);
-    }
-  } catch { /* ok */ }
-}
-
-function isValidBusinessEmail(email: string): boolean {
-  if (!email.includes("@") || email.length > 100) return false;
-  const skipPrefixes = ["noreply", "no-reply", "donotreply", "mailer-daemon", "postmaster",
-    "webmaster", "hostmaster", "abuse", "support@google", "support@facebook", "example@", "test@", "demo@", "spam@"];
-  if (skipPrefixes.some(p => email.startsWith(p))) return false;
-  const skipDomains = ["example.com", "test.com", "sentry.io", "wixpress.com", "squarespace.com",
-    "godaddy.com", "googleapis.com", "cloudflare.com", "w3.org", "schema.org", "wordpress.org", "gravatar.com"];
-  const domain = email.split("@")[1];
-  if (skipDomains.includes(domain)) return false;
-  if (email.includes(".png") || email.includes(".jpg") || email.includes(".svg")) return false;
-  return true;
-}
 
 function extractFirstName(name: string): string {
   const parts = name.trim().split(/\s+/);
