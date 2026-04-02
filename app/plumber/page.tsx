@@ -294,7 +294,7 @@ export default function PlumberPage() {
           <div style={{
             position: "absolute",
             inset: "-5%",
-            backgroundImage: "url('https://images.unsplash.com/photo-1711014882930-c8e0484aedb4?w=1920&q=80')",
+            backgroundImage: "url('/plumber-hero.png')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             animation: "mp-hero-zoom 20s ease-in-out alternate infinite",
@@ -707,7 +707,7 @@ export default function PlumberPage() {
           <div style={{
             position: "absolute",
             inset: 0,
-            backgroundImage: "url('https://images.unsplash.com/photo-1711014882930-c8e0484aedb4?w=1920&q=80')",
+            backgroundImage: "url('/plumber-hero.png')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }} />
