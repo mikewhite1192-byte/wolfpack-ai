@@ -504,6 +504,15 @@ export default function OutreachPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function stopCampaignContacts(campaignId?: string) {
+    const label = campaignId ? "this campaign" : "unassigned";
+    if (!confirm(`Stop all active contacts in ${label}? They will not receive any more emails.`)) return;
+    const res = await fetch("/api/outreach/campaigns", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "stop-contacts", campaignId }) });
+    const data = await res.json();
+    alert(`${data.count || 0} contacts stopped`);
+    refreshStats();
+  }
+
   async function migrateContacts(campaignId: string) {
     if (!confirm("Move ALL unassigned contacts into this campaign?")) return;
     const res = await fetch("/api/outreach/campaigns", {
@@ -1440,9 +1449,12 @@ export default function OutreachPage() {
                       </div>
 
                       {/* Quick actions */}
-                      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                      <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
                         <button className="out-btn-ghost" style={{ fontSize: 11, padding: "6px 12px" }} onClick={() => migrateContacts(c.id as string)}>
-                          Move All Unassigned Contacts Here
+                          Move Unassigned Here
+                        </button>
+                        <button style={{ fontSize: 11, padding: "6px 12px", background: `${T.red}10`, border: `1px solid ${T.red}30`, color: T.red, borderRadius: 6, cursor: "pointer" }} onClick={() => stopCampaignContacts(c.id as string)}>
+                          Stop All Contacts
                         </button>
                       </div>
 
