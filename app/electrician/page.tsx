@@ -18,7 +18,7 @@ const SERVICES = [
   {
     title: "EV Charger Install",
     desc: "Level 2 home charging stations for Tesla, Ford, Chevy, and all major EV brands. Same-week installation with full permit and inspection handling.",
-    image: "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=800&q=80",
+    image: "/electrician-ev.png",
   },
   {
     title: "Lighting & Wiring",

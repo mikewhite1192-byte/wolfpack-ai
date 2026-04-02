@@ -23,7 +23,7 @@ const SERVICES = [
   {
     title: "Gutters & Exteriors",
     desc: "Seamless gutter installation, siding repair, and exterior maintenance. We protect every side of your home, not just the top.",
-    image: "https://images.unsplash.com/photo-1597484661973-ee6cd0b6482c?w=800&q=80",
+    image: "/roofing-gutters.png",
   },
 ];
 
