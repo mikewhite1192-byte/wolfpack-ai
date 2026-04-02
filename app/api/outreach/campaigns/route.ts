@@ -75,6 +75,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Campaign deleted" });
     }
 
+    // ── Stop all active contacts in a campaign (or legacy/unassigned) ──
+    if (action === "stop-contacts") {
+      const { neon } = await import("@neondatabase/serverless");
+      const sql = neon(process.env.DATABASE_URL!);
+      let result;
+      if (body.campaignId) {
+        result = await sql`UPDATE outreach_contacts SET sequence_status = 'completed' WHERE campaign_id = ${body.campaignId} AND sequence_status = 'active'`;
+      } else {
+        result = await sql`UPDATE outreach_contacts SET sequence_status = 'completed' WHERE campaign_id IS NULL AND sequence_status = 'active'`;
+      }
+      return NextResponse.json({ message: "Contacts stopped", count: result.length });
+    }
+
     // ── Assign a sender email address to a campaign ──
     if (action === "assign-sender") {
       await assignSenderToCampaign(body.campaignId, body.senderId);
