@@ -18,7 +18,7 @@ const SERVICES = [
   {
     title: "EV Charger Install",
     desc: "Level 2 home charging stations for Tesla, Ford, Chevy, and all major EV brands. Same-week installation with full permit and inspection handling.",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=800&q=80",
   },
   {
     title: "Lighting & Wiring",
@@ -69,12 +69,12 @@ export default function ElectricianPage() {
           left: 0;
           right: 0;
           z-index: 1000;
-          transition: background 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease;
-        }
-        .ve-nav--scrolled {
-          background: rgba(10, 10, 10, 0.95) !important;
+          background: rgba(10, 10, 10, 0.97);
           backdrop-filter: blur(16px);
           box-shadow: 0 1px 0 rgba(255,255,255,0.05);
+        }
+        .ve-nav--scrolled {
+          background: rgba(10, 10, 10, 0.97) !important;
         }
 
         .ve-btn {
@@ -220,7 +220,7 @@ export default function ElectricianPage() {
         <nav
           ref={navRef}
           className={`ve-nav${scrolled ? " ve-nav--scrolled" : ""}`}
-          style={{ background: scrolled ? undefined : "transparent" }}
+          style={{}}
         >
           <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 80 }}>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 3, color: "#fff" }}>

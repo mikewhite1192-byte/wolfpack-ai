@@ -23,7 +23,7 @@ const SERVICES = [
   {
     title: "Gutters & Exteriors",
     desc: "Seamless gutter installation, siding repair, and exterior maintenance. We protect every side of your home, not just the top.",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&q=80",
+    image: "https://images.unsplash.com/photo-1597484661973-ee6cd0b6482c?w=800&q=80",
   },
 ];
 
@@ -69,12 +69,12 @@ export default function RoofingPage() {
           left: 0;
           right: 0;
           z-index: 1000;
-          transition: background 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease;
-        }
-        .sr-nav--scrolled {
-          background: rgba(10, 10, 10, 0.95) !important;
+          background: rgba(10, 10, 10, 0.97);
           backdrop-filter: blur(16px);
           box-shadow: 0 1px 0 rgba(255,255,255,0.05);
+        }
+        .sr-nav--scrolled {
+          background: rgba(10, 10, 10, 0.97) !important;
         }
 
         .sr-btn {
@@ -220,7 +220,7 @@ export default function RoofingPage() {
         <nav
           ref={navRef}
           className={`sr-nav${scrolled ? " sr-nav--scrolled" : ""}`}
-          style={{ background: scrolled ? undefined : "transparent" }}
+          style={{}}
         >
           <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 80 }}>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 3, color: "#fff" }}>
