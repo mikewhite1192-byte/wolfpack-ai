@@ -38,6 +38,7 @@ interface RecentEmail {
 }
 
 interface EmailHealthData {
+  id: string;
   address: string;
   role: "cold_sender" | "warmup_only";
   displayName: string;
@@ -90,6 +91,8 @@ export default function OutreachPage() {
   const [editingTemplates, setEditingTemplates] = useState<string | null>(null);
   const [templateDrafts, setTemplateDrafts] = useState<Record<number, { subject: string; body: string }>>({});
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [emailSearch, setEmailSearch] = useState("");
+  const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
 
   const DEFAULT_TEMPLATES: Record<number, { subject: string; body: string }> = {
     1: {
@@ -258,6 +261,15 @@ export default function OutreachPage() {
 
     setSendResult(`Done! ${totalChecked} checked, ${totalRemoved} removed${allRemoved.length ? `: ${allRemoved.join(", ")}` : ""}`);
     refreshStats();
+  }
+
+  async function deleteEmailAddress(id: string) {
+    setDeletingEmail(id);
+    try {
+      await fetch("/api/outreach/warmup", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+      setEmailHealth(emailHealth.filter(h => h.id !== id));
+    } catch (e) { console.error(e); }
+    setDeletingEmail(null);
   }
 
   async function addEmailAddress() {
@@ -885,11 +897,22 @@ export default function OutreachPage() {
           {/* ============= EMAIL ADDRESSES TAB ============= */}
           {tab === "emails" && (
             <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div className="out-label" style={{ marginBottom: 0 }}>Registered Email Addresses</div>
-                <button className="out-btn out-btn-sm" onClick={() => setShowAddForm(!showAddForm)}>
-                  {showAddForm ? "Cancel" : "+ Add Email"}
-                </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div className="out-label" style={{ marginBottom: 0 }}>Email Addresses</div>
+                  <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 12, background: `${T.orange}15`, color: T.orange, fontWeight: 700 }}>{emailHealth.length}</span>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    style={{ ...inputStyle, width: 220, fontSize: 12 }}
+                    placeholder="Search emails..."
+                    value={emailSearch}
+                    onChange={e => setEmailSearch(e.target.value)}
+                  />
+                  <button className="out-btn out-btn-sm" onClick={() => setShowAddForm(!showAddForm)}>
+                    {showAddForm ? "Cancel" : "+ Add Email"}
+                  </button>
+                </div>
               </div>
 
               {addResult && <div style={{ fontSize: 12, color: addResult.startsWith("Error") ? T.red : T.green, marginBottom: 12 }}>{addResult}</div>}
@@ -960,7 +983,7 @@ export default function OutreachPage() {
                   No email addresses registered yet. Click &quot;+ Add Email&quot; to get started.
                 </div>
               ) : (
-                emailHealth.map(h => (
+                emailHealth.filter(h => !emailSearch || h.address.toLowerCase().includes(emailSearch.toLowerCase())).map(h => (
                   <div key={h.address} className="health-card">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div>
@@ -972,16 +995,25 @@ export default function OutreachPage() {
                           {h.role === "cold_sender" && ` · Limit: ${h.coldDailyLimit}/day`}
                         </div>
                       </div>
-                      <div style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        padding: "4px 10px",
-                        borderRadius: 12,
-                        background: `${healthColor(h.healthStatus)}15`,
-                        color: healthColor(h.healthStatus),
-                        border: `1px solid ${healthColor(h.healthStatus)}30`,
-                      }}>
-                        {h.healthScore}/100
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <div style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "4px 10px",
+                          borderRadius: 12,
+                          background: `${healthColor(h.healthStatus)}15`,
+                          color: healthColor(h.healthStatus),
+                          border: `1px solid ${healthColor(h.healthStatus)}30`,
+                        }}>
+                          {h.healthScore}/100
+                        </div>
+                        <button
+                          onClick={() => { if (confirm(`Delete ${h.address}?`)) deleteEmailAddress(h.id); }}
+                          disabled={deletingEmail === h.id}
+                          style={{ padding: "4px 8px", fontSize: 11, background: "rgba(255,59,48,0.1)", color: "#ff3b30", border: "1px solid rgba(255,59,48,0.2)", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}
+                        >
+                          {deletingEmail === h.id ? "..." : "X"}
+                        </button>
                       </div>
                     </div>
 

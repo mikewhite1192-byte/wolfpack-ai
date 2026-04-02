@@ -70,6 +70,13 @@ export async function addWarmupAddress(address: {
   return result[0].id;
 }
 
+// Delete a warmup address
+export async function deleteWarmupAddress(id: string): Promise<void> {
+  // Remove from campaign_senders first
+  await sql`DELETE FROM campaign_senders WHERE warmup_address_id = ${id}`;
+  await sql`DELETE FROM warmup_addresses WHERE id = ${id}`;
+}
+
 // Get only addresses that are designated cold senders
 export async function getColdSenderAddresses(): Promise<WarmupAddress[]> {
   return await sql`

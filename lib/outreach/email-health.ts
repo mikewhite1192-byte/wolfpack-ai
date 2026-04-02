@@ -4,6 +4,7 @@ import { getDailyLimits } from "./warmup";
 const sql = neon(process.env.DATABASE_URL!);
 
 export interface EmailHealth {
+  id: string;
   address: string;
   role: "cold_sender" | "warmup_only";
   displayName: string;
@@ -180,6 +181,7 @@ export async function getAllEmailHealth(): Promise<EmailHealth[]> {
     });
 
     healths.push({
+      id: addr.id as string,
       address: email,
       role: coldSender ? "cold_sender" : "warmup_only",
       displayName: addr.display_name as string,

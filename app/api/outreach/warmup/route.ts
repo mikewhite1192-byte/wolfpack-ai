@@ -75,6 +75,20 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// DELETE /api/outreach/warmup — remove an email address
+export async function DELETE(req: NextRequest) {
+  try {
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+    const { deleteWarmupAddress } = await import("@/lib/outreach/warmup");
+    await deleteWarmupAddress(id);
+    return NextResponse.json({ message: "Address deleted" });
+  } catch (err) {
+    console.error("[warmup] Delete error:", err);
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Error" }, { status: 500 });
+  }
+}
+
 // PUT /api/outreach/warmup — add a new email address to warmup
 export async function PUT(req: NextRequest) {
   try {
