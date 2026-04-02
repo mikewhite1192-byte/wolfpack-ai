@@ -145,17 +145,37 @@ export default function RoofingDemo() {
         </nav>
 
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section style={{ padding: "100px 24px 80px", textAlign: "center", maxWidth: 900, margin: "0 auto" }}>
-          <h1 style={{ fontSize: 64, lineHeight: 1.05, marginBottom: 24, fontWeight: 400 }}>
-            Protect Your Home<br />
-            <span style={{ color: ACCENT }}>From The Top Down</span>
-          </h1>
-          <p style={{ fontSize: 18, color: MUTED, lineHeight: 1.7, maxWidth: 620, margin: "0 auto 40px" }}>
-            Storm damage repair, complete roof replacements, and free inspections for homeowners across Macomb County. Licensed, insured, and trusted since 2009.
-          </p>
-          <div className="hero-buttons" style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
-            <span className="roofing-btn">Get Free Inspection</span>
-            <span className="roofing-btn-outline">Call Now — (586) 555-0287</span>
+        <section style={{ position: "relative", padding: "120px 24px 100px", textAlign: "center", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: "-30%", left: "50%", transform: "translateX(-50%)", width: 900, height: 900, borderRadius: "50%", background: `radial-gradient(circle, rgba(196,65,43,0.12) 0%, transparent 65%)`, pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto" }}>
+            <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: "rgba(196,65,43,0.12)", color: ACCENT, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 24 }}>
+              Free Inspections &bull; Insurance Claims &bull; Licensed
+            </div>
+            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 58, lineHeight: 1.1, marginBottom: 12, fontWeight: 800, letterSpacing: -1 }}>
+              Your Roof Took the Hit.
+            </h1>
+            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 58, lineHeight: 1.1, marginBottom: 28, fontWeight: 800, letterSpacing: -1 }}>
+              <span style={{ color: ACCENT }}>We&apos;ll Make It Right.</span>
+            </h1>
+            <p style={{ fontSize: 18, color: MUTED, lineHeight: 1.7, maxWidth: 580, margin: "0 auto 40px" }}>
+              Storm damage repair, full replacements, and free inspections across Macomb County. We handle the insurance paperwork so you don&apos;t have to.
+            </p>
+            <div className="hero-buttons" style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 56 }}>
+              <span className="roofing-btn" style={{ fontSize: 18, padding: "16px 40px" }}>Get Free Inspection</span>
+              <span className="roofing-btn-outline" style={{ fontSize: 18, padding: "16px 40px" }}>Call (586) 555-0287</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
+              {[
+                { num: "850+", label: "Roofs Replaced" },
+                { num: "17", label: "Years Experience" },
+                { num: "4.8", label: "Google Rating" },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: ACCENT, lineHeight: 1 }}>{s.num}</div>
+                  <div style={{ fontSize: 13, color: MUTED, marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

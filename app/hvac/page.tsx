@@ -243,16 +243,37 @@ export default function HvacPage() {
       </nav>
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="hvac-hero">
-        <h1>Keep Your Home Comfortable Year-Round</h1>
-        <p>
-          Troy&apos;s trusted source for heating, cooling, and indoor air quality.
-          From routine maintenance to 24/7 emergency repairs, we keep your
-          family comfortable no matter the season.
-        </p>
-        <div className="hvac-hero-btns">
-          <button className="hvac-btn-primary">Schedule Service</button>
-          <button className="hvac-btn-secondary">Call (248) 555-0193</button>
+      <section className="hvac-hero" style={{ position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "-40%", left: "50%", transform: "translateX(-50%)", width: 800, height: 800, borderRadius: "50%", background: `radial-gradient(circle, rgba(43,165,165,0.18) 0%, transparent 65%)`, pointerEvents: "none" }} />
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: `rgba(43,165,165,0.12)`, color: TEAL, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 24 }}>
+            NATE Certified &bull; 24/7 Emergency &bull; Financing Available
+          </div>
+          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 76, lineHeight: 1, maxWidth: 800, margin: "0 auto 12px", letterSpacing: 2, color: "#fff" }}>
+            Your Comfort Is
+          </h1>
+          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 76, lineHeight: 1, maxWidth: 800, margin: "0 auto 28px", letterSpacing: 2, color: TEAL }}>
+            Non-Negotiable
+          </h1>
+          <p style={{ fontSize: 18, color: "rgba(232,234,240,0.65)", maxWidth: 560, margin: "0 auto 40px", lineHeight: 1.7 }}>
+            Heating, cooling, and air quality for Troy and Oakland County. From routine tune-ups to emergency repairs at 2am, we keep your family comfortable.
+          </p>
+          <div className="hvac-hero-btns" style={{ marginBottom: 56 }}>
+            <button className="hvac-btn-primary">Schedule Service</button>
+            <button className="hvac-btn-secondary">Call (248) 555-0193</button>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
+            {[
+              { num: "12,000+", label: "Systems Serviced" },
+              { num: "20+", label: "Years Experience" },
+              { num: "4.9", label: "Google Rating" },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: TEAL, lineHeight: 1 }}>{s.num}</div>
+                <div style={{ fontSize: 13, color: "rgba(232,234,240,0.5)", marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

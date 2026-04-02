@@ -61,35 +61,38 @@ export default function ElectricianDemo() {
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <section className="elec-hero" style={{
-        padding: "140px 24px 80px", textAlign: "center",
-        background: "radial-gradient(ellipse at 50% 0%, rgba(212,160,43,0.08) 0%, transparent 70%)",
+        position: "relative", padding: "120px 24px 100px", textAlign: "center", overflow: "hidden",
       }}>
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+        <div style={{ position: "absolute", top: "-35%", left: "50%", transform: "translateX(-50%)", width: 850, height: 850, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,160,43,0.14) 0%, transparent 65%)", pointerEvents: "none" }} />
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 850, margin: "0 auto" }}>
           <div style={{
             display: "inline-block", background: "rgba(212,160,43,0.12)",
             border: "1px solid rgba(212,160,43,0.25)", borderRadius: 20,
             padding: "6px 18px", fontSize: 13, fontWeight: 600, color: "#D4A02B",
             marginBottom: 24, letterSpacing: 0.5,
           }}>
-            Licensed Master Electricians — Rochester Hills, MI
+            Master Licensed &bull; Same-Day Service &bull; Code Compliant
           </div>
           <h1 style={{
-            fontFamily: "'Bebas Neue', sans-serif", fontSize: 64,
-            lineHeight: 1.05, letterSpacing: 1, margin: "0 0 20px",
+            fontFamily: "'Bebas Neue', sans-serif", fontSize: 78,
+            lineHeight: 1, letterSpacing: 3, margin: "0 0 12px",
           }}>
-            Reliable Electrical Work<br />
-            <span style={{ color: "#D4A02B" }}>You Can Trust</span>
+            Don&apos;t Trust Your Wiring
+          </h1>
+          <h1 style={{
+            fontFamily: "'Bebas Neue', sans-serif", fontSize: 78,
+            lineHeight: 1, letterSpacing: 3, margin: "0 0 28px", color: "#D4A02B",
+          }}>
+            To Just Anyone.
           </h1>
           <p style={{
             fontSize: 18, color: "#b0b4c8", lineHeight: 1.7, maxWidth: 560,
-            margin: "0 auto 36px",
+            margin: "0 auto 40px",
           }}>
-            Residential and commercial electrical services backed by 20+ years of
-            experience. Licensed, insured, and committed to code-compliant work
-            on every job.
+            Residential and commercial electrical services from master licensed electricians. EV chargers, panel upgrades, whole-home rewiring, and same-day emergency service.
           </p>
           <div className="elec-hero-buttons" style={{
-            display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap",
+            display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 56,
           }}>
             <a href="#estimate" style={{
               background: "#D4A02B", color: "#0a0a0a", padding: "16px 36px",
@@ -104,8 +107,20 @@ export default function ElectricianDemo() {
               padding: "16px 36px", borderRadius: 8, fontSize: 16,
               fontWeight: 600, textDecoration: "none",
             }}>
-              Call Now — (248) 555-0361
+              Call (248) 555-0361
             </a>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
+            {[
+              { num: "5,000+", label: "Jobs Completed" },
+              { num: "22", label: "Years Experience" },
+              { num: "4.9", label: "Google Rating" },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: "#D4A02B", lineHeight: 1 }}>{s.num}</div>
+                <div style={{ fontSize: 13, color: "#b0b4c8", marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
