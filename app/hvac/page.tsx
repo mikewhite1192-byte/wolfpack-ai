@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import TradeChatWidget from "../components/TradeChatWidget";
-import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground } from "../components/TradeHeroEffects";
+import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground, ScrollReveal, GlowCard, TestimonialCarousel } from "../components/TradeHeroEffects";
 
 const TEAL = "#2BA5A5";
 const BG = "#0a0a0a";
@@ -27,22 +27,12 @@ const WHY_US = [
 ];
 
 const TESTIMONIALS = [
-  { name: "Jennifer M.", location: "Troy, MI", stars: 5, text: "Our AC went out in the middle of July and they had a tech here within two hours. Professional, fair pricing, and our house was cool again by dinner. Can't recommend them enough." },
-  { name: "David & Lisa K.", location: "Rochester Hills, MI", stars: 5, text: "We've used Comfort Zone for our furnace maintenance for three years now. Always on time, always thorough. They caught a cracked heat exchanger last fall that could've been dangerous." },
-  { name: "Robert T.", location: "Sterling Heights, MI", stars: 5, text: "Got quotes from four companies for a new HVAC system. Comfort Zone was the most honest and competitively priced. Install crew was clean, fast, and explained everything. Five stars." },
+  { name: "Jennifer M.", location: "Troy, MI", rating: 5, text: "Our AC went out in the middle of July and they had a tech here within two hours. Professional, fair pricing, and our house was cool again by dinner. Can't recommend them enough." },
+  { name: "David & Lisa K.", location: "Rochester Hills, MI", rating: 5, text: "We've used Comfort Zone for our furnace maintenance for three years now. Always on time, always thorough. They caught a cracked heat exchanger last fall that could've been dangerous." },
+  { name: "Robert T.", location: "Sterling Heights, MI", rating: 5, text: "Got quotes from four companies for a new HVAC system. Comfort Zone was the most honest and competitively priced. Install crew was clean, fast, and explained everything. Five stars." },
 ];
 
 const SERVICE_AREAS = ["Troy", "Warren", "Sterling Heights", "Rochester Hills", "Birmingham", "Oakland County"];
-
-function Stars({ count }: { count: number }) {
-  return (
-    <div style={{ color: "#f5a623", fontSize: 18, letterSpacing: 2 }}>
-      {Array.from({ length: count }, (_, i) => (
-        <span key={i}>&#9733;</span>
-      ))}
-    </div>
-  );
-}
 
 export default function HvacPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -297,18 +287,25 @@ export default function HvacPage() {
 
       {/* ── Services ───────────────────────────────────────────────────── */}
       <section className="hvac-section">
-        <h2 className="hvac-section-title">Our Services</h2>
-        <p className="hvac-section-sub">
-          Full-service heating and cooling for residential and light commercial
-          properties across Oakland County.
-        </p>
+        <ScrollReveal>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: TEAL, marginBottom: 12 }}>What We Do</div>
+            <h2 className="hvac-section-title">Our Services</h2>
+            <p className="hvac-section-sub">
+              Full-service heating and cooling for residential and light commercial
+              properties across Oakland County.
+            </p>
+          </div>
+        </ScrollReveal>
         <div className="hvac-services-grid">
           {SERVICES.map((s, i) => (
-            <div key={i} className="hvac-service-card">
-              <div className="hvac-service-icon">{s.icon}</div>
-              <div className="hvac-service-title">{s.title}</div>
-              <div className="hvac-service-desc">{s.desc}</div>
-            </div>
+            <ScrollReveal key={i} delay={i * 100}>
+              <GlowCard color={TEAL}>
+                <div className="hvac-service-icon">{s.icon}</div>
+                <div className="hvac-service-title">{s.title}</div>
+                <div className="hvac-service-desc">{s.desc}</div>
+              </GlowCard>
+            </ScrollReveal>
           ))}
         </div>
       </section>
@@ -317,16 +314,24 @@ export default function HvacPage() {
 
       {/* ── Why Choose Us ──────────────────────────────────────────────── */}
       <section className="hvac-section">
-        <h2 className="hvac-section-title">Why Choose Comfort Zone</h2>
-        <p className="hvac-section-sub">
-          Locally owned and operated since 2009. We treat every home like our own.
-        </p>
+        <ScrollReveal>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: TEAL, marginBottom: 12 }}>The Difference</div>
+            <h2 className="hvac-section-title">Why Choose Comfort Zone</h2>
+            <p className="hvac-section-sub">
+              Locally owned and operated since 2009. We treat every home like our own.
+            </p>
+          </div>
+        </ScrollReveal>
         <div className="hvac-why-grid">
           {WHY_US.map((w, i) => (
-            <div key={i} className="hvac-why-card">
-              <div className="hvac-why-title">{w.title}</div>
-              <div className="hvac-why-desc">{w.desc}</div>
-            </div>
+            <ScrollReveal key={i} delay={i * 100}>
+              <GlowCard color={TEAL} style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: TEAL, marginBottom: 12 }}>{String(i + 1).padStart(2, "0")}</div>
+                <div className="hvac-why-title">{w.title}</div>
+                <div className="hvac-why-desc">{w.desc}</div>
+              </GlowCard>
+            </ScrollReveal>
           ))}
         </div>
       </section>
@@ -334,46 +339,60 @@ export default function HvacPage() {
       <div className="hvac-divider" />
 
       {/* ── Testimonials ───────────────────────────────────────────────── */}
-      <section className="hvac-section">
-        <h2 className="hvac-section-title">What Our Customers Say</h2>
-        <p className="hvac-section-sub">
-          Real reviews from real homeowners in the Troy and Rochester Hills area.
-        </p>
-        <div className="hvac-testimonials-grid">
-          {TESTIMONIALS.map((t, i) => (
-            <div key={i} className="hvac-testimonial-card">
-              <Stars count={t.stars} />
-              <div className="hvac-testimonial-text" style={{ marginTop: 16 }}>
-                &ldquo;{t.text}&rdquo;
-              </div>
-              <div className="hvac-testimonial-name">{t.name}</div>
-              <div className="hvac-testimonial-loc">{t.location}</div>
+      <section style={{ padding: "96px 0", background: "#08090c" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 48px" }}>
+          <ScrollReveal>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: TEAL, marginBottom: 12 }}>Reviews</div>
+              <h2 className="hvac-section-title">What Our Customers Say</h2>
+              <p className="hvac-section-sub">
+                Real reviews from real homeowners in the Troy and Rochester Hills area.
+              </p>
             </div>
-          ))}
+          </ScrollReveal>
         </div>
+        <ScrollReveal>
+          <TestimonialCarousel testimonials={TESTIMONIALS} color={TEAL} />
+        </ScrollReveal>
       </section>
 
       <div className="hvac-divider" />
 
       {/* ── Service Area ───────────────────────────────────────────────── */}
       <section className="hvac-section">
-        <h2 className="hvac-section-title">Service Area</h2>
-        <p className="hvac-section-sub">
-          Proudly serving homeowners and businesses across Southeast Michigan.
-        </p>
-        <div className="hvac-areas">
-          {SERVICE_AREAS.map((a, i) => (
-            <div key={i} className="hvac-area-tag">{a}</div>
-          ))}
-        </div>
+        <ScrollReveal>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: TEAL, marginBottom: 12 }}>Coverage</div>
+            <h2 className="hvac-section-title">Service Area</h2>
+            <p className="hvac-section-sub">
+              Proudly serving homeowners and businesses across Southeast Michigan.
+            </p>
+          </div>
+        </ScrollReveal>
+        <ScrollReveal delay={200}>
+          <div className="hvac-areas">
+            {SERVICE_AREAS.map((a, i) => (
+              <div key={i} className="hvac-area-tag">{a}</div>
+            ))}
+          </div>
+        </ScrollReveal>
       </section>
 
       {/* ── CTA Section ────────────────────────────────────────────────── */}
-      <section className="hvac-cta-section">
-        <h2>Don&apos;t Sweat It &mdash; We&apos;ve Got You Covered</h2>
-        <p>Call now for a free estimate or schedule your service online.</p>
-        <div className="hvac-cta-phone">(248) 555-0193</div>
-        <button className="hvac-btn-primary">Schedule Service Today</button>
+      <section className="hvac-cta-section" style={{ background: `radial-gradient(ellipse at 50% 50%, rgba(43,165,165,0.12) 0%, transparent 70%)`, padding: "120px 48px" }}>
+        <ScrollReveal>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 64, color: "#fff", marginBottom: 16, letterSpacing: 2 }}>
+            Don&apos;t Sweat It &mdash; We&apos;ve Got You <span style={{ color: TEAL }}>Covered</span>
+          </h2>
+          <p style={{ color: "rgba(232,234,240,0.55)", fontSize: 20, marginBottom: 40, maxWidth: 600, marginLeft: "auto", marginRight: "auto" }}>
+            Call now for a free estimate or schedule your service online.
+          </p>
+          <div className="hvac-cta-phone">(248) 555-0193</div>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <button className="hvac-btn-primary" style={{ padding: "18px 44px", fontSize: 17 }}>Schedule Service Today</button>
+            <button className="hvac-btn-secondary" style={{ padding: "16px 44px", fontSize: 17 }}>Call Now</button>
+          </div>
+        </ScrollReveal>
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}

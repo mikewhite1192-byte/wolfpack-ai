@@ -1,7 +1,7 @@
 "use client";
 
 import TradeChatWidget from "../components/TradeChatWidget";
-import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground } from "../components/TradeHeroEffects";
+import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground, ScrollReveal, GlowCard, TestimonialCarousel } from "../components/TradeHeroEffects";
 
 const ACCENT = "#C4412B";
 const BG = "#0a0a0a";
@@ -27,20 +27,12 @@ const WHY_US = [
 ];
 
 const TESTIMONIALS = [
-  { name: "Dave & Linda M.", location: "Sterling Heights", stars: 5, text: "Summit replaced our entire roof in two days after the July storm. They handled the insurance claim from start to finish. Couldn't have been easier." },
-  { name: "Rachel K.", location: "Troy", stars: 5, text: "I got three quotes and Summit was the most thorough by far. They found hail damage I didn't even know about. Professional crew, great cleanup." },
-  { name: "Tom P.", location: "Shelby Township", stars: 5, text: "Called them on a Sunday after a tree branch punctured our roof. They had a tarp up within 2 hours. Replacement done that same week. Highly recommend." },
+  { name: "Dave & Linda M.", location: "Sterling Heights", rating: 5, text: "Summit replaced our entire roof in two days after the July storm. They handled the insurance claim from start to finish. Couldn't have been easier." },
+  { name: "Rachel K.", location: "Troy", rating: 5, text: "I got three quotes and Summit was the most thorough by far. They found hail damage I didn't even know about. Professional crew, great cleanup." },
+  { name: "Tom P.", location: "Shelby Township", rating: 5, text: "Called them on a Sunday after a tree branch punctured our roof. They had a tarp up within 2 hours. Replacement done that same week. Highly recommend." },
 ];
 
 const SERVICE_AREAS = ["Sterling Heights", "Warren", "Troy", "Rochester Hills", "Shelby Township", "Macomb County"];
-
-function Stars({ count }: { count: number }) {
-  return (
-    <div style={{ color: "#facc15", fontSize: 18, letterSpacing: 2 }}>
-      {"★".repeat(count)}
-    </div>
-  );
-}
 
 export default function RoofingDemo() {
   return (
@@ -101,28 +93,13 @@ export default function RoofingDemo() {
           grid-template-columns: repeat(4, 1fr);
           gap: 24px;
         }
-        .testimonials-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
-        }
-        .areas-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-          max-width: 700px;
-          margin: 0 auto;
-        }
         @media (max-width: 900px) {
           .services-grid { grid-template-columns: repeat(2, 1fr); }
           .why-grid { grid-template-columns: repeat(2, 1fr); }
-          .testimonials-grid { grid-template-columns: 1fr; }
-          .areas-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 600px) {
           .services-grid { grid-template-columns: 1fr; }
           .why-grid { grid-template-columns: 1fr; }
-          .areas-grid { grid-template-columns: repeat(2, 1fr); }
           .hero-buttons { flex-direction: column; align-items: stretch; }
           .nav-inner { flex-direction: column; gap: 12px; text-align: center; }
         }
@@ -196,98 +173,127 @@ export default function RoofingDemo() {
         </section>
 
         {/* ── Services ─────────────────────────────────────────── */}
-        <section style={{ padding: "80px 24px", maxWidth: 1200, margin: "0 auto" }}>
-          <h2 style={{ fontSize: 44, textAlign: "center", marginBottom: 12, fontWeight: 400 }}>
-            What We Do
-          </h2>
-          <p style={{ textAlign: "center", color: MUTED, fontSize: 16, marginBottom: 48, maxWidth: 540, marginLeft: "auto", marginRight: "auto" }}>
-            Full-service roofing and exterior solutions for residential homeowners.
-          </p>
-          <div className="services-grid">
-            {SERVICES.map((s) => (
-              <div key={s.title} style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 32 }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>{s.icon}</div>
-                <h3 style={{ fontSize: 22, fontWeight: 400, marginBottom: 8 }}>{s.title}</h3>
-                <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.7 }}>{s.desc}</p>
+        <section style={{ background: "#08090c", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle, rgba(196,65,43,0.06) 0%, transparent 70%)`, pointerEvents: "none" }} />
+          <div style={{ padding: "80px 24px", maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 1 }}>
+            <ScrollReveal>
+              <div style={{ textAlign: "center", marginBottom: 56 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: ACCENT, marginBottom: 12 }}>What We Do</div>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 12px" }}>
+                  Our Services
+                </h2>
+                <p style={{ color: MUTED, fontSize: 16 }}>
+                  Full-service roofing and exterior solutions for residential homeowners.
+                </p>
               </div>
-            ))}
+            </ScrollReveal>
+            <div className="services-grid">
+              {SERVICES.map((s, i) => (
+                <ScrollReveal key={s.title} delay={i * 100}>
+                  <GlowCard color={ACCENT}>
+                    <div style={{ fontSize: 40, marginBottom: 16 }}>{s.icon}</div>
+                    <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: 1, margin: "0 0 10px", color: TEXT }}>{s.title}</h3>
+                    <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{s.desc}</p>
+                  </GlowCard>
+                </ScrollReveal>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* ── Why Choose Us ────────────────────────────────────── */}
-        <section style={{ padding: "80px 24px", borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-            <h2 style={{ fontSize: 44, textAlign: "center", marginBottom: 48, fontWeight: 400 }}>
-              Why Choose <span style={{ color: ACCENT }}>Summit</span>
-            </h2>
+        <section style={{ position: "relative", overflow: "hidden" }}>
+          <div style={{ padding: "80px 24px", maxWidth: 1200, margin: "0 auto" }}>
+            <ScrollReveal>
+              <div style={{ textAlign: "center", marginBottom: 56 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: ACCENT, marginBottom: 12 }}>The Difference</div>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 12px" }}>
+                  Why Choose <span style={{ color: ACCENT }}>Summit</span>
+                </h2>
+                <p style={{ color: MUTED, fontSize: 16 }}>What sets us apart from every other roofer in Macomb County</p>
+              </div>
+            </ScrollReveal>
             <div className="why-grid">
-              {WHY_US.map((item) => (
-                <div key={item.title} style={{ textAlign: "center", padding: 24 }}>
-                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: `${ACCENT}15`, border: `1.5px solid ${ACCENT}33`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: ACCENT, fontSize: 14, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1 }}>
-                    {item.title.charAt(0)}
-                  </div>
-                  <h3 style={{ fontSize: 20, fontWeight: 400, marginBottom: 8 }}>{item.title}</h3>
-                  <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.6 }}>{item.desc}</p>
-                </div>
+              {WHY_US.map((item, i) => (
+                <ScrollReveal key={item.title} delay={i * 120}>
+                  <GlowCard color={ACCENT} style={{ textAlign: "center" }}>
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${ACCENT}25, ${ACCENT}08)`, border: `1px solid ${ACCENT}30`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: ACCENT }}>{String(i + 1).padStart(2, "0")}</div>
+                    </div>
+                    <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 21, letterSpacing: 1, margin: "0 0 10px", color: TEXT }}>{item.title}</h3>
+                    <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{item.desc}</p>
+                  </GlowCard>
+                </ScrollReveal>
               ))}
             </div>
           </div>
         </section>
 
         {/* ── Testimonials ─────────────────────────────────────── */}
-        <section style={{ padding: "80px 24px", maxWidth: 1200, margin: "0 auto" }}>
-          <h2 style={{ fontSize: 44, textAlign: "center", marginBottom: 48, fontWeight: 400 }}>
-            What Homeowners Say
-          </h2>
-          <div className="testimonials-grid">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 32 }}>
-                <Stars count={t.stars} />
-                <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.7, margin: "16px 0 20px", fontStyle: "italic" }}>
-                  &ldquo;{t.text}&rdquo;
-                </p>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>{t.name}</div>
-                  <div style={{ color: MUTED, fontSize: 13 }}>{t.location}</div>
-                </div>
+        <section style={{ background: "#08090c", overflow: "hidden" }}>
+          <div style={{ padding: "80px 24px 80px", maxWidth: 1200, margin: "0 auto" }}>
+            <ScrollReveal>
+              <div style={{ textAlign: "center", marginBottom: 48 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: ACCENT, marginBottom: 12 }}>Reviews</div>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 12px" }}>
+                  What Homeowners Say
+                </h2>
+                <p style={{ color: MUTED, fontSize: 16 }}>Real reviews from homeowners across Macomb County</p>
               </div>
-            ))}
+            </ScrollReveal>
           </div>
+          <ScrollReveal>
+            <TestimonialCarousel testimonials={TESTIMONIALS} color={ACCENT} />
+          </ScrollReveal>
+          <div style={{ height: 60 }} />
         </section>
 
         {/* ── Service Area ─────────────────────────────────────── */}
-        <section style={{ padding: "80px 24px", borderTop: `1px solid ${BORDER}`, textAlign: "center" }}>
-          <h2 style={{ fontSize: 44, marginBottom: 12, fontWeight: 400 }}>
-            Serving Macomb County & Beyond
-          </h2>
-          <p style={{ color: MUTED, fontSize: 16, marginBottom: 40 }}>
-            Proud to serve homeowners across Southeast Michigan.
-          </p>
-          <div className="areas-grid">
-            {SERVICE_AREAS.map((city) => (
-              <div key={city} style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "14px 20px", fontSize: 15 }}>
-                {city}
+        <section style={{ position: "relative" }}>
+          <div style={{ padding: "80px 24px", maxWidth: 1200, margin: "0 auto", textAlign: "center" }}>
+            <ScrollReveal>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: ACCENT, marginBottom: 12 }}>Coverage</div>
+              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 12px" }}>
+                Serving Macomb County & Beyond
+              </h2>
+              <p style={{ color: MUTED, fontSize: 16, marginBottom: 32 }}>
+                Proud to serve homeowners across Southeast Michigan.
+              </p>
+            </ScrollReveal>
+            <ScrollReveal delay={200}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14 }}>
+                {SERVICE_AREAS.map((city) => (
+                  <span key={city} style={{ padding: "12px 28px", borderRadius: 24, background: "rgba(196,65,43,0.08)", border: `1px solid rgba(196,65,43,0.2)`, color: ACCENT, fontSize: 15, fontWeight: 600, letterSpacing: 0.5, transition: "all 0.3s", cursor: "default" }}>
+                    {city}
+                  </span>
+                ))}
               </div>
-            ))}
+            </ScrollReveal>
           </div>
         </section>
 
         {/* ── CTA ──────────────────────────────────────────────── */}
-        <section style={{ padding: "80px 24px", textAlign: "center", background: `linear-gradient(to bottom, transparent, ${ACCENT}12)` }}>
-          <h2 style={{ fontSize: 48, marginBottom: 16, fontWeight: 400 }}>
-            Don&apos;t Wait Until The Next Storm
-          </h2>
-          <p style={{ color: MUTED, fontSize: 17, marginBottom: 36, maxWidth: 520, margin: "0 auto 36px" }}>
-            Most roof damage goes unnoticed until it&apos;s too late. Schedule your free inspection today.
-          </p>
-          <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
-            <span className="roofing-btn" style={{ fontSize: 20, padding: "18px 40px" }}>
-              Schedule Free Inspection
-            </span>
+        <section style={{ position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, rgba(196,65,43,0.15) 0%, rgba(196,65,43,0.03) 50%, rgba(196,65,43,0.10) 100%)` }} />
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, rgba(196,65,43,0.12) 0%, transparent 70%)`, pointerEvents: "none" }} />
+          <div style={{ padding: "80px 24px", maxWidth: 1200, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
+            <ScrollReveal>
+              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 56, letterSpacing: 3, margin: "0 0 20px" }}>
+                Don&apos;t Wait Until The Next <span style={{ color: ACCENT }}>Storm</span>
+              </h2>
+              <p style={{ color: MUTED, fontSize: 18, lineHeight: 1.7, maxWidth: 550, margin: "0 auto 40px" }}>
+                Most roof damage goes unnoticed until it&apos;s too late. Schedule your free inspection today.
+              </p>
+              <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
+                <span className="roofing-btn" style={{ fontSize: 20, padding: "18px 44px" }}>
+                  Schedule Free Inspection
+                </span>
+                <span className="roofing-btn-outline" style={{ fontSize: 20, padding: "18px 44px" }}>
+                  Call (586) 555-0287
+                </span>
+              </div>
+            </ScrollReveal>
           </div>
-          <p style={{ color: MUTED, fontSize: 15, marginTop: 20 }}>
-            Or call us directly: <span style={{ color: TEXT, fontWeight: 600 }}>(586) 555-0287</span>
-          </p>
         </section>
 
         {/* ── Footer ───────────────────────────────────────────── */}

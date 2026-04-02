@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import TradeChatWidget from "../components/TradeChatWidget";
-import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground } from "../components/TradeHeroEffects";
+import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground, ScrollReveal, GlowCard, TestimonialCarousel } from "../components/TradeHeroEffects";
 
 const BLUE = "#2B7CD4";
 const BG = "#0a0a0a";
@@ -183,95 +183,110 @@ export default function PlumberPage() {
         </section>
 
         {/* ── Services ─────────────────────────────────────────────────── */}
-        <section style={{ background: "#08090c" }}>
-          <div className="plumber-section">
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, letterSpacing: 2, margin: "0 0 12px" }}>Our Services</h2>
-              <p style={{ color: TEXT_MUTED, fontSize: 16 }}>Professional plumbing solutions for your home or business</p>
-            </div>
+        <section style={{ background: "#08090c", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle, rgba(43,124,212,0.06) 0%, transparent 70%)`, pointerEvents: "none" }} />
+          <div className="plumber-section" style={{ position: "relative", zIndex: 1 }}>
+            <ScrollReveal>
+              <div style={{ textAlign: "center", marginBottom: 56 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: BLUE, marginBottom: 12 }}>What We Do</div>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 12px" }}>Our Services</h2>
+                <p style={{ color: TEXT_MUTED, fontSize: 16 }}>Professional plumbing solutions for your home or business</p>
+              </div>
+            </ScrollReveal>
             <div className="plumber-grid-6">
-              {SERVICES.map((s) => (
-                <div key={s.title} style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, borderRadius: 10, padding: 28 }}>
-                  <div style={{ fontSize: 36, marginBottom: 14 }}>{s.icon}</div>
-                  <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: 1, margin: "0 0 10px", color: TEXT }}>{s.title}</h3>
-                  <p style={{ color: TEXT_MUTED, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{s.desc}</p>
-                </div>
+              {SERVICES.map((s, i) => (
+                <ScrollReveal key={s.title} delay={i * 100}>
+                  <GlowCard color={BLUE}>
+                    <div style={{ fontSize: 40, marginBottom: 16 }}>{s.icon}</div>
+                    <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: 1, margin: "0 0 10px", color: TEXT }}>{s.title}</h3>
+                    <p style={{ color: TEXT_MUTED, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{s.desc}</p>
+                  </GlowCard>
+                </ScrollReveal>
               ))}
             </div>
           </div>
         </section>
 
         {/* ── Why Choose Us ────────────────────────────────────────────── */}
-        <section>
+        <section style={{ position: "relative", overflow: "hidden" }}>
           <div className="plumber-section">
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, letterSpacing: 2, margin: "0 0 12px" }}>Why Choose Metro Plumbing</h2>
-              <p style={{ color: TEXT_MUTED, fontSize: 16 }}>What sets us apart from every other plumber in Warren</p>
-            </div>
+            <ScrollReveal>
+              <div style={{ textAlign: "center", marginBottom: 56 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: BLUE, marginBottom: 12 }}>The Difference</div>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 12px" }}>Why Choose Metro Plumbing</h2>
+                <p style={{ color: TEXT_MUTED, fontSize: 16 }}>What sets us apart from every other plumber in Warren</p>
+              </div>
+            </ScrollReveal>
             <div className="plumber-grid-4">
-              {REASONS.map((r) => (
-                <div key={r.title} style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, borderRadius: 10, padding: 28, textAlign: "center" }}>
-                  <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(43,124,212,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                    <div style={{ width: 12, height: 12, borderRadius: "50%", background: BLUE }} />
-                  </div>
-                  <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 1, margin: "0 0 10px", color: TEXT }}>{r.title}</h3>
-                  <p style={{ color: TEXT_MUTED, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{r.desc}</p>
-                </div>
+              {REASONS.map((r, i) => (
+                <ScrollReveal key={r.title} delay={i * 120}>
+                  <GlowCard color={BLUE} style={{ textAlign: "center" }}>
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${BLUE}25, ${BLUE}08)`, border: `1px solid ${BLUE}30`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: BLUE }}>{String(i + 1).padStart(2, "0")}</div>
+                    </div>
+                    <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 21, letterSpacing: 1, margin: "0 0 10px", color: TEXT }}>{r.title}</h3>
+                    <p style={{ color: TEXT_MUTED, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{r.desc}</p>
+                  </GlowCard>
+                </ScrollReveal>
               ))}
             </div>
           </div>
         </section>
 
         {/* ── Testimonials ─────────────────────────────────────────────── */}
-        <section style={{ background: "#08090c" }}>
-          <div className="plumber-section">
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, letterSpacing: 2, margin: "0 0 12px" }}>What Our Customers Say</h2>
-              <p style={{ color: TEXT_MUTED, fontSize: 16 }}>Real reviews from homeowners in the Warren area</p>
-            </div>
-            <div className="plumber-grid-3">
-              {TESTIMONIALS.map((t) => (
-                <div key={t.name} style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}`, borderRadius: 10, padding: 28 }}>
-                  <Stars count={t.rating} />
-                  <p style={{ color: TEXT_MUTED, fontSize: 14, lineHeight: 1.7, margin: "0 0 20px", fontStyle: "italic" }}>
-                    &ldquo;{t.text}&rdquo;
-                  </p>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 15, color: TEXT }}>{t.name}</div>
-                    <div style={{ fontSize: 13, color: TEXT_MUTED }}>{t.location}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+        <section style={{ background: "#08090c", overflow: "hidden" }}>
+          <div style={{ padding: "80px 24px 80px", maxWidth: 1100, margin: "0 auto" }}>
+            <ScrollReveal>
+              <div style={{ textAlign: "center", marginBottom: 48 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: BLUE, marginBottom: 12 }}>Reviews</div>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 12px" }}>What Our Customers Say</h2>
+                <p style={{ color: TEXT_MUTED, fontSize: 16 }}>Real reviews from homeowners in the Warren area</p>
+              </div>
+            </ScrollReveal>
           </div>
+          <ScrollReveal>
+            <TestimonialCarousel testimonials={TESTIMONIALS} color={BLUE} />
+          </ScrollReveal>
+          <div style={{ height: 60 }} />
         </section>
 
         {/* ── Service Area ─────────────────────────────────────────────── */}
-        <section>
+        <section style={{ position: "relative" }}>
           <div className="plumber-section" style={{ textAlign: "center" }}>
-            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, letterSpacing: 2, margin: "0 0 12px" }}>Service Area</h2>
-            <p style={{ color: TEXT_MUTED, fontSize: 16, marginBottom: 32 }}>Proudly serving Southeast Michigan</p>
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12 }}>
-              {AREAS.map((a) => (
-                <span key={a} style={{ padding: "10px 24px", borderRadius: 20, background: "rgba(43,124,212,0.1)", border: `1px solid rgba(43,124,212,0.2)`, color: BLUE, fontSize: 15, fontWeight: 500 }}>
-                  {a}
-                </span>
-              ))}
-            </div>
+            <ScrollReveal>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: BLUE, marginBottom: 12 }}>Coverage</div>
+              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 12px" }}>Service Area</h2>
+              <p style={{ color: TEXT_MUTED, fontSize: 16, marginBottom: 32 }}>Proudly serving Southeast Michigan</p>
+            </ScrollReveal>
+            <ScrollReveal delay={200}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14 }}>
+                {AREAS.map((a) => (
+                  <span key={a} style={{ padding: "12px 28px", borderRadius: 24, background: "rgba(43,124,212,0.08)", border: `1px solid rgba(43,124,212,0.2)`, color: BLUE, fontSize: 15, fontWeight: 600, letterSpacing: 0.5, transition: "all 0.3s", cursor: "default" }}>
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </ScrollReveal>
           </div>
         </section>
 
         {/* ── CTA ──────────────────────────────────────────────────────── */}
-        <section style={{ background: `linear-gradient(135deg, rgba(43,124,212,0.12) 0%, rgba(43,124,212,0.04) 100%)`, borderTop: `1px solid rgba(43,124,212,0.15)`, borderBottom: `1px solid rgba(43,124,212,0.15)` }}>
-          <div className="plumber-section" style={{ textAlign: "center" }}>
-            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, letterSpacing: 2, margin: "0 0 16px" }}>Ready to Fix Your Plumbing?</h2>
-            <p style={{ color: TEXT_MUTED, fontSize: 17, lineHeight: 1.7, maxWidth: 550, margin: "0 auto 36px" }}>
-              Give us a call or request a free quote online. We respond to every inquiry within 15 minutes during business hours.
-            </p>
-            <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-              <button className="plumber-btn" style={{ fontSize: 20, padding: "16px 40px" }}>Call (586) 555-0142</button>
-              <button className="plumber-btn-outline" style={{ fontSize: 20, padding: "16px 40px" }}>Request a Free Quote</button>
-            </div>
+        <section style={{ position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, rgba(43,124,212,0.15) 0%, rgba(43,124,212,0.03) 50%, rgba(43,124,212,0.10) 100%)` }} />
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, rgba(43,124,212,0.12) 0%, transparent 70%)`, pointerEvents: "none" }} />
+          <div className="plumber-section" style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
+            <ScrollReveal>
+              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 56, letterSpacing: 3, margin: "0 0 20px" }}>
+                Ready to Fix Your <span style={{ color: BLUE }}>Plumbing?</span>
+              </h2>
+              <p style={{ color: TEXT_MUTED, fontSize: 18, lineHeight: 1.7, maxWidth: 550, margin: "0 auto 40px" }}>
+                Give us a call or request a free quote online. We respond to every inquiry within 15 minutes.
+              </p>
+              <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+                <button className="plumber-btn" style={{ fontSize: 20, padding: "18px 44px" }}>Call (586) 555-0142</button>
+                <button className="plumber-btn-outline" style={{ fontSize: 20, padding: "18px 44px" }}>Request a Free Quote</button>
+              </div>
+            </ScrollReveal>
           </div>
         </section>
 

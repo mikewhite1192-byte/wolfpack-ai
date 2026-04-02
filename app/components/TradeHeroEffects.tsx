@@ -122,6 +122,132 @@ export function FloatingOrbs({ color }: { color: string }) {
   );
 }
 
+// ── Scroll Reveal (IntersectionObserver) ──────────────────────────
+export function ScrollReveal({ children, delay = 0, direction = "up" }: { children: React.ReactNode; delay?: number; direction?: "up" | "left" | "right" | "none" }) {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => setVisible(true), delay);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [delay]);
+
+  const translateMap = { up: "translateY(40px)", left: "translateX(-40px)", right: "translateX(40px)", none: "none" };
+
+  return (
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "none" : translateMap[direction],
+      transition: `opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1)`,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Glow Card (glassmorphism with gradient border on hover) ───────
+export function GlowCard({ children, color, style }: { children: React.ReactNode; color: string; style?: React.CSSProperties }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: "relative",
+        background: hovered ? `linear-gradient(135deg, ${color}08 0%, rgba(255,255,255,0.03) 100%)` : "rgba(255,255,255,0.02)",
+        border: `1px solid ${hovered ? color + "40" : "rgba(255,255,255,0.06)"}`,
+        borderRadius: 14,
+        padding: 32,
+        transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        transform: hovered ? "translateY(-4px)" : "none",
+        boxShadow: hovered ? `0 20px 40px ${color}12, 0 0 60px ${color}08` : "none",
+        cursor: "default",
+        ...style,
+      }}
+    >
+      {hovered && (
+        <div style={{
+          position: "absolute", top: -1, left: -1, right: -1, bottom: -1,
+          borderRadius: 15,
+          background: `linear-gradient(135deg, ${color}30, transparent 50%, ${color}15)`,
+          mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+          maskComposite: "exclude",
+          WebkitMaskComposite: "xor",
+          padding: 1,
+          pointerEvents: "none",
+        }} />
+      )}
+      {children}
+    </div>
+  );
+}
+
+// ── Section Divider (angled) ──────────────────────────────────────
+export function AngleDivider({ color, flip = false }: { color: string; flip?: boolean }) {
+  return (
+    <div style={{ position: "relative", height: 60, overflow: "hidden", marginTop: -1 }}>
+      <svg viewBox="0 0 1440 60" preserveAspectRatio="none" style={{ position: "absolute", width: "100%", height: "100%", transform: flip ? "scaleY(-1)" : "none" }}>
+        <path d="M0,60 L1440,0 L1440,60 Z" fill={color} />
+      </svg>
+    </div>
+  );
+}
+
+// ── Testimonial Carousel ──────────────────────────────────────────
+export function TestimonialCarousel({ testimonials, color }: { testimonials: { name: string; location: string; rating: number; text: string }[]; color: string }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div style={{ overflow: "hidden", position: "relative", padding: "10px 0" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 100, background: "linear-gradient(to right, #08090c, transparent)", zIndex: 2 }} />
+      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 100, background: "linear-gradient(to left, #08090c, transparent)", zIndex: 2 }} />
+      <style>{`
+        @keyframes testimonialScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .testimonial-track { display: flex; gap: 24px; animation: testimonialScroll 30s linear infinite; }
+        .testimonial-track:hover { animation-play-state: paused; }
+      `}</style>
+      <div ref={trackRef} className="testimonial-track">
+        {[...testimonials, ...testimonials].map((t, i) => (
+          <div key={i} style={{
+            flexShrink: 0, width: 380, background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 28,
+          }}>
+            <div style={{ display: "flex", gap: 2, marginBottom: 14 }}>
+              {Array.from({ length: t.rating }).map((_, j) => (
+                <span key={j} style={{ color: "#facc15", fontSize: 16 }}>&#9733;</span>
+              ))}
+            </div>
+            <p style={{ color: "rgba(232,234,240,0.6)", fontSize: 14, lineHeight: 1.7, margin: "0 0 20px", fontStyle: "italic" }}>
+              &ldquo;{t.text}&rdquo;
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${color}20`, display: "flex", alignItems: "center", justifyContent: "center", color: color, fontSize: 14, fontWeight: 700 }}>
+                {t.name[0]}
+              </div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: "#e8eaf0" }}>{t.name}</div>
+                <div style={{ fontSize: 12, color: "rgba(232,234,240,0.4)" }}>{t.location}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Hero Background Image ─────────────────────────────────────────
 export function HeroBackground({ imageUrl, overlayOpacity = 0.82 }: { imageUrl: string; overlayOpacity?: number }) {
   return (
