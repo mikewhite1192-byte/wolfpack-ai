@@ -79,6 +79,7 @@ export default function TradeChatWidget({ trade, accentColor }: { trade: Trade; 
 
   return (
     <>
+      <style>{`@keyframes dotPulse { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }`}</style>
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
@@ -161,7 +162,11 @@ export default function TradeChatWidget({ trade, accentColor }: { trade: Trade; 
                   </div>
                 ))}
                 {sending && (
-                  <div style={{ fontSize: 12, color: "rgba(232,230,227,0.3)", padding: "4px 8px" }}>Typing...</div>
+                  <div style={{ display: "flex", gap: 4, padding: "10px 14px", background: "rgba(255,255,255,0.06)", borderRadius: "14px 14px 14px 4px", width: "fit-content" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: accentColor, opacity: 0.6, animation: "dotPulse 1.4s ease-in-out infinite" }} />
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: accentColor, opacity: 0.6, animation: "dotPulse 1.4s ease-in-out 0.2s infinite" }} />
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: accentColor, opacity: 0.6, animation: "dotPulse 1.4s ease-in-out 0.4s infinite" }} />
+                  </div>
                 )}
                 <div ref={endRef} />
               </div>
