@@ -556,6 +556,18 @@ export default function OutreachPage() {
     refreshStats();
   }
 
+  const [movingToCrm, setMovingToCrm] = useState<string | null>(null);
+  async function moveToCrm(contactId: string) {
+    setMovingToCrm(contactId);
+    try {
+      const res = await fetch("/api/outreach/campaigns", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "move-to-crm", contactId }) });
+      const data = await res.json();
+      if (data.error) { alert(data.error); } else { alert("Moved to CRM! Check your pipeline."); }
+    } catch { alert("Error moving to CRM"); }
+    setMovingToCrm(null);
+    refreshStats();
+  }
+
   async function viewContact(contactId: string) {
     const res = await fetch(`/api/outreach/sequence?contactId=${contactId}`);
     const data = await res.json();
@@ -2070,6 +2082,16 @@ export default function OutreachPage() {
                             }}
                           />
                           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+                            {r.outreach_contact_id && (
+                              <button
+                                className="out-btn-ghost"
+                                onClick={e => { e.stopPropagation(); moveToCrm(r.outreach_contact_id!); }}
+                                disabled={movingToCrm === r.outreach_contact_id}
+                                style={{ fontSize: 11, padding: "5px 12px", color: T.green, borderColor: `${T.green}40` }}
+                              >
+                                {movingToCrm === r.outreach_contact_id ? "Moving..." : "Move to CRM"}
+                              </button>
+                            )}
                             <button
                               className="out-btn out-btn-sm"
                               onClick={e => { e.stopPropagation(); sendReply(r.id); }}
@@ -2138,6 +2160,13 @@ export default function OutreachPage() {
                   Unsubscribe
                 </button>
               )}
+              <button
+                onClick={() => moveToCrm(selectedContact.id)}
+                disabled={movingToCrm === selectedContact.id || selectedContact.converted}
+                style={{ fontSize: 11, padding: "5px 12px", background: selectedContact.converted ? `${T.green}15` : `${T.green}20`, border: `1px solid ${T.green}40`, color: T.green, borderRadius: 6, cursor: selectedContact.converted ? "default" : "pointer", fontWeight: 600 }}
+              >
+                {selectedContact.converted ? "In CRM" : movingToCrm === selectedContact.id ? "Moving..." : "Move to CRM"}
+              </button>
             </div>
           </div>
 

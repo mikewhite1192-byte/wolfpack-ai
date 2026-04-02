@@ -88,6 +88,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Contacts stopped", count: result.length });
     }
 
+    // ── Move outreach contact to CRM ──
+    if (action === "move-to-crm") {
+      const { neon } = await import("@neondatabase/serverless");
+      const sql = neon(process.env.DATABASE_URL!);
+      const contactId = body.contactId;
+      if (!contactId) return NextResponse.json({ error: "contactId required" }, { status: 400 });
+
+      // Get the outreach contact
+      const contacts = await sql`SELECT * FROM outreach_contacts WHERE id = ${contactId} LIMIT 1`;
+      if (contacts.length === 0) return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+      const oc = contacts[0];
+
+      // Get workspace
+      const ws = await sql`SELECT id FROM workspaces WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`;
+      if (ws.length === 0) return NextResponse.json({ error: "No active workspace" }, { status: 400 });
+      const wsId = ws[0].id;
+
+      // Check if already in CRM
+      const existing = await sql`SELECT id FROM contacts WHERE workspace_id = ${wsId} AND email = ${oc.email} LIMIT 1`;
+      let crmContactId: string;
+
+      if (existing.length > 0) {
+        crmContactId = existing[0].id as string;
+      } else {
+        const newContact = await sql`
+          INSERT INTO contacts (workspace_id, first_name, last_name, email, phone, company, source, source_detail)
+          VALUES (${wsId}, ${oc.first_name}, ${oc.last_name}, ${oc.email}, ${null}, ${oc.company}, 'cold_outreach', 'Moved from outreach campaign')
+          RETURNING id
+        `;
+        crmContactId = newContact[0].id as string;
+      }
+
+      // Create deal in first pipeline stage
+      const existingDeal = await sql`SELECT id FROM deals WHERE contact_id = ${crmContactId} AND workspace_id = ${wsId} LIMIT 1`;
+      if (existingDeal.length === 0) {
+        const firstStage = await sql`SELECT id FROM pipeline_stages WHERE workspace_id = ${wsId} ORDER BY position ASC LIMIT 1`;
+        if (firstStage.length > 0) {
+          const dealTitle = [oc.first_name, oc.last_name].filter(Boolean).join(" ") || oc.email;
+          await sql`INSERT INTO deals (workspace_id, contact_id, stage_id, title) VALUES (${wsId}, ${crmContactId}, ${firstStage[0].id}, ${dealTitle + ' — Web Dev Lead'})`;
+        }
+      }
+
+      // Mark as converted in outreach
+      await sql`UPDATE outreach_contacts SET converted = TRUE WHERE id = ${contactId}`;
+
+      return NextResponse.json({ message: "Moved to CRM", crmContactId });
+    }
+
     // ── Assign a sender email address to a campaign ──
     if (action === "assign-sender") {
       await assignSenderToCampaign(body.campaignId, body.senderId);
