@@ -126,7 +126,7 @@ export default function OutreachPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scraperStats, setScraperStats] = useState<any>(null);
   const [showScraperForm, setShowScraperForm] = useState(false);
-  const [newScraper, setNewScraper] = useState({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "", campaignId: "" });
+  const [newScraper, setNewScraper] = useState({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "", campaignId: "", city: "", state: "", country: "US" });
   const [addingScraper, setAddingScraper] = useState(false);
   const [editingScraperId, setEditingScraperId] = useState<string | null>(null);
   const [editScraper, setEditScraper] = useState({ name: "", query: "", dailyCount: "", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "" });
@@ -428,7 +428,7 @@ export default function OutreachPage() {
         await linkScraperToCampaign(latest.id as string, newScraper.campaignId);
       }
     }
-    setNewScraper({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "", campaignId: "" });
+    setNewScraper({ name: "", query: "", dailyCount: "15", maxReviews: "", minRating: "", maxRating: "", categoryFilter: "", customCategory: "", campaignId: "", city: "", state: "", country: "US" });
     setShowScraperForm(false);
     setAddingScraper(false);
     refreshStats();
@@ -1599,18 +1599,50 @@ export default function OutreachPage() {
 
               {showScraperForm && (
                 <div className="out-card" style={{ marginBottom: 16 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 100px", gap: 10, marginBottom: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 100px", gap: 10, marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>NAME</div>
-                      <input style={inputStyle} placeholder="Tampa Roofers" value={newScraper.name} onChange={e => setNewScraper({ ...newScraper, name: e.target.value })} />
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>CITY</div>
+                      <input style={inputStyle} placeholder="Warren" value={newScraper.city} onChange={e => {
+                        const city = e.target.value;
+                        const query = city ? `${newScraper.name || "businesses"} near ${city}${newScraper.state ? " " + newScraper.state : ""}` : newScraper.query;
+                        setNewScraper({ ...newScraper, city, query: city ? query : newScraper.query });
+                      }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>GOOGLE MAPS QUERY</div>
-                      <input style={inputStyle} placeholder="roofing contractors in Tampa FL" value={newScraper.query} onChange={e => setNewScraper({ ...newScraper, query: e.target.value })} />
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>STATE</div>
+                      <input style={inputStyle} placeholder="MI" value={newScraper.state} onChange={e => {
+                        const state = e.target.value;
+                        const query = newScraper.city ? `${newScraper.name || "businesses"} near ${newScraper.city} ${state}` : newScraper.query;
+                        setNewScraper({ ...newScraper, state, query: newScraper.city ? query : newScraper.query });
+                      }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>COUNTRY</div>
+                      <select style={inputStyle} value={newScraper.country} onChange={e => setNewScraper({ ...newScraper, country: e.target.value })}>
+                        <option value="US">United States</option>
+                        <option value="CA">Canada</option>
+                        <option value="UK">United Kingdom</option>
+                        <option value="AU">Australia</option>
+                        <option value="other">Other</option>
+                      </select>
                     </div>
                     <div>
                       <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>DAILY COUNT</div>
                       <input style={inputStyle} type="number" value={newScraper.dailyCount} onChange={e => setNewScraper({ ...newScraper, dailyCount: e.target.value })} />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>NAME</div>
+                      <input style={inputStyle} placeholder="e.g. plumbers, roofers, HVAC" value={newScraper.name} onChange={e => {
+                        const name = e.target.value;
+                        const query = newScraper.city ? `${name} near ${newScraper.city}${newScraper.state ? " " + newScraper.state : ""}` : "";
+                        setNewScraper({ ...newScraper, name, query: newScraper.city ? query : newScraper.query });
+                      }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>GOOGLE MAPS QUERY <span style={{ color: T.muted, fontWeight: 400 }}>(auto-generated or custom)</span></div>
+                      <input style={inputStyle} placeholder="plumbers near Warren MI" value={newScraper.query} onChange={e => setNewScraper({ ...newScraper, query: e.target.value })} />
                     </div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
