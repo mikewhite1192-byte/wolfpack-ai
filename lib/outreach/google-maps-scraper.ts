@@ -337,18 +337,20 @@ function csvEscape(val: string): string {
 
 // ─── STATS ───────────────────────────────────────────────────────────────────
 
-export async function getScraperStats() {
-  const stats = await sql`
-    SELECT
-      COUNT(*) as total,
-      COUNT(*) FILTER (WHERE email_status = 'pending') as pending,
-      COUNT(*) FILTER (WHERE email_status = 'found') as found,
-      COUNT(*) FILTER (WHERE email_status = 'not_found') as not_found,
-      COUNT(*) FILTER (WHERE email_status = 'verified') as verified,
-      COUNT(*) FILTER (WHERE email_status = 'invalid') as invalid,
-      COUNT(*) FILTER (WHERE email_status = 'added') as added
-    FROM scraped_businesses
-  `;
+export async function getScraperStats(range?: string) {
+  if (range === "today") {
+    const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE email_status = 'pending') as pending, COUNT(*) FILTER (WHERE email_status = 'found') as found, COUNT(*) FILTER (WHERE email_status = 'not_found') as not_found, COUNT(*) FILTER (WHERE email_status = 'verified') as verified, COUNT(*) FILTER (WHERE email_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE email_status = 'added') as added FROM scraped_businesses WHERE created_at >= CURRENT_DATE`;
+    return stats[0];
+  }
+  if (range === "7d") {
+    const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE email_status = 'pending') as pending, COUNT(*) FILTER (WHERE email_status = 'found') as found, COUNT(*) FILTER (WHERE email_status = 'not_found') as not_found, COUNT(*) FILTER (WHERE email_status = 'verified') as verified, COUNT(*) FILTER (WHERE email_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE email_status = 'added') as added FROM scraped_businesses WHERE created_at >= NOW() - INTERVAL '7 days'`;
+    return stats[0];
+  }
+  if (range === "30d") {
+    const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE email_status = 'pending') as pending, COUNT(*) FILTER (WHERE email_status = 'found') as found, COUNT(*) FILTER (WHERE email_status = 'not_found') as not_found, COUNT(*) FILTER (WHERE email_status = 'verified') as verified, COUNT(*) FILTER (WHERE email_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE email_status = 'added') as added FROM scraped_businesses WHERE created_at >= NOW() - INTERVAL '30 days'`;
+    return stats[0];
+  }
+  const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE email_status = 'pending') as pending, COUNT(*) FILTER (WHERE email_status = 'found') as found, COUNT(*) FILTER (WHERE email_status = 'not_found') as not_found, COUNT(*) FILTER (WHERE email_status = 'verified') as verified, COUNT(*) FILTER (WHERE email_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE email_status = 'added') as added FROM scraped_businesses`;
   return stats[0];
 }
 

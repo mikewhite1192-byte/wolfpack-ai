@@ -98,6 +98,8 @@ export default function OutreachPage() {
   const [statsRange, setStatsRange] = useState<"today" | "7d" | "30d" | "90d">("7d");
   const [contactCampaignFilter, setContactCampaignFilter] = useState<string>("");
   const [healthCampaignFilter, setHealthCampaignFilter] = useState<string>("");
+  const [emailCampaignFilter, setEmailCampaignFilter] = useState<string>("");
+  const [scraperDateFilter, setScraperDateFilter] = useState<"today" | "7d" | "30d" | "all">("all");
 
   const DEFAULT_TEMPLATES: Record<number, { subject: string; body: string }> = {
     1: {
@@ -923,8 +925,15 @@ export default function OutreachPage() {
                   <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 12, background: `${T.orange}15`, color: T.orange, fontWeight: 700 }}>{emailHealth.length}</span>
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <select style={{ ...inputStyle, width: 160, fontSize: 12 }} value={emailCampaignFilter} onChange={e => setEmailCampaignFilter(e.target.value)}>
+                    <option value="">All Campaigns</option>
+                    {campaigns.map((c: Record<string, unknown>) => (
+                      <option key={c.id as string} value={c.id as string}>{c.name as string}</option>
+                    ))}
+                    <option value="none">Unassigned</option>
+                  </select>
                   <input
-                    style={{ ...inputStyle, width: 220, fontSize: 12 }}
+                    style={{ ...inputStyle, width: 200, fontSize: 12 }}
                     placeholder="Search emails..."
                     value={emailSearch}
                     onChange={e => setEmailSearch(e.target.value)}
@@ -1003,7 +1012,19 @@ export default function OutreachPage() {
                   No email addresses registered yet. Click &quot;+ Add Email&quot; to get started.
                 </div>
               ) : (
-                emailHealth.filter(h => !emailSearch || h.address.toLowerCase().includes(emailSearch.toLowerCase())).sort((a, b) => {
+                emailHealth.filter(h => {
+                  if (emailSearch && !h.address.toLowerCase().includes(emailSearch.toLowerCase())) return false;
+                  if (emailCampaignFilter) {
+                    const senderCampMap: Record<string, string> = {};
+                    campaigns.forEach((c: Record<string, unknown>) => {
+                      const senders = (c.senders || []) as { email: string }[];
+                      senders.forEach(s => { senderCampMap[s.email] = c.id as string; });
+                    });
+                    if (emailCampaignFilter === "none") return !senderCampMap[h.address];
+                    return senderCampMap[h.address] === emailCampaignFilter;
+                  }
+                  return true;
+                }).sort((a, b) => {
                   if (a.role === "cold_sender" && b.role !== "cold_sender") return -1;
                   if (a.role !== "cold_sender" && b.role === "cold_sender") return 1;
                   return a.address.localeCompare(b.address);
@@ -1400,7 +1421,7 @@ export default function OutreachPage() {
                         <span>Completed: {cStats.completed || "0"}</span>
                         <span>Invalid: {cStats.invalid || "0"}</span>
                         <span>Unsubscribed: {cStats.unsubscribed || "0"}</span>
-                        <span style={{ color: T.green }}>Scraping 15 contacts/day automatically</span>
+                        <span style={{ color: T.green }}>Scraping {scraperConfigs.filter((sc: Record<string, unknown>) => sc.campaign_id === c.id && sc.enabled).reduce((sum: number, sc: Record<string, unknown>) => sum + ((sc.daily_count as number) || 0), 0)} contacts/day ({scraperConfigs.filter((sc: Record<string, unknown>) => sc.campaign_id === c.id && sc.enabled).length} scrapers)</span>
                       </div>
 
                       {/* Quick actions */}
@@ -1550,6 +1571,16 @@ export default function OutreachPage() {
                   ))}
                 </div>
               )}
+
+              {/* Date filter for scraper stats */}
+              <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+                {(["today", "7d", "30d", "all"] as const).map(r => (
+                  <button key={r} onClick={() => { setScraperDateFilter(r); fetch(`/api/outreach/scrape-maps`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "status", range: r === "all" ? undefined : r }) }).then(res => res.json()).then(data => { if (data.stats) setScraperStats(data.stats); }); }}
+                    style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: "pointer", background: scraperDateFilter === r ? `${T.orange}20` : "rgba(255,255,255,0.04)", color: scraperDateFilter === r ? T.orange : T.muted, border: `1px solid ${scraperDateFilter === r ? T.orange + "40" : T.border}`, transition: "all 0.2s" }}>
+                    {r === "today" ? "Today" : r === "7d" ? "7 Days" : r === "30d" ? "30 Days" : "All Time"}
+                  </button>
+                ))}
+              </div>
 
               {/* Scraper configs */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>

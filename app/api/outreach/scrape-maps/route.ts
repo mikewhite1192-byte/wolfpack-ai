@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
     // ── Get status ──
     if (action === "status") {
       const configs = await getScraperConfigs();
-      const stats = await getScraperStats();
+      const stats = await getScraperStats(body.range);
       return NextResponse.json({ configs, stats });
     }
 
