@@ -138,19 +138,24 @@ export async function markUnsubscribed(email: string) {
 }
 
 // Get sequence stats
-export async function getSequenceStats() {
-  const stats = await sql`
-    SELECT
-      COUNT(*) as total,
-      COUNT(*) FILTER (WHERE sequence_status = 'active') as active,
-      COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed,
-      COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied,
-      COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced,
-      COUNT(*) FILTER (WHERE sequence_status = 'invalid') as invalid,
-      COUNT(*) FILTER (WHERE sequence_status = 'unsubscribed') as unsubscribed,
-      COUNT(*) FILTER (WHERE converted = TRUE) as converted
-    FROM outreach_contacts
-  `;
+export async function getSequenceStats(range?: string) {
+  if (range === "today") {
+    const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE sequence_status = 'active') as active, COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed, COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied, COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced, COUNT(*) FILTER (WHERE sequence_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE sequence_status = 'unsubscribed') as unsubscribed, COUNT(*) FILTER (WHERE converted = TRUE) as converted FROM outreach_contacts WHERE created_at >= CURRENT_DATE`;
+    return stats[0];
+  }
+  if (range === "7d") {
+    const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE sequence_status = 'active') as active, COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed, COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied, COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced, COUNT(*) FILTER (WHERE sequence_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE sequence_status = 'unsubscribed') as unsubscribed, COUNT(*) FILTER (WHERE converted = TRUE) as converted FROM outreach_contacts WHERE created_at >= NOW() - INTERVAL '7 days'`;
+    return stats[0];
+  }
+  if (range === "30d") {
+    const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE sequence_status = 'active') as active, COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed, COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied, COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced, COUNT(*) FILTER (WHERE sequence_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE sequence_status = 'unsubscribed') as unsubscribed, COUNT(*) FILTER (WHERE converted = TRUE) as converted FROM outreach_contacts WHERE created_at >= NOW() - INTERVAL '30 days'`;
+    return stats[0];
+  }
+  if (range === "90d") {
+    const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE sequence_status = 'active') as active, COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed, COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied, COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced, COUNT(*) FILTER (WHERE sequence_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE sequence_status = 'unsubscribed') as unsubscribed, COUNT(*) FILTER (WHERE converted = TRUE) as converted FROM outreach_contacts WHERE created_at >= NOW() - INTERVAL '90 days'`;
+    return stats[0];
+  }
+  const stats = await sql`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE sequence_status = 'active') as active, COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed, COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied, COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced, COUNT(*) FILTER (WHERE sequence_status = 'invalid') as invalid, COUNT(*) FILTER (WHERE sequence_status = 'unsubscribed') as unsubscribed, COUNT(*) FILTER (WHERE converted = TRUE) as converted FROM outreach_contacts`;
   return stats[0];
 }
 

@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const search = url.searchParams.get("search")?.toLowerCase() || "";
 
-    const stats = await getSequenceStats();
+    const range = url.searchParams.get("range") || undefined;
+    const stats = await getSequenceStats(range);
 
     const recentEmails = await sql`
       SELECT oe.step, oe.status, oe.sent_at, oe.from_email, oc.email, oc.first_name

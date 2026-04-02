@@ -94,6 +94,10 @@ export default function OutreachPage() {
   const [emailSearch, setEmailSearch] = useState("");
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
   const [campaignSearch, setCampaignSearch] = useState("");
+  const [rampOpen, setRampOpen] = useState(false);
+  const [statsRange, setStatsRange] = useState<"today" | "7d" | "30d" | "90d">("7d");
+  const [contactCampaignFilter, setContactCampaignFilter] = useState<string>("");
+  const [healthCampaignFilter, setHealthCampaignFilter] = useState<string>("");
 
   const DEFAULT_TEMPLATES: Record<number, { subject: string; body: string }> = {
     1: {
@@ -148,6 +152,7 @@ export default function OutreachPage() {
     company: string | null; state: string | null; sequence_status: string;
     sequence_step: number; assigned_sender: string | null; replied: boolean;
     bounced: boolean; unsubscribed: boolean; created_at: string; last_email_sent_at: string | null;
+    campaign_id: string | null;
   }>>([]);
 
   // Inbox state
@@ -772,52 +777,78 @@ export default function OutreachPage() {
                 </div>
               </div>
 
-              {/* Warmup ramp progress */}
+              {/* Warmup ramp progress — collapsible */}
               <div className="out-card" style={{ marginBottom: 14 }}>
-                <div className="out-label">Email Address Ramp Progress</div>
-                {warmupAddresses.map((wa: Record<string, unknown>) => {
-                  const day = wa.daysActive as number;
-                  const limits = wa.dailyLimits as { total: number; cold: number; warmup: number };
-                  const pct = Math.min((day / 25) * 100, 100);
-                  const atSteady = day >= 25;
-                  return (
-                    <div key={wa.address as string} style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>{(wa.address as string).split("@")[0]}@...</span>
-                        <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
-                          <span style={{ color: T.muted }}>Day {day}</span>
-                          <span style={{ color: T.orange }}>{limits.cold} cold</span>
-                          <span style={{ color: T.blue }}>{limits.warmup} warmup</span>
-                          <span style={{ color: atSteady ? T.green : T.yellow }}>{atSteady ? "FULL" : `${limits.total}/50`}</span>
+                <div onClick={() => setRampOpen(!rampOpen)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+                  <div className="out-label" style={{ marginBottom: 0 }}>
+                    Email Address Ramp Progress
+                    <span style={{ fontSize: 11, color: T.muted, fontWeight: 400, marginLeft: 8 }}>
+                      ({warmupAddresses.filter((wa: Record<string, unknown>) => (wa.daysActive as number) >= 25).length}/{warmupAddresses.length} at full capacity)
+                    </span>
+                  </div>
+                  <span style={{ color: T.orange, fontSize: 18, fontWeight: 300, transition: "transform 0.3s", transform: rampOpen ? "rotate(45deg)" : "rotate(0)" }}>+</span>
+                </div>
+                {rampOpen && (
+                  <div style={{ marginTop: 14 }}>
+                    {warmupAddresses.map((wa: Record<string, unknown>) => {
+                      const day = wa.daysActive as number;
+                      const limits = wa.dailyLimits as { total: number; cold: number; warmup: number };
+                      const pct = Math.min((day / 25) * 100, 100);
+                      const atSteady = day >= 25;
+                      return (
+                        <div key={wa.address as string} style={{ marginBottom: 10 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                            <span style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>{(wa.address as string).split("@")[0]}@...</span>
+                            <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
+                              <span style={{ color: T.muted }}>Day {day}</span>
+                              <span style={{ color: T.orange }}>{limits.cold} cold</span>
+                              <span style={{ color: T.blue }}>{limits.warmup} warmup</span>
+                              <span style={{ color: atSteady ? T.green : T.yellow }}>{atSteady ? "FULL" : `${limits.total}/50`}</span>
+                            </div>
+                          </div>
+                          <div className="health-bar">
+                            <div className="health-fill" style={{ width: `${pct}%`, background: atSteady ? T.green : T.orange }} />
+                          </div>
                         </div>
-                      </div>
-                      <div className="health-bar">
-                        <div className="health-fill" style={{ width: `${pct}%`, background: atSteady ? T.green : T.orange }} />
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* Stats + Controls side by side */}
-              <div className="out-row">
-                <div>
-                  <div className="out-stats" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-                    {stats && [
-                      { label: "Total Contacts", value: stats.total, color: T.text },
-                      { label: "Completed", value: stats.completed, color: T.muted },
-                      { label: "Reply Rate", value: parseInt(stats.total) > 0 ? `${Math.round((parseInt(stats.replied) / parseInt(stats.total)) * 100)}%` : "0%", color: T.green },
-                      { label: "Bounced", value: stats.bounced, color: T.red },
-                      { label: "Invalid", value: stats.invalid || "0", color: T.muted },
-                      { label: "Unsubscribed", value: stats.unsubscribed, color: T.yellow },
-                    ].map(s => (
-                      <div key={s.label} className="out-stat">
-                        <div className="out-stat-val" style={{ color: s.color }}>{s.value}</div>
-                        <div className="out-stat-label">{s.label}</div>
-                      </div>
+              {/* Stats with date range */}
+              <div className="out-card" style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div className="out-label" style={{ marginBottom: 0 }}>Contact Stats</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {(["today", "7d", "30d", "90d"] as const).map(r => (
+                      <button key={r} onClick={() => { setStatsRange(r); fetch(`/api/outreach/stats?range=${r}`).then(res => res.json()).then(data => { if (data.stats) setStats(data.stats); }); }}
+                        style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: "pointer", background: statsRange === r ? `${T.orange}20` : "rgba(255,255,255,0.04)", color: statsRange === r ? T.orange : T.muted, border: `1px solid ${statsRange === r ? T.orange + "40" : T.border}`, transition: "all 0.2s" }}>
+                        {r === "today" ? "Today" : r === "7d" ? "7 Days" : r === "30d" ? "30 Days" : "90 Days"}
+                      </button>
                     ))}
                   </div>
+                </div>
+                <div className="out-stats" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                  {stats && [
+                    { label: "Total Contacts", value: stats.total, color: T.text },
+                    { label: "Completed", value: stats.completed, color: T.muted },
+                    { label: "Reply Rate", value: parseInt(stats.total) > 0 ? `${Math.round((parseInt(stats.replied) / parseInt(stats.total)) * 100)}%` : "0%", color: T.green },
+                    { label: "Bounced", value: stats.bounced, color: T.red },
+                    { label: "Invalid", value: stats.invalid || "0", color: T.muted },
+                    { label: "Unsubscribed", value: stats.unsubscribed, color: T.yellow },
+                  ].map(s => (
+                    <div key={s.label} className="out-stat">
+                      <div className="out-stat-val" style={{ color: s.color }}>{s.value}</div>
+                      <div className="out-stat-label">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
+              {/* Recent sends + actions */}
+              <div className="out-row">
+                <div>
                   <div className="out-card">
                     <div className="out-label">Recent Sends</div>
                     {recentEmails.length === 0 ? (
@@ -843,25 +874,13 @@ export default function OutreachPage() {
 
                 <div>
                   <div className="out-card">
-                    <div className="out-label">Controls</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 6 }}>Scrape New Contacts</div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input className="out-input" type="number" value={scrapeCount} onChange={e => setScrapeCount(parseInt(e.target.value) || 30)} min={1} max={500} />
-                          <button className="out-btn" onClick={runScrape} disabled={scraping}>{scraping ? "Scraping..." : "Scrape NIPR"}</button>
-                        </div>
-                        {scrapeState && <div style={{ fontSize: 12, color: T.green, marginTop: 6 }}>{scrapeState}</div>}
+                    <div className="out-label">Quick Actions</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button className="out-btn" onClick={runSend} disabled={sending}>{sending ? "Sending..." : "Send Cold Emails"}</button>
+                        <button className="out-btn-ghost" onClick={runWarmup}>Run Warmup</button>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 6 }}>Manual Actions</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button className="out-btn" onClick={runSend} disabled={sending}>{sending ? "Sending..." : "Send Cold Emails"}</button>
-                          <button className="out-btn-ghost" onClick={runWarmup}>Run Warmup</button>
-                          <button className="out-btn-ghost" onClick={revalidateContacts}>Revalidate</button>
-                        </div>
-                        {sendResult && <div style={{ fontSize: 12, color: T.green, marginTop: 6 }}>{sendResult}</div>}
-                      </div>
+                      {sendResult && <div style={{ fontSize: 12, color: T.green, marginTop: 4 }}>{sendResult}</div>}
                     </div>
                   </div>
 
@@ -1062,14 +1081,26 @@ export default function OutreachPage() {
           {/* ============= CONTACTS TAB ============= */}
           {tab === "contacts" && (
             <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div className="out-label" style={{ marginBottom: 0 }}>Outreach Contacts ({outreachContacts.length})</div>
-                <input
-                  style={{ ...inputStyle, width: 260 }}
-                  placeholder="Search by name, email, company..."
-                  value={contactSearch}
-                  onChange={e => searchContacts(e.target.value)}
-                />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div className="out-label" style={{ marginBottom: 0 }}>Outreach Contacts</div>
+                  <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 12, background: `${T.orange}15`, color: T.orange, fontWeight: 700 }}>{outreachContacts.length}</span>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <select style={{ ...inputStyle, width: 160, fontSize: 12 }} value={contactCampaignFilter} onChange={e => setContactCampaignFilter(e.target.value)}>
+                    <option value="">All Campaigns</option>
+                    {campaigns.map((c: Record<string, unknown>) => (
+                      <option key={c.id as string} value={c.id as string}>{c.name as string}</option>
+                    ))}
+                    <option value="none">No Campaign</option>
+                  </select>
+                  <input
+                    style={{ ...inputStyle, width: 220, fontSize: 12 }}
+                    placeholder="Search by name, email, company..."
+                    value={contactSearch}
+                    onChange={e => searchContacts(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="out-card">
                 {outreachContacts.length === 0 ? (
@@ -1091,7 +1122,7 @@ export default function OutreachPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {outreachContacts.map(c => (
+                        {outreachContacts.filter(c => !contactCampaignFilter || (contactCampaignFilter === "none" ? !c.campaign_id : c.campaign_id === contactCampaignFilter)).map(c => (
                           <tr key={c.id} onClick={() => viewContact(c.id)} style={{ cursor: "pointer" }}>
                             <td style={{ fontWeight: 600 }}>{[c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}</td>
                             <td style={{ fontSize: 12 }}>{c.email}</td>
@@ -1135,17 +1166,37 @@ export default function OutreachPage() {
           )}
 
           {/* ============= HEALTH MONITOR TAB ============= */}
-          {tab === "health" && (
+          {tab === "health" && (() => {
+            const senderCampaignMap: Record<string, string> = {};
+            campaigns.forEach((c: Record<string, unknown>) => {
+              const senders = (c.senders || []) as { id: string; email: string }[];
+              senders.forEach(s => { senderCampaignMap[s.email] = c.id as string; });
+            });
+            const filteredHealth = healthCampaignFilter
+              ? healthCampaignFilter === "none"
+                ? emailHealth.filter(h => !senderCampaignMap[h.address])
+                : emailHealth.filter(h => senderCampaignMap[h.address] === healthCampaignFilter)
+              : emailHealth;
+            return (
             <>
-              <div className="out-label">Health Overview</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                <div className="out-label" style={{ marginBottom: 0 }}>Health Overview</div>
+                <select style={{ ...inputStyle, width: 180, fontSize: 12 }} value={healthCampaignFilter} onChange={e => setHealthCampaignFilter(e.target.value)}>
+                  <option value="">All Campaigns</option>
+                  {campaigns.map((c: Record<string, unknown>) => (
+                    <option key={c.id as string} value={c.id as string}>{c.name as string}</option>
+                  ))}
+                  <option value="none">Unassigned</option>
+                </select>
+              </div>
 
               {/* Summary stats */}
               <div className="out-stats" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
                 {[
-                  { label: "Total Addresses", value: emailHealth.length, color: T.text },
-                  { label: "Cold Senders", value: emailHealth.filter(h => h.role === "cold_sender").length, color: T.orange },
-                  { label: "Warmup Only", value: emailHealth.filter(h => h.role === "warmup_only").length, color: T.blue },
-                  { label: "Healthy", value: emailHealth.filter(h => h.healthStatus === "healthy").length, color: T.green },
+                  { label: "Total Addresses", value: filteredHealth.length, color: T.text },
+                  { label: "Cold Senders", value: filteredHealth.filter(h => h.role === "cold_sender").length, color: T.orange },
+                  { label: "Warmup Only", value: filteredHealth.filter(h => h.role === "warmup_only").length, color: T.blue },
+                  { label: "Healthy", value: filteredHealth.filter(h => h.healthStatus === "healthy").length, color: T.green },
                 ].map(s => (
                   <div key={s.label} className="out-stat">
                     <div className="out-stat-val" style={{ color: s.color }}>{s.value}</div>
@@ -1172,7 +1223,7 @@ export default function OutreachPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {emailHealth.map(h => (
+                    {filteredHealth.map(h => (
                       <tr key={h.address}>
                         <td style={{ fontWeight: 600 }}>{h.address.split("@")[0]}@...</td>
                         <td className="muted" style={{ fontSize: 11 }}>{h.role === "cold_sender" ? "COLD" : "WARM"}</td>
@@ -1199,7 +1250,7 @@ export default function OutreachPage() {
               {emailHealth.some(h => h.healthStatus === "danger" || h.healthStatus === "warning") && (
                 <div className="out-card" style={{ borderColor: `${T.red}30` }}>
                   <div className="out-label" style={{ color: T.red }}>Alerts</div>
-                  {emailHealth.filter(h => h.healthIssues.length > 0).map(h => (
+                  {filteredHealth.filter(h => h.healthIssues.length > 0).map(h => (
                     <div key={h.address} style={{ marginBottom: 10 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{h.address}</div>
                       {h.healthIssues.map((issue, i) => (
@@ -1212,7 +1263,7 @@ export default function OutreachPage() {
                 </div>
               )}
             </>
-          )}
+          );})()}
 
           {/* ============= CAMPAIGNS TAB ============= */}
           {tab === "campaigns" && (
@@ -1591,7 +1642,29 @@ export default function OutreachPage() {
                   No scraper configs yet. Add one to start scraping Google Maps for leads.
                 </div>
               ) : (
-                scraperConfigs.map((sc: Record<string, unknown>) => {
+                (() => {
+                  const grouped: Record<string, Record<string, unknown>[]> = {};
+                  scraperConfigs.forEach((sc: Record<string, unknown>) => {
+                    const campId = (sc.campaign_id as string) || "unassigned";
+                    if (!grouped[campId]) grouped[campId] = [];
+                    grouped[campId].push(sc);
+                  });
+                  const campName = (id: string) => {
+                    if (id === "unassigned") return "Unassigned";
+                    const c = campaigns.find((c: Record<string, unknown>) => c.id === id);
+                    return c ? (c.name as string) : "Unknown";
+                  };
+                  return Object.entries(grouped).sort((a, b) => a[0] === "unassigned" ? 1 : b[0] === "unassigned" ? -1 : 0).map(([campId, configs]) => (
+                    <div key={campId} style={{ marginBottom: 16 }}>
+                      <div onClick={() => setExpandedSections(prev => ({ ...prev, [`scraper_${campId}`]: !prev[`scraper_${campId}`] }))}
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", padding: "10px 14px", background: "rgba(255,255,255,0.02)", border: `1px solid ${T.border}`, borderRadius: 10, marginBottom: expandedSections[`scraper_${campId}`] ? 10 : 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{campName(campId)}</span>
+                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 8, background: `${T.orange}15`, color: T.orange, fontWeight: 600 }}>{configs.length} scrapers</span>
+                        </div>
+                        <span style={{ color: T.orange, fontSize: 16, fontWeight: 300, transition: "transform 0.3s", transform: expandedSections[`scraper_${campId}`] ? "rotate(45deg)" : "rotate(0)" }}>+</span>
+                      </div>
+                      {expandedSections[`scraper_${campId}`] && configs.map((sc: Record<string, unknown>) => {
                   const isEditing = editingScraperId === sc.id;
                   return (
                   <div key={sc.id as string} className="health-card">
@@ -1689,7 +1762,10 @@ export default function OutreachPage() {
                     )}
                   </div>
                   );
-                })
+                })}
+                    </div>
+                  ));
+                })()
               )}
 
               {/* Mass scrape */}
