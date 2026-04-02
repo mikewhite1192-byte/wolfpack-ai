@@ -79,7 +79,10 @@ export default function TradeChatWidget({ trade, accentColor }: { trade: Trade; 
 
   return (
     <>
-      <style>{`@keyframes dotPulse { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }`}</style>
+      <style>{`
+        @keyframes dotPulse { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+        @keyframes chatPulse { 0%, 100% { box-shadow: 0 4px 20px var(--chat-glow); } 50% { box-shadow: 0 4px 30px var(--chat-glow), 0 0 40px var(--chat-glow); } }
+      `}</style>
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
@@ -88,11 +91,18 @@ export default function TradeChatWidget({ trade, accentColor }: { trade: Trade; 
           borderRadius: "50%", background: accentColor, border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: `0 4px 20px ${accentColor}66`, zIndex: 9998,
-          fontSize: 24, color: "#fff", transition: "transform 0.2s",
-          transform: open ? "rotate(45deg)" : "none",
-        }}
+          color: "#fff", transition: "transform 0.3s, box-shadow 0.3s",
+          transform: open ? "rotate(90deg)" : "none",
+          // @ts-expect-error css variable
+          "--chat-glow": `${accentColor}44`,
+          animation: open ? "none" : "chatPulse 3s ease-in-out infinite",
+        } as React.CSSProperties}
       >
-        {open ? "+" : "\u{1F4AC}"}
+        {open ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        ) : (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        )}
       </button>
 
       {/* Chat window */}

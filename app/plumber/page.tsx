@@ -164,6 +164,10 @@ export default function PlumberPage() {
         }
         .mp-nav-link:hover { color: #fff; }
 
+        @keyframes mp-hero-zoom {
+          0% { transform: scale(1); }
+          100% { transform: scale(1.1); }
+        }
         @keyframes mp-bounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(10px); }
@@ -289,10 +293,11 @@ export default function PlumberPage() {
         }}>
           <div style={{
             position: "absolute",
-            inset: 0,
-            backgroundImage: "url('https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1920&q=80')",
+            inset: "-5%",
+            backgroundImage: "url('https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=1920&q=80')",
             backgroundSize: "cover",
             backgroundPosition: "center",
+            animation: "mp-hero-zoom 20s ease-in-out alternate infinite",
           }} />
           <div style={{
             position: "absolute",
@@ -702,7 +707,7 @@ export default function PlumberPage() {
           <div style={{
             position: "absolute",
             inset: 0,
-            backgroundImage: "url('https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1920&q=80')",
+            backgroundImage: "url('https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=1920&q=80')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }} />
