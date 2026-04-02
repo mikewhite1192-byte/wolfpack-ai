@@ -737,7 +737,24 @@ export default function OutreachPage() {
         .health-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
         .health-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
         .health-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 16px; margin-bottom: 10px; }
-        @media (max-width: 900px) { .out-stats { grid-template-columns: repeat(2, 1fr); } .out-row { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) {
+          .out-stats { grid-template-columns: repeat(2, 1fr) !important; }
+          .out-row { grid-template-columns: 1fr !important; }
+          .out-tabs { flex-wrap: wrap; gap: 2px; }
+          .out-tab { font-size: 11px !important; padding: 8px 10px !important; }
+          .out-table th, .out-table td { font-size: 11px; padding: 6px 8px; }
+        }
+        @media (max-width: 600px) {
+          .out-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .out-stat-val { font-size: 22px !important; }
+          .out-stat-label { font-size: 9px !important; }
+          .out-card { padding: 14px !important; }
+          .out-label { font-size: 12px !important; }
+          .out-table { font-size: 10px; }
+          .out-table th, .out-table td { padding: 5px 6px; white-space: nowrap; }
+          .out-tab { font-size: 10px !important; padding: 6px 8px !important; }
+          .health-card { padding: 12px !important; }
+        }
       `}</style>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
