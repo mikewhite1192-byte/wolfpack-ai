@@ -983,7 +983,11 @@ export default function OutreachPage() {
                   No email addresses registered yet. Click &quot;+ Add Email&quot; to get started.
                 </div>
               ) : (
-                emailHealth.filter(h => !emailSearch || h.address.toLowerCase().includes(emailSearch.toLowerCase())).map(h => (
+                emailHealth.filter(h => !emailSearch || h.address.toLowerCase().includes(emailSearch.toLowerCase())).sort((a, b) => {
+                  if (a.role === "cold_sender" && b.role !== "cold_sender") return -1;
+                  if (a.role !== "cold_sender" && b.role === "cold_sender") return 1;
+                  return a.address.localeCompare(b.address);
+                }).map(h => (
                   <div key={h.address} className="health-card">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div>
