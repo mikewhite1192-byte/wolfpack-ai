@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import TradeChatWidget from "../components/TradeChatWidget";
+import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground } from "../components/TradeHeroEffects";
 
 const TEAL = "#2BA5A5";
 const BG = "#0a0a0a";
@@ -244,36 +245,51 @@ export default function HvacPage() {
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="hvac-hero" style={{ position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "-40%", left: "50%", transform: "translateX(-50%)", width: 800, height: 800, borderRadius: "50%", background: `radial-gradient(circle, rgba(43,165,165,0.18) 0%, transparent 65%)`, pointerEvents: "none" }} />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: `rgba(43,165,165,0.12)`, color: TEAL, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 24 }}>
-            NATE Certified &bull; 24/7 Emergency &bull; Financing Available
-          </div>
-          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 76, lineHeight: 1, maxWidth: 800, margin: "0 auto 12px", letterSpacing: 2, color: "#fff" }}>
-            Your Comfort Is
-          </h1>
-          <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 76, lineHeight: 1, maxWidth: 800, margin: "0 auto 28px", letterSpacing: 2, color: TEAL }}>
-            Non-Negotiable
-          </h1>
-          <p style={{ fontSize: 18, color: "rgba(232,234,240,0.65)", maxWidth: 560, margin: "0 auto 40px", lineHeight: 1.7 }}>
-            Heating, cooling, and air quality for Troy and Oakland County. From routine tune-ups to emergency repairs at 2am, we keep your family comfortable.
-          </p>
-          <div className="hvac-hero-btns" style={{ marginBottom: 56 }}>
-            <button className="hvac-btn-primary">Schedule Service</button>
-            <button className="hvac-btn-secondary">Call (248) 555-0193</button>
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
-            {[
-              { num: "12,000+", label: "Systems Serviced" },
-              { num: "20+", label: "Years Experience" },
-              { num: "4.9", label: "Google Rating" },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: TEAL, lineHeight: 1 }}>{s.num}</div>
-                <div style={{ fontSize: 13, color: "rgba(232,234,240,0.5)", marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+        <HeroBackground imageUrl="https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=1920&q=80" overlayOpacity={0.85} />
+        <FloatingOrbs color={TEAL} />
+        <div style={{ position: "relative", zIndex: 2 }}>
+          <FadeIn delay={100}>
+            <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: `rgba(43,165,165,0.15)`, border: `1px solid rgba(43,165,165,0.25)`, color: TEAL, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
+              NATE Certified &bull; 24/7 Emergency &bull; Financing Available
+            </div>
+          </FadeIn>
+          <FadeIn delay={300}>
+            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.95, maxWidth: 800, margin: "0 auto 8px", letterSpacing: 3, color: "#fff" }}>
+              <ScrambleText text="YOUR COMFORT IS" delay={400} />
+            </h1>
+          </FadeIn>
+          <FadeIn delay={500}>
+            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.95, maxWidth: 800, margin: "0 auto 32px", letterSpacing: 3, color: TEAL }}>
+              <ScrambleText text="NON-NEGOTIABLE" delay={700} />
+            </h1>
+          </FadeIn>
+          <FadeIn delay={900}>
+            <p style={{ fontSize: 18, color: "rgba(232,234,240,0.65)", maxWidth: 560, margin: "0 auto 44px", lineHeight: 1.7 }}>
+              Heating, cooling, and air quality for Troy and Oakland County. From routine tune-ups to emergency repairs at 2am, we keep your family comfortable.
+            </p>
+          </FadeIn>
+          <FadeIn delay={1100}>
+            <div className="hvac-hero-btns" style={{ marginBottom: 64 }}>
+              <button className="hvac-btn-primary">Schedule Service</button>
+              <button className="hvac-btn-secondary">Call (248) 555-0193</button>
+            </div>
+          </FadeIn>
+          <FadeIn delay={1400}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 56, flexWrap: "wrap" }}>
+              {[
+                { num: "12,000+", label: "Systems Serviced" },
+                { num: "20+", label: "Years Experience" },
+                { num: "4.9", label: "Google Rating" },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 46, color: TEAL, lineHeight: 1 }}>
+                    <AnimatedCounter target={s.num} delay={1600} />
+                  </div>
+                  <div style={{ fontSize: 12, color: "rgba(232,234,240,0.5)", marginTop: 6, letterSpacing: 1, textTransform: "uppercase" }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
         </div>
       </section>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import TradeChatWidget from "../components/TradeChatWidget";
+import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground } from "../components/TradeHeroEffects";
 
 const ACCENT = "#C4412B";
 const BG = "#0a0a0a";
@@ -145,37 +146,52 @@ export default function RoofingDemo() {
         </nav>
 
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section style={{ position: "relative", padding: "120px 24px 100px", textAlign: "center", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: "-30%", left: "50%", transform: "translateX(-50%)", width: 900, height: 900, borderRadius: "50%", background: `radial-gradient(circle, rgba(196,65,43,0.12) 0%, transparent 65%)`, pointerEvents: "none" }} />
-          <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto" }}>
-            <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: "rgba(196,65,43,0.12)", color: ACCENT, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 24 }}>
-              Free Inspections &bull; Insurance Claims &bull; Licensed
-            </div>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 58, lineHeight: 1.1, marginBottom: 12, fontWeight: 800, letterSpacing: -1 }}>
-              Your Roof Took the Hit.
-            </h1>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 58, lineHeight: 1.1, marginBottom: 28, fontWeight: 800, letterSpacing: -1 }}>
-              <span style={{ color: ACCENT }}>We&apos;ll Make It Right.</span>
-            </h1>
-            <p style={{ fontSize: 18, color: MUTED, lineHeight: 1.7, maxWidth: 580, margin: "0 auto 40px" }}>
-              Storm damage repair, full replacements, and free inspections across Macomb County. We handle the insurance paperwork so you don&apos;t have to.
-            </p>
-            <div className="hero-buttons" style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 56 }}>
-              <span className="roofing-btn" style={{ fontSize: 18, padding: "16px 40px" }}>Get Free Inspection</span>
-              <span className="roofing-btn-outline" style={{ fontSize: 18, padding: "16px 40px" }}>Call (586) 555-0287</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
-              {[
-                { num: "850+", label: "Roofs Replaced" },
-                { num: "17", label: "Years Experience" },
-                { num: "4.8", label: "Google Rating" },
-              ].map(s => (
-                <div key={s.label} style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: ACCENT, lineHeight: 1 }}>{s.num}</div>
-                  <div style={{ fontSize: 13, color: MUTED, marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
+        <section style={{ position: "relative", padding: "140px 24px 110px", textAlign: "center", overflow: "hidden" }}>
+          <HeroBackground imageUrl="https://images.unsplash.com/photo-1632759145351-1d592919f522?w=1920&q=80" overlayOpacity={0.83} />
+          <FloatingOrbs color={ACCENT} />
+          <div style={{ position: "relative", zIndex: 2, maxWidth: 900, margin: "0 auto" }}>
+            <FadeIn delay={100}>
+              <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: "rgba(196,65,43,0.15)", border: "1px solid rgba(196,65,43,0.25)", color: ACCENT, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
+                Free Inspections &bull; Insurance Claims &bull; Licensed
+              </div>
+            </FadeIn>
+            <FadeIn delay={300}>
+              <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 60, lineHeight: 1.1, marginBottom: 8, fontWeight: 800, letterSpacing: -1 }}>
+                <ScrambleText text="YOUR ROOF TOOK THE HIT." delay={400} />
+              </h1>
+            </FadeIn>
+            <FadeIn delay={500}>
+              <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 60, lineHeight: 1.1, marginBottom: 32, fontWeight: 800, letterSpacing: -1, color: ACCENT }}>
+                <ScrambleText text="WE'LL MAKE IT RIGHT." delay={700} />
+              </h1>
+            </FadeIn>
+            <FadeIn delay={900}>
+              <p style={{ fontSize: 18, color: MUTED, lineHeight: 1.7, maxWidth: 580, margin: "0 auto 44px" }}>
+                Storm damage repair, full replacements, and free inspections across Macomb County. We handle the insurance paperwork so you don&apos;t have to.
+              </p>
+            </FadeIn>
+            <FadeIn delay={1100}>
+              <div className="hero-buttons" style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 64 }}>
+                <span className="roofing-btn" style={{ fontSize: 18, padding: "16px 40px" }}>Get Free Inspection</span>
+                <span className="roofing-btn-outline" style={{ fontSize: 18, padding: "16px 40px" }}>Call (586) 555-0287</span>
+              </div>
+            </FadeIn>
+            <FadeIn delay={1400}>
+              <div style={{ display: "flex", justifyContent: "center", gap: 56, flexWrap: "wrap" }}>
+                {[
+                  { num: "850+", label: "Roofs Replaced" },
+                  { num: "17", label: "Years Experience" },
+                  { num: "4.8", label: "Google Rating" },
+                ].map(s => (
+                  <div key={s.label} style={{ textAlign: "center" }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 46, color: ACCENT, lineHeight: 1 }}>
+                      <AnimatedCounter target={s.num} delay={1600} />
+                    </div>
+                    <div style={{ fontSize: 12, color: MUTED, marginTop: 6, letterSpacing: 1, textTransform: "uppercase" }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </FadeIn>
           </div>
         </section>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import TradeChatWidget from "../components/TradeChatWidget";
+import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground } from "../components/TradeHeroEffects";
 
 const AMBER = "#D4A02B";
 
@@ -61,67 +62,82 @@ export default function ElectricianDemo() {
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <section className="elec-hero" style={{
-        position: "relative", padding: "120px 24px 100px", textAlign: "center", overflow: "hidden",
+        position: "relative", padding: "140px 24px 110px", textAlign: "center", overflow: "hidden",
       }}>
-        <div style={{ position: "absolute", top: "-35%", left: "50%", transform: "translateX(-50%)", width: 850, height: 850, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,160,43,0.14) 0%, transparent 65%)", pointerEvents: "none" }} />
-        <div style={{ position: "relative", zIndex: 1, maxWidth: 850, margin: "0 auto" }}>
-          <div style={{
-            display: "inline-block", background: "rgba(212,160,43,0.12)",
-            border: "1px solid rgba(212,160,43,0.25)", borderRadius: 20,
-            padding: "6px 18px", fontSize: 13, fontWeight: 600, color: "#D4A02B",
-            marginBottom: 24, letterSpacing: 0.5,
-          }}>
-            Master Licensed &bull; Same-Day Service &bull; Code Compliant
-          </div>
-          <h1 style={{
-            fontFamily: "'Bebas Neue', sans-serif", fontSize: 78,
-            lineHeight: 1, letterSpacing: 3, margin: "0 0 12px",
-          }}>
-            Don&apos;t Trust Your Wiring
-          </h1>
-          <h1 style={{
-            fontFamily: "'Bebas Neue', sans-serif", fontSize: 78,
-            lineHeight: 1, letterSpacing: 3, margin: "0 0 28px", color: "#D4A02B",
-          }}>
-            To Just Anyone.
-          </h1>
-          <p style={{
-            fontSize: 18, color: "#b0b4c8", lineHeight: 1.7, maxWidth: 560,
-            margin: "0 auto 40px",
-          }}>
-            Residential and commercial electrical services from master licensed electricians. EV chargers, panel upgrades, whole-home rewiring, and same-day emergency service.
-          </p>
-          <div className="elec-hero-buttons" style={{
-            display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 56,
-          }}>
-            <a href="#estimate" style={{
-              background: "#D4A02B", color: "#0a0a0a", padding: "16px 36px",
-              borderRadius: 8, fontSize: 16, fontWeight: 700, textDecoration: "none",
-              letterSpacing: 0.5,
+        <HeroBackground imageUrl="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1920&q=80" overlayOpacity={0.84} />
+        <FloatingOrbs color="#D4A02B" />
+        <div style={{ position: "relative", zIndex: 2, maxWidth: 850, margin: "0 auto" }}>
+          <FadeIn delay={100}>
+            <div style={{
+              display: "inline-block", background: "rgba(212,160,43,0.15)",
+              border: "1px solid rgba(212,160,43,0.25)", borderRadius: 20,
+              padding: "6px 18px", fontSize: 13, fontWeight: 600, color: "#D4A02B",
+              marginBottom: 28, letterSpacing: 0.5,
             }}>
-              Get Free Estimate
-            </a>
-            <a href="tel:2485550361" style={{
-              background: "transparent", color: "#e8eaf0",
-              border: "1px solid rgba(255,255,255,0.2)",
-              padding: "16px 36px", borderRadius: 8, fontSize: 16,
-              fontWeight: 600, textDecoration: "none",
+              Master Licensed &bull; Same-Day Service &bull; Code Compliant
+            </div>
+          </FadeIn>
+          <FadeIn delay={300}>
+            <h1 style={{
+              fontFamily: "'Bebas Neue', sans-serif", fontSize: 82,
+              lineHeight: 0.95, letterSpacing: 4, margin: "0 0 8px",
             }}>
-              Call (248) 555-0361
-            </a>
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
-            {[
-              { num: "5,000+", label: "Jobs Completed" },
-              { num: "22", label: "Years Experience" },
-              { num: "4.9", label: "Google Rating" },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: "#D4A02B", lineHeight: 1 }}>{s.num}</div>
-                <div style={{ fontSize: 13, color: "#b0b4c8", marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+              <ScrambleText text="DON'T TRUST YOUR WIRING" delay={400} />
+            </h1>
+          </FadeIn>
+          <FadeIn delay={500}>
+            <h1 style={{
+              fontFamily: "'Bebas Neue', sans-serif", fontSize: 82,
+              lineHeight: 0.95, letterSpacing: 4, margin: "0 0 32px", color: "#D4A02B",
+            }}>
+              <ScrambleText text="TO JUST ANYONE." delay={700} />
+            </h1>
+          </FadeIn>
+          <FadeIn delay={900}>
+            <p style={{
+              fontSize: 18, color: "#b0b4c8", lineHeight: 1.7, maxWidth: 560,
+              margin: "0 auto 44px",
+            }}>
+              Residential and commercial electrical services from master licensed electricians. EV chargers, panel upgrades, whole-home rewiring, and same-day emergency service.
+            </p>
+          </FadeIn>
+          <FadeIn delay={1100}>
+            <div className="elec-hero-buttons" style={{
+              display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 64,
+            }}>
+              <a href="#estimate" style={{
+                background: "#D4A02B", color: "#0a0a0a", padding: "16px 36px",
+                borderRadius: 8, fontSize: 16, fontWeight: 700, textDecoration: "none",
+                letterSpacing: 0.5,
+              }}>
+                Get Free Estimate
+              </a>
+              <a href="tel:2485550361" style={{
+                background: "transparent", color: "#e8eaf0",
+                border: "1px solid rgba(255,255,255,0.2)",
+                padding: "16px 36px", borderRadius: 8, fontSize: 16,
+                fontWeight: 600, textDecoration: "none",
+              }}>
+                Call (248) 555-0361
+              </a>
+            </div>
+          </FadeIn>
+          <FadeIn delay={1400}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 56, flexWrap: "wrap" }}>
+              {[
+                { num: "5,000+", label: "Jobs Completed" },
+                { num: "22", label: "Years Experience" },
+                { num: "4.9", label: "Google Rating" },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 46, color: "#D4A02B", lineHeight: 1 }}>
+                    <AnimatedCounter target={s.num} delay={1600} />
+                  </div>
+                  <div style={{ fontSize: 12, color: "#b0b4c8", marginTop: 6, letterSpacing: 1, textTransform: "uppercase" }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
         </div>
       </section>
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import TradeChatWidget from "../components/TradeChatWidget";
+import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground } from "../components/TradeHeroEffects";
 
 const BLUE = "#2B7CD4";
 const BG = "#0a0a0a";
@@ -132,39 +133,52 @@ export default function PlumberPage() {
         </nav>
 
         {/* ── Hero ─────────────────────────────────────────────────────── */}
-        <section style={{ position: "relative", padding: "120px 24px 100px", textAlign: "center", overflow: "hidden" }}>
-          {/* Background glow */}
-          <div style={{ position: "absolute", top: "-40%", left: "50%", transform: "translateX(-50%)", width: 800, height: 800, borderRadius: "50%", background: `radial-gradient(circle, rgba(43,124,212,0.15) 0%, transparent 70%)`, pointerEvents: "none" }} />
-          <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto" }}>
-            <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: "rgba(43,124,212,0.12)", color: BLUE, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 24 }}>
-              Licensed &bull; Insured &bull; 24/7 Emergency
-            </div>
-            <h1 className="plumber-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, letterSpacing: 3, lineHeight: 1, margin: "0 0 12px", color: TEXT }}>
-              Warren&apos;s <span style={{ color: BLUE }}>Most Trusted</span>
-            </h1>
-            <h1 className="plumber-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, letterSpacing: 3, lineHeight: 1, margin: "0 0 28px", color: TEXT }}>
-              Plumbers
-            </h1>
-            <p style={{ fontSize: 18, lineHeight: 1.7, color: TEXT_MUTED, maxWidth: 580, margin: "0 auto 40px" }}>
-              From emergency repairs at 2am to full bathroom remodels. Fast response. Honest pricing. Guaranteed work.
-            </p>
-            <div className="plumber-hero-buttons" style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 56 }}>
-              <button className="plumber-btn" style={{ fontSize: 20, padding: "16px 40px" }}>Call Now &mdash; (586) 555-0142</button>
-              <button className="plumber-btn-outline" style={{ fontSize: 20, padding: "16px 40px" }}>Request a Quote</button>
-            </div>
-            {/* Stats bar */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap" }}>
-              {[
-                { num: "15+", label: "Years in Business" },
-                { num: "3,200+", label: "Jobs Completed" },
-                { num: "4.9", label: "Google Rating" },
-              ].map(s => (
-                <div key={s.label} style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: BLUE, lineHeight: 1 }}>{s.num}</div>
-                  <div style={{ fontSize: 13, color: TEXT_MUTED, marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
+        <section style={{ position: "relative", padding: "140px 24px 110px", textAlign: "center", overflow: "hidden" }}>
+          <HeroBackground imageUrl="https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=1920&q=80" overlayOpacity={0.85} />
+          <FloatingOrbs color={BLUE} />
+          <div style={{ position: "relative", zIndex: 2, maxWidth: 900, margin: "0 auto" }}>
+            <FadeIn delay={100}>
+              <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: "rgba(43,124,212,0.15)", border: "1px solid rgba(43,124,212,0.25)", color: BLUE, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
+                Licensed &bull; Insured &bull; 24/7 Emergency
+              </div>
+            </FadeIn>
+            <FadeIn delay={300}>
+              <h1 className="plumber-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 84, letterSpacing: 4, lineHeight: 0.95, margin: "0 0 8px", color: TEXT }}>
+                <ScrambleText text="WARREN'S" delay={400} /> <span style={{ color: BLUE }}><ScrambleText text="MOST TRUSTED" delay={600} /></span>
+              </h1>
+            </FadeIn>
+            <FadeIn delay={500}>
+              <h1 className="plumber-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 84, letterSpacing: 4, lineHeight: 0.95, margin: "0 0 32px", color: TEXT }}>
+                <ScrambleText text="PLUMBERS" delay={800} />
+              </h1>
+            </FadeIn>
+            <FadeIn delay={900}>
+              <p style={{ fontSize: 18, lineHeight: 1.7, color: TEXT_MUTED, maxWidth: 580, margin: "0 auto 44px" }}>
+                From emergency repairs at 2am to full bathroom remodels. Fast response. Honest pricing. Guaranteed work.
+              </p>
+            </FadeIn>
+            <FadeIn delay={1100}>
+              <div className="plumber-hero-buttons" style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 64 }}>
+                <button className="plumber-btn" style={{ fontSize: 20, padding: "16px 40px" }}>Call Now &mdash; (586) 555-0142</button>
+                <button className="plumber-btn-outline" style={{ fontSize: 20, padding: "16px 40px" }}>Request a Quote</button>
+              </div>
+            </FadeIn>
+            <FadeIn delay={1400}>
+              <div style={{ display: "flex", justifyContent: "center", gap: 56, flexWrap: "wrap" }}>
+                {[
+                  { num: "15+", target: "15", label: "Years in Business" },
+                  { num: "3,200+", target: "3,200", label: "Jobs Completed" },
+                  { num: "4.9", target: "4.9", label: "Google Rating" },
+                ].map(s => (
+                  <div key={s.label} style={{ textAlign: "center" }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 46, color: BLUE, lineHeight: 1 }}>
+                      <AnimatedCounter target={s.num} delay={1600} />
+                    </div>
+                    <div style={{ fontSize: 12, color: TEXT_MUTED, marginTop: 6, letterSpacing: 1, textTransform: "uppercase" }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </FadeIn>
           </div>
         </section>
 
