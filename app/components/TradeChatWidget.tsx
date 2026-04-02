@@ -81,7 +81,7 @@ export default function TradeChatWidget({ trade, accentColor }: { trade: Trade; 
     <>
       <style>{`
         @keyframes dotPulse { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
-        @keyframes chatPulse { 0%, 100% { box-shadow: 0 4px 20px var(--chat-glow); } 50% { box-shadow: 0 4px 30px var(--chat-glow), 0 0 40px var(--chat-glow); } }
+        @keyframes chatPulse { 0%, 100% { box-shadow: 0 4px 20px rgba(100,160,255,0.3); } 50% { box-shadow: 0 4px 30px rgba(100,160,255,0.5), 0 0 40px rgba(100,160,255,0.3); } }
       `}</style>
       {/* Floating button */}
       <button
@@ -93,10 +93,8 @@ export default function TradeChatWidget({ trade, accentColor }: { trade: Trade; 
           boxShadow: `0 4px 20px ${accentColor}66`, zIndex: 9998,
           color: "#fff", transition: "transform 0.3s, box-shadow 0.3s",
           transform: open ? "rotate(90deg)" : "none",
-          // @ts-expect-error css variable
-          "--chat-glow": `${accentColor}44`,
           animation: open ? "none" : "chatPulse 3s ease-in-out infinite",
-        } as React.CSSProperties}
+        } as React.CSSProperties & Record<string, string>}
       >
         {open ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
