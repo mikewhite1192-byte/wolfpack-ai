@@ -93,6 +93,7 @@ export default function OutreachPage() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [emailSearch, setEmailSearch] = useState("");
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
+  const [campaignSearch, setCampaignSearch] = useState("");
 
   const DEFAULT_TEMPLATES: Record<number, { subject: string; body: string }> = {
     1: {
@@ -1216,11 +1217,22 @@ export default function OutreachPage() {
           {/* ============= CAMPAIGNS TAB ============= */}
           {tab === "campaigns" && (
             <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div className="out-label" style={{ marginBottom: 0 }}>Campaigns</div>
-                <button className="out-btn out-btn-sm" onClick={() => setShowCampaignForm(!showCampaignForm)}>
-                  {showCampaignForm ? "Cancel" : "+ New Campaign"}
-                </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div className="out-label" style={{ marginBottom: 0 }}>Campaigns</div>
+                  <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 12, background: `${T.orange}15`, color: T.orange, fontWeight: 700 }}>{campaigns.length}</span>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    style={{ ...inputStyle, width: 220, fontSize: 12 }}
+                    placeholder="Search campaigns..."
+                    value={campaignSearch}
+                    onChange={e => setCampaignSearch(e.target.value)}
+                  />
+                  <button className="out-btn out-btn-sm" onClick={() => setShowCampaignForm(!showCampaignForm)}>
+                    {showCampaignForm ? "Cancel" : "+ New Campaign"}
+                  </button>
+                </div>
               </div>
 
               {showCampaignForm && (
@@ -1246,7 +1258,11 @@ export default function OutreachPage() {
                   No campaigns yet. Create one to separate niches with dedicated senders and templates.
                 </div>
               ) : (
-                campaigns.map((c: Record<string, unknown>) => {
+                campaigns.filter((c: Record<string, unknown>) => !campaignSearch || (c.name as string).toLowerCase().includes(campaignSearch.toLowerCase()) || ((c.niche as string) || "").toLowerCase().includes(campaignSearch.toLowerCase())).sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+                  if (a.enabled && !b.enabled) return -1;
+                  if (!a.enabled && b.enabled) return 1;
+                  return 0;
+                }).map((c: Record<string, unknown>) => {
                   const senders = (c.senders || []) as { id: string; email: string; display_name: string }[];
                   const templates = (c.templates || []) as { step: number; subject: string; body: string }[];
                   const cStats = (c.stats || {}) as Record<string, string>;
