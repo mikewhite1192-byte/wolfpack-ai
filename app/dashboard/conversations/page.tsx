@@ -237,8 +237,10 @@ export default function ConversationsPage() {
 
   const cd = contactDetail;
 
+  const [mobilePanel, setMobilePanel] = useState<"list" | "thread" | "detail">("list");
+
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 60px)", margin: "-24px", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "calc(100vh - 60px)", margin: "-24px", overflow: "hidden", position: "relative" }}>
       <style>{`
         .cv-sidebar { width: 280px; border-right: 1px solid ${T.border}; display: flex; flex-direction: column; background: ${T.bg}; flex-shrink: 0; }
         .cv-search { padding: 12px; border-bottom: 1px solid ${T.border}; }
@@ -297,13 +299,23 @@ export default function ConversationsPage() {
         .cv-note-time { font-size: 10px; color: ${T.muted}; margin-top: 4px; }
         .cv-note-input { display: flex; gap: 6px; padding: 10px 18px; border-top: 1px solid ${T.border}; flex-shrink: 0; }
         .cv-note-textarea { flex: 1; padding: 7px 10px; background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 8px; color: ${T.text}; font-size: 12px; resize: none; outline: none; font-family: 'Inter', sans-serif; min-height: 32px; }
+
+        @media (max-width: 768px) {
+          .cv-sidebar { width: 100% !important; position: absolute; inset: 0; z-index: 10; }
+          .cv-thread { width: 100% !important; position: absolute; inset: 0; z-index: 20; display: none; }
+          .cv-thread.cv-thread-open { display: flex !important; }
+          .cv-detail { position: absolute; inset: 0; z-index: 30; display: none; }
+          .cv-detail.cv-detail-open { display: flex !important; }
+          .cv-sidebar-hidden { display: none !important; }
+          .cv-back-btn { display: block !important; }
+        }
         .cv-note-textarea:focus { border-color: ${T.orange}; }
         .cv-note-btn { padding: 7px 12px; background: ${T.orange}; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; }
         .cv-note-btn:disabled { opacity: 0.5; }
       `}</style>
 
       {/* Left — Conversation List */}
-      <div className="cv-sidebar">
+      <div className={`cv-sidebar${mobilePanel !== "list" ? " cv-sidebar-hidden" : ""}`}>
         <div className="cv-search" style={{ display: "flex", gap: 6 }}>
           <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1 }} />
           <button onClick={openNewConvo} style={{ padding: "6px 12px", background: T.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>+ New</button>
@@ -317,7 +329,7 @@ export default function ConversationsPage() {
             </div>
           ) : (
             filtered.map(c => (
-              <div key={c.id} className={`cv-item ${activeConvo === c.id ? "active" : ""}`} onClick={() => loadMessages(c.id)}>
+              <div key={c.id} className={`cv-item ${activeConvo === c.id ? "active" : ""}`} onClick={() => { loadMessages(c.id); setMobilePanel("thread"); }}>
                 <div className="cv-avatar">{(c.first_name?.[0] || "") + (c.last_name?.[0] || "") || "?"}</div>
                 <div className="cv-info">
                   <div className="cv-name">
@@ -334,16 +346,19 @@ export default function ConversationsPage() {
       </div>
 
       {/* Middle — Message Thread */}
-      <div className="cv-thread">
+      <div className={`cv-thread${mobilePanel === "thread" ? " cv-thread-open" : ""}`}>
         {!activeConvo ? (
           <div className="cv-empty">Select a conversation to view messages</div>
         ) : (
           <>
             <div className="cv-thread-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div className="cv-thread-name">{activeContact ? contactName(activeContact) : ""}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button className="cv-back-btn" onClick={() => setMobilePanel("list")} style={{ display: "none", background: "none", border: "none", color: T.muted, fontSize: 18, cursor: "pointer", padding: "0 4px" }}>&larr;</button>
+                <div>
+                <div className="cv-thread-name" onClick={() => setMobilePanel("detail")} style={{ cursor: "pointer" }}>{activeContact ? contactName(activeContact) : ""}</div>
                 <div className="cv-thread-phone">
                   {activeContact?.phone || ""} · SMS
+                </div>
                 </div>
               </div>
               <div
@@ -433,8 +448,9 @@ export default function ConversationsPage() {
 
       {/* Right — Contact Info Card */}
       {activeConvo && activeContact && (
-        <div className="cv-detail">
+        <div className={`cv-detail${mobilePanel === "detail" ? " cv-detail-open" : ""}`}>
           <div className="cv-detail-header">
+            <button className="cv-back-btn" onClick={() => setMobilePanel("thread")} style={{ display: "none", background: "none", border: "none", color: T.muted, fontSize: 14, cursor: "pointer", marginBottom: 8 }}>&larr; Back to thread</button>
             <div className="cv-detail-avatar">
               {(activeContact.first_name?.[0] || "") + (activeContact.last_name?.[0] || "") || "?"}
             </div>
