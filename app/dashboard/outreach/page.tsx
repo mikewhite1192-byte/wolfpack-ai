@@ -133,6 +133,9 @@ export default function OutreachPage() {
   const [massScraping, setMassScraping] = useState(false);
   const [massScrapeQuery, setMassScrapeQuery] = useState("");
   const [massScrapeCount, setMassScrapeCount] = useState("50");
+  const [msName, setMsName] = useState("");
+  const [msCity, setMsCity] = useState("");
+  const [msState, setMsState] = useState("");
   const [runningAllScrapers, setRunningAllScrapers] = useState(false);
   const [scrapeProgress, setScrapeProgress] = useState("");
 
@@ -1834,18 +1837,84 @@ export default function OutreachPage() {
               {/* Mass scrape */}
               <div className="out-card" style={{ marginTop: 20 }}>
                 <div className="out-label">Mass Scrape + CSV Export</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px auto", gap: 10, alignItems: "end" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 100px", gap: 10, marginBottom: 12 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>SEARCH QUERY</div>
-                    <input style={inputStyle} placeholder="HVAC companies in Orlando FL" value={massScrapeQuery} onChange={e => setMassScrapeQuery(e.target.value)} />
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>CITY</div>
+                    <input style={inputStyle} placeholder="Warren" value={msCity} onChange={e => {
+                      setMsCity(e.target.value);
+                      if (e.target.value) setMassScrapeQuery(`${msName || "businesses"} near ${e.target.value}${msState ? " " + msState : ""}`);
+                    }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MAX</div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>STATE</div>
+                    <input style={inputStyle} placeholder="MI" value={msState} onChange={e => {
+                      setMsState(e.target.value);
+                      if (msCity) setMassScrapeQuery(`${msName || "businesses"} near ${msCity} ${e.target.value}`);
+                    }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>COUNTRY</div>
+                    <select style={inputStyle}>
+                      <option value="US">United States</option>
+                      <option value="CA">Canada</option>
+                      <option value="UK">United Kingdom</option>
+                      <option value="AU">Australia</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MAX RESULTS</div>
                     <input style={inputStyle} type="number" value={massScrapeCount} onChange={e => setMassScrapeCount(e.target.value)} />
                   </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>NAME / TRADE</div>
+                    <input style={inputStyle} placeholder="e.g. plumbers, roofers, HVAC" value={msName} onChange={e => {
+                      setMsName(e.target.value);
+                      if (msCity) setMassScrapeQuery(`${e.target.value} near ${msCity}${msState ? " " + msState : ""}`);
+                    }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>GOOGLE MAPS QUERY <span style={{ fontWeight: 400 }}>(auto-generated or custom)</span></div>
+                    <input style={inputStyle} placeholder="plumbers near Warren MI" value={massScrapeQuery} onChange={e => setMassScrapeQuery(e.target.value)} />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MAX REVIEWS</div>
+                    <input style={inputStyle} type="number" placeholder="e.g. 20" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MIN RATING</div>
+                    <input style={inputStyle} type="number" step="0.5" placeholder="e.g. 3.0" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>MAX RATING</div>
+                    <input style={inputStyle} type="number" step="0.5" placeholder="e.g. 5.0" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 4, fontWeight: 600 }}>CATEGORY</div>
+                    <select style={inputStyle}>
+                      <option value="">Any category</option>
+                      <option value="Roofing contractor">Roofing</option>
+                      <option value="HVAC contractor">HVAC</option>
+                      <option value="Plumber">Plumbing</option>
+                      <option value="Electrician">Electrical</option>
+                      <option value="Landscaping">Landscaping</option>
+                      <option value="Auto repair">Auto Repair</option>
+                      <option value="Restaurant">Restaurant</option>
+                      <option value="Dentist">Dental</option>
+                      <option value="Medical spa">Med Spa</option>
+                      <option value="Real estate">Real Estate</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
                   <button className="out-btn" onClick={runMassScrape} disabled={massScraping || !massScrapeQuery}>
                     {massScraping ? "Scraping..." : "Scrape + Download CSV"}
                   </button>
+                  <button className="out-btn-ghost" onClick={exportCSV} style={{ fontSize: 12 }}>Export All CSV</button>
                 </div>
               </div>
             </>
