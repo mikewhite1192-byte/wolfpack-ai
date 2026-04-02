@@ -1,416 +1,884 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import TradeChatWidget from "../components/TradeChatWidget";
-import { ScrambleText, FadeIn, AnimatedCounter, FloatingOrbs, HeroBackground, ScrollReveal, GlowCard, TestimonialCarousel } from "../components/TradeHeroEffects";
+import { ScrollReveal } from "../components/TradeHeroEffects";
 
 const TEAL = "#2BA5A5";
 const BG = "#0a0a0a";
 const TEXT = "#e8eaf0";
-const CARD_BG = "#141418";
-const BORDER = "rgba(255,255,255,0.06)";
+const TEXT_MUTED = "#9ca3af";
 
 const SERVICES = [
-  { icon: "\u2744\uFE0F", title: "AC Repair & Install", desc: "Fast, reliable air conditioning repair and new system installations to keep you cool all summer." },
-  { icon: "\uD83D\uDD25", title: "Furnace Repair & Install", desc: "Expert furnace diagnostics, repair, and high-efficiency system installations for Michigan winters." },
-  { icon: "\uD83D\uDCA8", title: "Duct Cleaning", desc: "Professional duct cleaning to improve air quality, reduce allergens, and boost system efficiency." },
-  { icon: "\uD83C\uDF21\uFE0F", title: "Thermostat Install", desc: "Smart thermostat installation and setup so you can control comfort and save on energy bills." },
-  { icon: "\uD83D\uDD27", title: "Maintenance Plans", desc: "Affordable annual maintenance plans that prevent breakdowns and extend your system's lifespan." },
-  { icon: "\u26A1", title: "Emergency HVAC Service", desc: "24/7 emergency heating and cooling repair. We'll be there when you need us most." },
+  {
+    title: "AC Repair & Install",
+    desc: "From emergency breakdowns on the hottest day to full system upgrades, we keep your home cool and comfortable all summer.",
+    image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80",
+  },
+  {
+    title: "Furnace Repair & Install",
+    desc: "High-efficiency furnace installation, repair, and maintenance. We service all major brands and ensure your family stays warm through Michigan winters.",
+    image: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=800&q=80",
+  },
+  {
+    title: "Maintenance Plans",
+    desc: "Preventive maintenance that catches problems before they become emergencies. Twice-yearly tune-ups keep your system running at peak efficiency.",
+    image: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&q=80",
+  },
 ];
 
-const WHY_US = [
-  { title: "NATE Certified Techs", desc: "Our technicians hold NATE certifications — the gold standard in HVAC training and expertise." },
-  { title: "24/7 Emergency Service", desc: "Furnace quit at 2am? AC died on the hottest day? We answer the phone and show up fast." },
-  { title: "Financing Available", desc: "Don't let cost stop you from staying comfortable. Flexible financing options on new systems." },
-  { title: "Satisfaction Guaranteed", desc: "We stand behind every job. If you're not happy, we'll make it right — no questions asked." },
+const REASONS = [
+  { num: "01", title: "NATE Certified", desc: "Our technicians hold NATE certifications, the gold standard in HVAC training and expertise." },
+  { num: "02", title: "24/7 Emergency", desc: "Furnace quit at 2am? AC died on the hottest day? We answer the phone and show up fast." },
+  { num: "03", title: "Financing Available", desc: "Don't let cost stop you from staying comfortable. Flexible financing on new systems." },
+  { num: "04", title: "Guaranteed Work", desc: "We stand behind every job. If you're not happy, we make it right, no questions asked." },
 ];
 
 const TESTIMONIALS = [
-  { name: "Jennifer M.", location: "Troy, MI", rating: 5, text: "Our AC went out in the middle of July and they had a tech here within two hours. Professional, fair pricing, and our house was cool again by dinner. Can't recommend them enough." },
-  { name: "David & Lisa K.", location: "Rochester Hills, MI", rating: 5, text: "We've used Comfort Zone for our furnace maintenance for three years now. Always on time, always thorough. They caught a cracked heat exchanger last fall that could've been dangerous." },
-  { name: "Robert T.", location: "Sterling Heights, MI", rating: 5, text: "Got quotes from four companies for a new HVAC system. Comfort Zone was the most honest and competitively priced. Install crew was clean, fast, and explained everything. Five stars." },
+  { name: "Jennifer M.", location: "Troy, MI", text: "Our AC went out in the middle of July and they had a tech here within two hours. Professional, fair pricing, and our house was cool again by dinner." },
+  { name: "David & Lisa K.", location: "Rochester Hills, MI", text: "We've used Comfort Zone for our furnace maintenance for three years now. Always on time, always thorough. They caught a cracked heat exchanger last fall." },
+  { name: "Robert T.", location: "Sterling Heights, MI", text: "Got quotes from four companies for a new HVAC system. Comfort Zone was the most honest and competitively priced. Install crew was clean and fast." },
 ];
-
-const SERVICE_AREAS = ["Troy", "Warren", "Sterling Heights", "Rochester Hills", "Birmingham", "Oakland County"];
 
 export default function HvacPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 60);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap');
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
-        body { background: ${BG}; color: ${TEXT}; font-family: 'Inter', sans-serif; }
 
-        .hvac-nav {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 16px 48px; position: sticky; top: 0; z-index: 100;
-          background: rgba(10,10,10,0.92); backdrop-filter: blur(12px);
-          border-bottom: 1px solid ${BORDER};
+        .cz-page a { color: inherit; text-decoration: none; }
+
+        .cz-nav {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 1000;
+          transition: background 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease;
         }
-        .hvac-nav-logo {
-          font-family: 'Bebas Neue', sans-serif; font-size: 22px;
-          color: ${TEAL}; letter-spacing: 1px; white-space: nowrap;
-        }
-        .hvac-nav-right { display: flex; align-items: center; gap: 24px; }
-        .hvac-nav-phone { color: ${TEXT}; font-size: 15px; font-weight: 500; }
-        .hvac-nav-cta {
-          background: ${TEAL}; color: #fff; border: none; padding: 10px 24px;
-          font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
-          border-radius: 6px; cursor: pointer; white-space: nowrap;
-          transition: opacity 0.2s;
-        }
-        .hvac-nav-cta:hover { opacity: 0.88; }
-        .hvac-hamburger {
-          display: none; background: none; border: none; color: ${TEXT};
-          font-size: 28px; cursor: pointer;
+        .cz-nav--scrolled {
+          background: rgba(10, 10, 10, 0.95) !important;
+          backdrop-filter: blur(16px);
+          box-shadow: 0 1px 0 rgba(255,255,255,0.05);
         }
 
-        .hvac-hero {
-          padding: 120px 48px 100px; text-align: center;
-          background: radial-gradient(ellipse at 50% 0%, rgba(43,165,165,0.10) 0%, transparent 70%);
-        }
-        .hvac-hero h1 {
-          font-family: 'Bebas Neue', sans-serif; font-size: 72px;
-          line-height: 1.05; color: #fff; max-width: 800px; margin: 0 auto 24px;
+        .cz-btn {
+          display: inline-block;
+          padding: 14px 34px;
+          background: ${TEAL};
+          color: #fff;
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
           letter-spacing: 1px;
+          text-transform: uppercase;
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          text-decoration: none;
         }
-        .hvac-hero p {
-          font-size: 18px; color: rgba(232,234,240,0.65); max-width: 580px;
-          margin: 0 auto 40px; line-height: 1.7;
-        }
-        .hvac-hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-        .hvac-btn-primary {
-          background: ${TEAL}; color: #fff; border: none; padding: 16px 36px;
-          font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600;
-          border-radius: 8px; cursor: pointer; transition: opacity 0.2s;
-        }
-        .hvac-btn-primary:hover { opacity: 0.88; }
-        .hvac-btn-secondary {
-          background: transparent; color: ${TEXT}; border: 2px solid rgba(255,255,255,0.15);
-          padding: 14px 36px; font-family: 'Inter', sans-serif; font-size: 16px;
-          font-weight: 600; border-radius: 8px; cursor: pointer; transition: border-color 0.2s;
-        }
-        .hvac-btn-secondary:hover { border-color: ${TEAL}; }
-
-        .hvac-section {
-          padding: 96px 48px; max-width: 1200px; margin: 0 auto;
-        }
-        .hvac-section-title {
-          font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: #fff;
-          text-align: center; margin-bottom: 16px; letter-spacing: 1px;
-        }
-        .hvac-section-sub {
-          text-align: center; color: rgba(232,234,240,0.5); font-size: 16px;
-          margin-bottom: 56px; max-width: 560px; margin-left: auto; margin-right: auto;
+        .cz-btn:hover {
+          background: #238f8f;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(43, 165, 165, 0.3);
         }
 
-        .hvac-services-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+        .cz-btn-outline {
+          display: inline-block;
+          padding: 14px 34px;
+          background: transparent;
+          color: #fff;
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          border: 1px solid rgba(255,255,255,0.3);
+          cursor: pointer;
+          transition: all 0.3s ease;
+          text-decoration: none;
         }
-        .hvac-service-card {
-          background: ${CARD_BG}; border: 1px solid ${BORDER}; border-radius: 12px;
-          padding: 36px 28px; transition: border-color 0.25s;
-        }
-        .hvac-service-card:hover { border-color: ${TEAL}; }
-        .hvac-service-icon { font-size: 32px; margin-bottom: 16px; }
-        .hvac-service-title {
-          font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #fff;
-          margin-bottom: 10px; letter-spacing: 0.5px;
-        }
-        .hvac-service-desc { color: rgba(232,234,240,0.55); font-size: 14px; line-height: 1.7; }
-
-        .hvac-why-grid {
-          display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
-        }
-        .hvac-why-card {
-          background: ${CARD_BG}; border: 1px solid ${BORDER}; border-radius: 12px;
-          padding: 32px 24px; text-align: center;
-        }
-        .hvac-why-title {
-          font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: ${TEAL};
-          margin-bottom: 12px; letter-spacing: 0.5px;
-        }
-        .hvac-why-desc { color: rgba(232,234,240,0.55); font-size: 14px; line-height: 1.7; }
-
-        .hvac-testimonials-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
-        }
-        .hvac-testimonial-card {
-          background: ${CARD_BG}; border: 1px solid ${BORDER}; border-radius: 12px;
-          padding: 32px 28px;
-        }
-        .hvac-testimonial-text {
-          color: rgba(232,234,240,0.7); font-size: 15px; line-height: 1.8;
-          margin-bottom: 20px; font-style: italic;
-        }
-        .hvac-testimonial-name { color: #fff; font-weight: 600; font-size: 15px; }
-        .hvac-testimonial-loc { color: rgba(232,234,240,0.4); font-size: 13px; margin-top: 2px; }
-
-        .hvac-areas {
-          display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
-        }
-        .hvac-area-tag {
-          background: rgba(43,165,165,0.10); border: 1px solid rgba(43,165,165,0.25);
-          color: ${TEAL}; padding: 10px 24px; border-radius: 100px;
-          font-size: 15px; font-weight: 500;
+        .cz-btn-outline:hover {
+          border-color: #fff;
+          background: rgba(255,255,255,0.05);
+          transform: translateY(-2px);
         }
 
-        .hvac-cta-section {
-          text-align: center; padding: 96px 48px;
-          background: radial-gradient(ellipse at 50% 100%, rgba(43,165,165,0.08) 0%, transparent 70%);
+        .cz-link-arrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: ${TEAL};
+          cursor: pointer;
+          transition: gap 0.3s ease;
+          background: none;
+          border: none;
+          text-decoration: none;
         }
-        .hvac-cta-section h2 {
-          font-family: 'Bebas Neue', sans-serif; font-size: 52px; color: #fff;
-          margin-bottom: 16px; letter-spacing: 1px;
-        }
-        .hvac-cta-section p {
-          color: rgba(232,234,240,0.55); font-size: 18px; margin-bottom: 40px;
-        }
-        .hvac-cta-phone {
-          font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: ${TEAL};
-          margin-bottom: 32px; letter-spacing: 2px;
-        }
-
-        .hvac-footer {
-          border-top: 1px solid ${BORDER}; padding: 48px;
-          display: flex; justify-content: space-between; align-items: center;
-          max-width: 1200px; margin: 0 auto; flex-wrap: wrap; gap: 24px;
-        }
-        .hvac-footer-left { color: rgba(232,234,240,0.4); font-size: 14px; line-height: 1.8; }
-        .hvac-footer-badge {
-          background: rgba(43,165,165,0.10); border: 1px solid rgba(43,165,165,0.25);
-          color: ${TEAL}; padding: 10px 20px; border-radius: 8px;
-          font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+        .cz-link-arrow:hover { gap: 14px; }
+        .cz-link-arrow::after {
+          content: '\\2192';
+          transition: transform 0.3s ease;
         }
 
-        .hvac-divider {
-          width: 100%; height: 1px; background: ${BORDER}; max-width: 1200px; margin: 0 auto;
+        .cz-service-img {
+          transition: transform 0.6s ease, filter 0.6s ease;
         }
+        .cz-service-img:hover {
+          transform: scale(1.03);
+          filter: brightness(1.1);
+        }
+
+        .cz-nav-link {
+          font-family: 'Inter', sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: rgba(232, 234, 240, 0.7);
+          text-decoration: none;
+          transition: color 0.3s;
+          cursor: pointer;
+          background: none;
+          border: none;
+        }
+        .cz-nav-link:hover { color: #fff; }
+
+        @keyframes cz-hero-zoom {
+          0% { transform: scale(1); }
+          100% { transform: scale(1.1); }
+        }
+        @keyframes cz-bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(10px); }
+        }
+        .cz-scroll-indicator {
+          animation: cz-bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes cz-fade-up {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .cz-hero-content {
+          animation: cz-fade-up 1s ease-out 0.3s both;
+        }
+
+        .cz-mobile-menu { display: none; }
+        .cz-hamburger { display: none; }
 
         @media (max-width: 900px) {
-          .hvac-nav { padding: 14px 20px; }
-          .hvac-nav-right { display: none; }
-          .hvac-nav-right.open {
-            display: flex; flex-direction: column; position: absolute;
-            top: 100%; left: 0; right: 0; background: rgba(10,10,10,0.97);
-            padding: 24px; gap: 16px; border-bottom: 1px solid ${BORDER};
-          }
-          .hvac-hamburger { display: block; }
-          .hvac-hero { padding: 80px 20px 64px; }
-          .hvac-hero h1 { font-size: 44px; }
-          .hvac-hero p { font-size: 16px; }
-          .hvac-section { padding: 64px 20px; }
-          .hvac-section-title { font-size: 36px; }
-          .hvac-services-grid { grid-template-columns: 1fr; }
-          .hvac-why-grid { grid-template-columns: repeat(2, 1fr); }
-          .hvac-testimonials-grid { grid-template-columns: 1fr; }
-          .hvac-cta-section { padding: 64px 20px; }
-          .hvac-cta-section h2 { font-size: 36px; }
-          .hvac-cta-phone { font-size: 28px; }
-          .hvac-footer { padding: 32px 20px; flex-direction: column; text-align: center; }
+          .cz-nav-desktop { display: none !important; }
+          .cz-hamburger { display: flex !important; }
+          .cz-mobile-menu--open { display: flex !important; }
+          .cz-service-row { flex-direction: column !important; }
+          .cz-service-row--reverse { flex-direction: column !important; }
+          .cz-service-image-wrap { width: 100% !important; min-height: 300px !important; }
+          .cz-service-text-wrap { width: 100% !important; padding: 48px 24px !important; }
+          .cz-stats-bar { flex-wrap: wrap; }
+          .cz-stats-bar > div { width: 50%; }
+          .cz-reasons-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .cz-testimonials-grid { grid-template-columns: 1fr !important; }
+          .cz-footer-grid { grid-template-columns: 1fr !important; text-align: center; }
+          .cz-hero-title { font-size: 56px !important; }
+          .cz-hero-sub-title { font-size: 56px !important; }
         }
 
         @media (max-width: 600px) {
-          .hvac-hero h1 { font-size: 36px; }
-          .hvac-why-grid { grid-template-columns: 1fr; }
-          .hvac-hero-btns { flex-direction: column; align-items: center; }
-          .hvac-btn-primary, .hvac-btn-secondary { width: 100%; max-width: 320px; text-align: center; }
+          .cz-hero-title { font-size: 42px !important; }
+          .cz-hero-sub-title { font-size: 42px !important; }
+          .cz-section-title { font-size: 36px !important; }
+          .cz-reasons-grid { grid-template-columns: 1fr !important; }
+          .cz-stats-bar > div { width: 100%; }
+          .cz-reason-num { font-size: 48px !important; }
         }
       `}</style>
 
-      {/* ── Nav ────────────────────────────────────────────────────────── */}
-      <nav className="hvac-nav">
-        <div className="hvac-nav-logo">Comfort Zone Heating &amp; Cooling</div>
-        <button className="hvac-hamburger" onClick={() => setMenuOpen(!menuOpen)}>
-          {menuOpen ? "\u2715" : "\u2630"}
-        </button>
-        <div className={`hvac-nav-right${menuOpen ? " open" : ""}`}>
-          <span className="hvac-nav-phone">(248) 555-0193</span>
-          <button className="hvac-nav-cta">Schedule Service</button>
-        </div>
-      </nav>
+      <div className="cz-page" style={{ background: BG, color: TEXT, fontFamily: "'Inter', sans-serif", minHeight: "100vh", overflowX: "hidden" }}>
 
-      {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="hvac-hero" style={{ position: "relative", overflow: "hidden" }}>
-        <HeroBackground imageUrl="https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=1920&q=80" overlayOpacity={0.85} />
-        <FloatingOrbs color={TEAL} />
-        <div style={{ position: "relative", zIndex: 2 }}>
-          <FadeIn delay={100}>
-            <div style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: `rgba(43,165,165,0.15)`, border: `1px solid rgba(43,165,165,0.25)`, color: TEAL, fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
-              NATE Certified &bull; 24/7 Emergency &bull; Financing Available
+        {/* ── Nav ──────────────────────────────────────────────── */}
+        <nav
+          ref={navRef}
+          className={`cz-nav${scrolled ? " cz-nav--scrolled" : ""}`}
+          style={{ background: scrolled ? undefined : "transparent" }}
+        >
+          <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 80 }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 3, color: "#fff" }}>
+              COMFORT ZONE <span style={{ color: TEAL }}>HVAC</span>
             </div>
-          </FadeIn>
-          <FadeIn delay={300}>
-            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.95, maxWidth: 800, margin: "0 auto 8px", letterSpacing: 3, color: "#fff" }}>
-              <ScrambleText text="YOUR COMFORT IS" delay={400} />
+
+            <div className="cz-nav-desktop" style={{ display: "flex", alignItems: "center", gap: 40 }}>
+              <a href="#services" className="cz-nav-link">Services</a>
+              <a href="#about" className="cz-nav-link">About</a>
+              <a href="#contact" className="cz-nav-link">Contact</a>
+              <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+              <a href="tel:2485550193" className="cz-nav-link" style={{ color: "rgba(232,234,240,0.9)" }}>(248) 555-0193</a>
+              <a href="#contact" className="cz-btn" style={{ padding: "12px 28px", fontSize: 12 }}>Get a Quote</a>
+            </div>
+
+            <button
+              className="cz-hamburger"
+              onClick={() => setMenuOpen(!menuOpen)}
+              style={{ display: "none", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "#fff", fontSize: 26, cursor: "pointer", padding: 8 }}
+            >
+              {menuOpen ? "\u2715" : "\u2630"}
+            </button>
+          </div>
+
+          <div
+            className={`cz-mobile-menu${menuOpen ? " cz-mobile-menu--open" : ""}`}
+            style={{
+              flexDirection: "column",
+              gap: 0,
+              background: "rgba(10,10,10,0.98)",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            {["Services", "About", "Contact"].map((link) => (
+              <a
+                key={link}
+                href={`#${link.toLowerCase()}`}
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  display: "block",
+                  padding: "18px 48px",
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  letterSpacing: 1.5,
+                  textTransform: "uppercase" as const,
+                  color: "rgba(232,234,240,0.8)",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  textDecoration: "none",
+                }}
+              >
+                {link}
+              </a>
+            ))}
+            <div style={{ padding: "20px 48px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <a href="tel:2485550193" style={{ color: TEXT, fontSize: 15, fontWeight: 600, textDecoration: "none" }}>(248) 555-0193</a>
+              <a href="#contact" className="cz-btn" style={{ textAlign: "center", padding: "14px 28px" }} onClick={() => setMenuOpen(false)}>Get a Quote</a>
+            </div>
+          </div>
+        </nav>
+
+        {/* ── Hero ─────────────────────────────────────────────── */}
+        <section style={{
+          position: "relative",
+          height: "100vh",
+          minHeight: 700,
+          display: "flex",
+          alignItems: "flex-end",
+          overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute",
+            inset: "-5%",
+            backgroundImage: "url('/hvac-hero.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            animation: "cz-hero-zoom 20s ease-in-out alternate infinite",
+          }} />
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)",
+          }} />
+
+          <div className="cz-hero-content" style={{
+            position: "relative",
+            zIndex: 2,
+            maxWidth: 1280,
+            width: "100%",
+            margin: "0 auto",
+            padding: "0 48px 100px",
+          }}>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 3,
+              textTransform: "uppercase" as const,
+              color: TEAL,
+              marginBottom: 24,
+            }}>
+              Troy, Michigan -- NATE Certified
+            </div>
+            <h1 className="cz-hero-title" style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 88,
+              letterSpacing: 4,
+              lineHeight: 0.95,
+              margin: 0,
+              color: "#fff",
+            }}>
+              YOUR COMFORT.
             </h1>
-          </FadeIn>
-          <FadeIn delay={500}>
-            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.95, maxWidth: 800, margin: "0 auto 32px", letterSpacing: 3, color: TEAL }}>
-              <ScrambleText text="NON-NEGOTIABLE" delay={700} />
+            <h1 className="cz-hero-sub-title" style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 88,
+              letterSpacing: 4,
+              lineHeight: 0.95,
+              margin: "0 0 32px",
+              color: TEAL,
+            }}>
+              NON-NEGOTIABLE.
             </h1>
-          </FadeIn>
-          <FadeIn delay={900}>
-            <p style={{ fontSize: 18, color: "rgba(232,234,240,0.65)", maxWidth: 560, margin: "0 auto 44px", lineHeight: 1.7 }}>
-              Heating, cooling, and air quality for Troy and Oakland County. From routine tune-ups to emergency repairs at 2am, we keep your family comfortable.
+            <p style={{
+              fontSize: 18,
+              lineHeight: 1.7,
+              color: "rgba(255,255,255,0.65)",
+              maxWidth: 520,
+              margin: "0 0 40px",
+            }}>
+              AC repair. Furnace installs. Maintenance plans. Fast response, honest pricing, guaranteed work.
             </p>
-          </FadeIn>
-          <FadeIn delay={1100}>
-            <div className="hvac-hero-btns" style={{ marginBottom: 64 }}>
-              <button className="hvac-btn-primary">Schedule Service</button>
-              <button className="hvac-btn-secondary">Call (248) 555-0193</button>
+            <a href="#contact" className="cz-btn" style={{ fontSize: 14, padding: "18px 44px" }}>
+              Schedule Service
+            </a>
+          </div>
+
+          <div className="cz-scroll-indicator" style={{
+            position: "absolute",
+            bottom: 32,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 8,
+          }}>
+            <div style={{
+              width: 1,
+              height: 40,
+              background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.4))",
+            }} />
+            <div style={{
+              fontSize: 10,
+              letterSpacing: 2,
+              textTransform: "uppercase" as const,
+              color: "rgba(255,255,255,0.4)",
+            }}>
+              Scroll
             </div>
-          </FadeIn>
-          <FadeIn delay={1400}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 56, flexWrap: "wrap" }}>
-              {[
-                { num: "12,000+", label: "Systems Serviced" },
-                { num: "20+", label: "Years Experience" },
-                { num: "4.9", label: "Google Rating" },
-              ].map(s => (
-                <div key={s.label} style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 46, color: TEAL, lineHeight: 1 }}>
-                    <AnimatedCounter target={s.num} delay={1600} />
-                  </div>
-                  <div style={{ fontSize: 12, color: "rgba(232,234,240,0.5)", marginTop: 6, letterSpacing: 1, textTransform: "uppercase" }}>{s.label}</div>
+          </div>
+        </section>
+
+        {/* ── Stats Bar ────────────────────────────────────────── */}
+        <section style={{ background: "#0d0d0d", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="cz-stats-bar" style={{
+            maxWidth: 1280,
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            {[
+              { value: "12,000+", label: "Systems Serviced" },
+              { value: "20+", label: "Years Experience" },
+              { value: "4.9", label: "Google Rating" },
+              { value: "NATE", label: "Certified Techs" },
+            ].map((stat, i) => (
+              <div key={stat.label} style={{
+                flex: 1,
+                textAlign: "center",
+                padding: "36px 24px",
+                borderRight: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
+              }}>
+                <div style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 36,
+                  letterSpacing: 2,
+                  color: TEAL,
+                  lineHeight: 1,
+                  marginBottom: 6,
+                }}>
+                  {stat.value}
                 </div>
-              ))}
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-
-      <div className="hvac-divider" />
-
-      {/* ── Services ───────────────────────────────────────────────────── */}
-      <section className="hvac-section">
-        <ScrollReveal>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: TEAL, marginBottom: 12 }}>What We Do</div>
-            <h2 className="hvac-section-title">Our Services</h2>
-            <p className="hvac-section-sub">
-              Full-service heating and cooling for residential and light commercial
-              properties across Oakland County.
-            </p>
-          </div>
-        </ScrollReveal>
-        <div className="hvac-services-grid">
-          {SERVICES.map((s, i) => (
-            <ScrollReveal key={i} delay={i * 100}>
-              <GlowCard color={TEAL}>
-                <div className="hvac-service-icon">{s.icon}</div>
-                <div className="hvac-service-title">{s.title}</div>
-                <div className="hvac-service-desc">{s.desc}</div>
-              </GlowCard>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
-
-      <div className="hvac-divider" />
-
-      {/* ── Why Choose Us ──────────────────────────────────────────────── */}
-      <section className="hvac-section">
-        <ScrollReveal>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: TEAL, marginBottom: 12 }}>The Difference</div>
-            <h2 className="hvac-section-title">Why Choose Comfort Zone</h2>
-            <p className="hvac-section-sub">
-              Locally owned and operated since 2009. We treat every home like our own.
-            </p>
-          </div>
-        </ScrollReveal>
-        <div className="hvac-why-grid">
-          {WHY_US.map((w, i) => (
-            <ScrollReveal key={i} delay={i * 100}>
-              <GlowCard color={TEAL} style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: TEAL, marginBottom: 12 }}>{String(i + 1).padStart(2, "0")}</div>
-                <div className="hvac-why-title">{w.title}</div>
-                <div className="hvac-why-desc">{w.desc}</div>
-              </GlowCard>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
-
-      <div className="hvac-divider" />
-
-      {/* ── Testimonials ───────────────────────────────────────────────── */}
-      <section style={{ padding: "96px 0", background: "#08090c" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 48px" }}>
-          <ScrollReveal>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: TEAL, marginBottom: 12 }}>Reviews</div>
-              <h2 className="hvac-section-title">What Our Customers Say</h2>
-              <p className="hvac-section-sub">
-                Real reviews from real homeowners in the Troy and Rochester Hills area.
-              </p>
-            </div>
-          </ScrollReveal>
-        </div>
-        <ScrollReveal>
-          <TestimonialCarousel testimonials={TESTIMONIALS} color={TEAL} />
-        </ScrollReveal>
-      </section>
-
-      <div className="hvac-divider" />
-
-      {/* ── Service Area ───────────────────────────────────────────────── */}
-      <section className="hvac-section">
-        <ScrollReveal>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: TEAL, marginBottom: 12 }}>Coverage</div>
-            <h2 className="hvac-section-title">Service Area</h2>
-            <p className="hvac-section-sub">
-              Proudly serving homeowners and businesses across Southeast Michigan.
-            </p>
-          </div>
-        </ScrollReveal>
-        <ScrollReveal delay={200}>
-          <div className="hvac-areas">
-            {SERVICE_AREAS.map((a, i) => (
-              <div key={i} className="hvac-area-tag">{a}</div>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: 2,
+                  textTransform: "uppercase" as const,
+                  color: TEXT_MUTED,
+                }}>
+                  {stat.label}
+                </div>
+              </div>
             ))}
           </div>
-        </ScrollReveal>
-      </section>
+        </section>
 
-      {/* ── CTA Section ────────────────────────────────────────────────── */}
-      <section className="hvac-cta-section" style={{ background: `radial-gradient(ellipse at 50% 50%, rgba(43,165,165,0.12) 0%, transparent 70%)`, padding: "120px 48px" }}>
-        <ScrollReveal>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 64, color: "#fff", marginBottom: 16, letterSpacing: 2 }}>
-            Don&apos;t Sweat It &mdash; We&apos;ve Got You <span style={{ color: TEAL }}>Covered</span>
-          </h2>
-          <p style={{ color: "rgba(232,234,240,0.55)", fontSize: 20, marginBottom: 40, maxWidth: 600, marginLeft: "auto", marginRight: "auto" }}>
-            Call now for a free estimate or schedule your service online.
-          </p>
-          <div className="hvac-cta-phone">(248) 555-0193</div>
-          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-            <button className="hvac-btn-primary" style={{ padding: "18px 44px", fontSize: 17 }}>Schedule Service Today</button>
-            <button className="hvac-btn-secondary" style={{ padding: "16px 44px", fontSize: 17 }}>Call Now</button>
+        {/* ── Services ────────────────────────────────────────── */}
+        <section id="services" style={{ paddingTop: 120, paddingBottom: 120 }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 48px" }}>
+            <ScrollReveal>
+              <div style={{ marginBottom: 80 }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 3,
+                  textTransform: "uppercase" as const,
+                  color: TEAL,
+                  marginBottom: 16,
+                }}>
+                  What We Do
+                </div>
+                <h2 className="cz-section-title" style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 56,
+                  letterSpacing: 3,
+                  margin: 0,
+                  lineHeight: 1,
+                }}>
+                  Our Services
+                </h2>
+              </div>
+            </ScrollReveal>
+
+            {SERVICES.map((service, i) => {
+              const isReversed = i % 2 !== 0;
+              return (
+                <ScrollReveal key={service.title} delay={i * 100}>
+                  <div
+                    className={`cz-service-row${isReversed ? " cz-service-row--reverse" : ""}`}
+                    style={{
+                      display: "flex",
+                      flexDirection: isReversed ? "row-reverse" : "row",
+                      marginBottom: i < SERVICES.length - 1 ? 2 : 0,
+                      background: "#111",
+                    }}
+                  >
+                    <div
+                      className="cz-service-image-wrap"
+                      style={{
+                        width: "50%",
+                        minHeight: 420,
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        className="cz-service-img"
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          backgroundImage: `url('${service.image}')`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }}
+                      />
+                    </div>
+                    <div
+                      className="cz-service-text-wrap"
+                      style={{
+                        width: "50%",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        padding: "64px 72px",
+                      }}
+                    >
+                      <div style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        letterSpacing: 3,
+                        textTransform: "uppercase" as const,
+                        color: TEAL,
+                        marginBottom: 16,
+                      }}>
+                        {String(i + 1).padStart(2, "0")}
+                      </div>
+                      <h3 style={{
+                        fontFamily: "'Bebas Neue', sans-serif",
+                        fontSize: 42,
+                        letterSpacing: 2,
+                        margin: "0 0 20px",
+                        lineHeight: 1,
+                        color: "#fff",
+                      }}>
+                        {service.title}
+                      </h3>
+                      <p style={{
+                        fontSize: 16,
+                        lineHeight: 1.8,
+                        color: TEXT_MUTED,
+                        margin: "0 0 32px",
+                        maxWidth: 440,
+                      }}>
+                        {service.desc}
+                      </p>
+                      <a href="#contact" className="cz-link-arrow">Learn More</a>
+                    </div>
+                  </div>
+                </ScrollReveal>
+              );
+            })}
           </div>
-        </ScrollReveal>
-      </section>
+        </section>
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
-      <footer>
-        <div className="hvac-divider" />
-        <div className="hvac-footer">
-          <div className="hvac-footer-left">
-            <div style={{ color: TEXT, fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, marginBottom: 8, letterSpacing: 1 }}>
-              Comfort Zone Heating &amp; Cooling
+        {/* ── Why Choose Us ───────────────────────────────────── */}
+        <section id="about" style={{
+          background: "#0d0d0d",
+          padding: "120px 0",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 48px" }}>
+            <ScrollReveal>
+              <div style={{ marginBottom: 80, maxWidth: 600 }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 3,
+                  textTransform: "uppercase" as const,
+                  color: TEAL,
+                  marginBottom: 16,
+                }}>
+                  The Difference
+                </div>
+                <h2 className="cz-section-title" style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 56,
+                  letterSpacing: 3,
+                  margin: 0,
+                  lineHeight: 1,
+                }}>
+                  Why Comfort Zone
+                </h2>
+              </div>
+            </ScrollReveal>
+
+            <div className="cz-reasons-grid" style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 48,
+            }}>
+              {REASONS.map((reason, i) => (
+                <ScrollReveal key={reason.title} delay={i * 120}>
+                  <div>
+                    <div className="cz-reason-num" style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: 72,
+                      letterSpacing: 2,
+                      color: TEAL,
+                      lineHeight: 1,
+                      marginBottom: 16,
+                      opacity: 0.9,
+                    }}>
+                      {reason.num}
+                    </div>
+                    <h3 style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: 24,
+                      letterSpacing: 1,
+                      margin: "0 0 12px",
+                      color: "#fff",
+                      lineHeight: 1.2,
+                    }}>
+                      {reason.title}
+                    </h3>
+                    <p style={{
+                      fontSize: 15,
+                      lineHeight: 1.8,
+                      color: TEXT_MUTED,
+                      margin: 0,
+                    }}>
+                      {reason.desc}
+                    </p>
+                  </div>
+                </ScrollReveal>
+              ))}
             </div>
-            <div>1847 E. Big Beaver Rd, Troy, MI 48083</div>
-            <div>(248) 555-0193</div>
-            <div style={{ marginTop: 8 }}>&copy; {new Date().getFullYear()} Comfort Zone Heating &amp; Cooling. All rights reserved.</div>
           </div>
-          <div className="hvac-footer-badge">Licensed &amp; Insured</div>
-        </div>
-      </footer>
-      <TradeChatWidget trade="hvac" accentColor={TEAL} />
+        </section>
+
+        {/* ── Testimonials ────────────────────────────────────── */}
+        <section style={{ padding: "120px 0" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 48px" }}>
+            <ScrollReveal>
+              <div style={{ marginBottom: 80 }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 3,
+                  textTransform: "uppercase" as const,
+                  color: TEAL,
+                  marginBottom: 16,
+                }}>
+                  Testimonials
+                </div>
+                <h2 className="cz-section-title" style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 56,
+                  letterSpacing: 3,
+                  margin: 0,
+                  lineHeight: 1,
+                }}>
+                  What Our Clients Say
+                </h2>
+              </div>
+            </ScrollReveal>
+
+            <div className="cz-testimonials-grid" style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 32,
+            }}>
+              {TESTIMONIALS.map((t, i) => (
+                <ScrollReveal key={t.name} delay={i * 120}>
+                  <div style={{
+                    padding: "48px 40px",
+                    background: "#111",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}>
+                    <div style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: 72,
+                      lineHeight: 0.6,
+                      color: TEAL,
+                      opacity: 0.4,
+                      marginBottom: 24,
+                      userSelect: "none",
+                    }}>
+                      &ldquo;
+                    </div>
+                    <p style={{
+                      fontSize: 16,
+                      lineHeight: 1.8,
+                      color: "rgba(232, 234, 240, 0.85)",
+                      fontStyle: "italic",
+                      margin: "0 0 32px",
+                      flex: 1,
+                    }}>
+                      {t.text}
+                    </p>
+                    <div>
+                      <div style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: "#fff",
+                        marginBottom: 4,
+                      }}>
+                        {t.name}
+                      </div>
+                      <div style={{
+                        fontSize: 13,
+                        color: TEXT_MUTED,
+                      }}>
+                        {t.location}
+                      </div>
+                    </div>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ─────────────────────────────────────────────── */}
+        <section id="contact" style={{
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "url('/hvac-hero.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }} />
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(0,0,0,0.8)",
+          }} />
+
+          <div style={{
+            position: "relative",
+            zIndex: 2,
+            maxWidth: 1280,
+            margin: "0 auto",
+            padding: "120px 48px",
+            textAlign: "center",
+          }}>
+            <ScrollReveal>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: 3,
+                textTransform: "uppercase" as const,
+                color: TEAL,
+                marginBottom: 20,
+              }}>
+                Get Started
+              </div>
+              <h2 className="cz-section-title" style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 56,
+                letterSpacing: 3,
+                margin: "0 0 20px",
+                lineHeight: 1,
+                color: "#fff",
+              }}>
+                Don&apos;t Sweat It. We&apos;ve Got You.
+              </h2>
+              <p style={{
+                fontSize: 18,
+                lineHeight: 1.7,
+                color: "rgba(255,255,255,0.55)",
+                maxWidth: 520,
+                margin: "0 auto 16px",
+              }}>
+                Give us a call or request a free quote. We respond to every inquiry within 15 minutes.
+              </p>
+              <a href="tel:2485550193" style={{
+                display: "block",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 42,
+                letterSpacing: 3,
+                color: "#fff",
+                marginBottom: 40,
+                textDecoration: "none",
+              }}>
+                (248) 555-0193
+              </a>
+              <a href="tel:2485550193" className="cz-btn" style={{ fontSize: 14, padding: "18px 52px" }}>
+                Call Now
+              </a>
+            </ScrollReveal>
+          </div>
+        </section>
+
+        {/* ── Footer ──────────────────────────────────────────── */}
+        <footer style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          background: "#0a0a0a",
+        }}>
+          <div style={{
+            maxWidth: 1280,
+            margin: "0 auto",
+            padding: "80px 48px 48px",
+          }}>
+            <div className="cz-footer-grid" style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr",
+              gap: 64,
+              marginBottom: 64,
+            }}>
+              <div>
+                <div style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 24,
+                  letterSpacing: 3,
+                  color: "#fff",
+                  marginBottom: 16,
+                }}>
+                  COMFORT ZONE <span style={{ color: TEAL }}>HVAC</span>
+                </div>
+                <p style={{
+                  fontSize: 15,
+                  lineHeight: 1.8,
+                  color: TEXT_MUTED,
+                  maxWidth: 360,
+                  margin: 0,
+                }}>
+                  Trusted residential and commercial heating and cooling services in Troy, Michigan and surrounding communities for over 20 years.
+                </p>
+              </div>
+
+              <div>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 2,
+                  textTransform: "uppercase" as const,
+                  color: "rgba(255,255,255,0.4)",
+                  marginBottom: 24,
+                }}>
+                  Quick Links
+                </div>
+                {["Services", "About", "Contact"].map((link) => (
+                  <a
+                    key={link}
+                    href={`#${link.toLowerCase()}`}
+                    style={{
+                      display: "block",
+                      fontSize: 15,
+                      color: TEXT_MUTED,
+                      marginBottom: 14,
+                      textDecoration: "none",
+                      transition: "color 0.3s",
+                    }}
+                  >
+                    {link}
+                  </a>
+                ))}
+              </div>
+
+              <div>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 2,
+                  textTransform: "uppercase" as const,
+                  color: "rgba(255,255,255,0.4)",
+                  marginBottom: 24,
+                }}>
+                  Contact
+                </div>
+                <p style={{ fontSize: 15, lineHeight: 2, color: TEXT_MUTED, margin: 0 }}>
+                  1847 E. Big Beaver Rd<br />
+                  Troy, MI 48083<br />
+                  (248) 555-0193
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              paddingTop: 32,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 16,
+            }}>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.25)" }}>
+                {new Date().getFullYear()} Comfort Zone Heating &amp; Cooling. All rights reserved.
+              </div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.25)" }}>
+                Licensed &amp; Insured &mdash; NATE Certified
+              </div>
+            </div>
+          </div>
+        </footer>
+
+        <TradeChatWidget trade="hvac" accentColor={TEAL} />
+      </div>
     </>
   );
 }
