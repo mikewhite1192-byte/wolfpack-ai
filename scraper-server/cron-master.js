@@ -386,6 +386,48 @@ async function jobMaya() {
   } catch (e) {}
 }
 
+// ── 15. GBP — REVIEW CHECK (every 6 hours) ──────────────────────
+async function jobGbpReviews() {
+  if (isRunning("gbp-reviews")) return;
+  setRunning("gbp-reviews", true);
+  try {
+    var result = await callVercel("/api/gbp/reviews?process=true", "GET", 300000);
+    console.log("[gbp-reviews] Checked: " + (result.checked || 0) + ", Replied: " + (result.replied || 0));
+  } catch (e) {
+    console.error("[gbp-reviews] " + e.message);
+  } finally {
+    setRunning("gbp-reviews", false);
+  }
+}
+
+// ── 16. GBP — WEEKLY POSTS (daily check, posts if 7+ days since last) ─
+async function jobGbpPosts() {
+  if (isRunning("gbp-posts")) return;
+  setRunning("gbp-posts", true);
+  try {
+    var result = await callVercel("/api/gbp/posts?process=true", "GET", 120000);
+    if (result.posted > 0) console.log("[gbp-posts] Posted: " + result.posted);
+  } catch (e) {
+    console.error("[gbp-posts] " + e.message);
+  } finally {
+    setRunning("gbp-posts", false);
+  }
+}
+
+// ── 17. GBP — MONTHLY INSIGHTS REPORT ───────────────────────────
+async function jobGbpInsights() {
+  if (isRunning("gbp-insights")) return;
+  setRunning("gbp-insights", true);
+  try {
+    var result = await callVercel("/api/gbp/insights?process=true", "GET", 120000);
+    if (result.sent > 0) console.log("[gbp-insights] Reports sent: " + result.sent);
+  } catch (e) {
+    console.error("[gbp-insights] " + e.message);
+  } finally {
+    setRunning("gbp-insights", false);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // SCHEDULER
 // ═══════════════════════════════════════════════════════════════════
@@ -429,6 +471,20 @@ setInterval(function() {
   jobAiFollowUp();
   jobPostCall();
 }, 2 * 60 * 60 * 1000);
+
+// Every 6 hours — GBP reviews
+setInterval(function() {
+  jobGbpReviews();
+}, 6 * 60 * 60 * 1000);
+
+// Daily — GBP posts + monthly insights check
+setInterval(function() {
+  var h = parseInt(getETHour());
+  if (h === 10) {
+    jobGbpPosts();
+    jobGbpInsights();
+  }
+}, 60 * 60 * 1000);
 
 // Every 12 hours — bounce checks
 setInterval(function() {
