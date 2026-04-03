@@ -352,29 +352,30 @@ export async function getConversationThread(replyId: string): Promise<Array<{ di
     }
   }
 
-  // Get all inbox messages involving this contact (both their replies and our replies)
-  const inboxMessages = await sql`
-    SELECT from_email, to_address, subject, body, received_at
-    FROM campaign_inbox
-    WHERE (from_email = ${contactEmail} OR to_address = ${contactEmail})
-      AND email_category = 'cold_reply'
-    ORDER BY received_at ASC
-  `;
-
+  // Get all inbox messages for this specific contact
   const received: Array<{ direction: string; from: string; body: string; subject: string; sent_at: string }> = [];
-  for (const m of inboxMessages) {
-    const isFromUs = (m.from_email as string) !== contactEmail;
-    received.push({
-      direction: isFromUs ? "outbound" : "inbound",
-      from: (m.from_email as string) || "",
-      body: (m.body as string) || "",
-      subject: (m.subject as string) || "",
-      sent_at: (m.received_at as string) || "",
-    });
-  }
 
-  // Also check email_assistant_messages if they exist
   if (outreachContactId) {
+    // Get inbox messages tied to this outreach contact
+    const inboxMessages = await sql`
+      SELECT from_email, to_address, subject, body, received_at
+      FROM campaign_inbox
+      WHERE outreach_contact_id = ${outreachContactId}
+      ORDER BY received_at ASC
+    `;
+
+    for (const m of inboxMessages) {
+      const isFromContact = (m.from_email as string).toLowerCase() === contactEmail.toLowerCase();
+      received.push({
+        direction: isFromContact ? "inbound" : "outbound",
+        from: (m.from_email as string) || "",
+        body: (m.body as string) || "",
+        subject: (m.subject as string) || "",
+        sent_at: (m.received_at as string) || "",
+      });
+    }
+
+    // Also check email_assistant_messages
     const assistantMsgs = await sql`
       SELECT eam.direction, eam.body, eam.subject, eam.sent_at
       FROM email_assistant_messages eam
@@ -389,6 +390,23 @@ export async function getConversationThread(replyId: string): Promise<Array<{ di
         body: (m.body as string) || "",
         subject: (m.subject as string) || "",
         sent_at: (m.sent_at as string) || "",
+      });
+    }
+  } else {
+    // No outreach contact ID — just show the single reply
+    const inboxMessages = await sql`
+      SELECT from_email, subject, body, received_at
+      FROM campaign_inbox
+      WHERE from_email = ${contactEmail} AND email_category = 'cold_reply'
+      ORDER BY received_at ASC
+    `;
+    for (const m of inboxMessages) {
+      received.push({
+        direction: "inbound",
+        from: (m.from_email as string) || "",
+        body: (m.body as string) || "",
+        subject: (m.subject as string) || "",
+        sent_at: (m.received_at as string) || "",
       });
     }
   }
