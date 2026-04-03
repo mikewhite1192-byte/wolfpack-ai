@@ -9,6 +9,10 @@ export async function GET() {
   try {
     const workspace = await getOrCreateWorkspace();
 
+    const pipelines = await sql`
+      SELECT * FROM pipelines WHERE workspace_id = ${workspace.id} ORDER BY created_at ASC
+    `;
+
     const stages = await sql`
       SELECT * FROM pipeline_stages
       WHERE workspace_id = ${workspace.id}
@@ -21,9 +25,17 @@ export async function GET() {
       ORDER BY created_at ASC
     `;
 
+    // GBP connections
+    const gbpConnections = await sql`
+      SELECT id, connected_email, connected, location_name, auto_post_enabled, auto_review_reply_enabled, monthly_report_enabled, report_phone
+      FROM gbp_connections WHERE workspace_id = ${workspace.id}
+    `;
+
     return NextResponse.json({
       workspace,
+      pipelines,
       stages,
+      gbpConnections,
       smsTemplates: templates.filter(t => t.type === "sms"),
       emailTemplates: templates.filter(t => t.type === "email"),
     });
@@ -70,19 +82,28 @@ export async function PATCH(req: Request) {
     }
 
     if (section === "stages") {
-      const { stages } = body; // [{name, color, isWon, isLost}]
+      const { stages, pipelineId } = body; // [{name, color, isWon, isLost}], pipelineId
 
-      // Delete existing stages (cascade will be handled separately when deals exist)
-      // For now, delete and recreate
-      await sql`DELETE FROM pipeline_stages WHERE workspace_id = ${workspace.id}`;
+      if (!pipelineId) {
+        return NextResponse.json({ error: "pipelineId required" }, { status: 400 });
+      }
+
+      // Delete existing stages for this specific pipeline
+      await sql`DELETE FROM pipeline_stages WHERE workspace_id = ${workspace.id} AND pipeline_id = ${pipelineId}`;
 
       for (let i = 0; i < stages.length; i++) {
         const s = stages[i];
         await sql`
-          INSERT INTO pipeline_stages (workspace_id, name, position, color, is_won, is_lost)
-          VALUES (${workspace.id}, ${s.name}, ${i}, ${s.color || "#3498db"}, ${s.isWon || false}, ${s.isLost || false})
+          INSERT INTO pipeline_stages (workspace_id, pipeline_id, name, position, color, is_won, is_lost)
+          VALUES (${workspace.id}, ${pipelineId}, ${s.name}, ${i}, ${s.color || "#3498db"}, ${s.isWon || false}, ${s.isLost || false})
         `;
       }
+      return NextResponse.json({ ok: true });
+    }
+
+    if (section === "renamePipeline") {
+      const { pipelineId, name } = body;
+      await sql`UPDATE pipelines SET name = ${name} WHERE id = ${pipelineId} AND workspace_id = ${workspace.id}`;
       return NextResponse.json({ ok: true });
     }
 

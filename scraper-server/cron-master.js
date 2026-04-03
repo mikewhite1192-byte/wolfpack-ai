@@ -428,6 +428,20 @@ async function jobGbpInsights() {
   }
 }
 
+// ── 18. GBP — REVIEW NUDGES (daily) ─────────────────────────────
+async function jobGbpNudges() {
+  if (isRunning("gbp-nudges")) return;
+  setRunning("gbp-nudges", true);
+  try {
+    var result = await callVercel("/api/gbp/reviews?nudge=true", "GET", 120000);
+    if (result.sent > 0 || result.completed > 0) console.log("[gbp-nudges] Sent: " + (result.sent || 0) + ", Completed: " + (result.completed || 0));
+  } catch (e) {
+    console.error("[gbp-nudges] " + e.message);
+  } finally {
+    setRunning("gbp-nudges", false);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // SCHEDULER
 // ═══════════════════════════════════════════════════════════════════
@@ -477,12 +491,13 @@ setInterval(function() {
   jobGbpReviews();
 }, 6 * 60 * 60 * 1000);
 
-// Daily — GBP posts + monthly insights check
+// Daily — GBP posts + monthly insights check + review nudges
 setInterval(function() {
   var h = parseInt(getETHour());
   if (h === 10) {
     jobGbpPosts();
     jobGbpInsights();
+    jobGbpNudges();
   }
 }, 60 * 60 * 1000);
 

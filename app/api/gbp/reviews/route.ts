@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { processReviews } from "@/lib/gbp";
+import { processReviews, processReviewNudges } from "@/lib/gbp";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -14,6 +14,13 @@ export async function GET(req: Request) {
     // Cron trigger — process all reviews
     if (process_flag === "true") {
       const result = await processReviews();
+      return NextResponse.json(result);
+    }
+
+    // Cron trigger — process review nudges
+    const nudge_flag = searchParams.get("nudge");
+    if (nudge_flag === "true") {
+      const result = await processReviewNudges();
       return NextResponse.json(result);
     }
 

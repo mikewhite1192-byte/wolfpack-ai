@@ -19,6 +19,22 @@ interface Stage {
   isLost: boolean;
 }
 
+interface Pipeline {
+  id: string;
+  name: string;
+}
+
+interface GbpConnection {
+  id: string;
+  connected_email: string | null;
+  connected: boolean;
+  location_name: string | null;
+  auto_post_enabled: boolean;
+  auto_review_reply_enabled: boolean;
+  monthly_report_enabled: boolean;
+  report_phone: string | null;
+}
+
 interface Template {
   name: string;
   subject?: string;
@@ -34,8 +50,16 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState("");
 
   // Pipeline
+  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
   const [stages, setStages] = useState<Stage[]>([]);
+  const [allStages, setAllStages] = useState<Record<string, Stage[]>>({});
   const [newStage, setNewStage] = useState("");
+  const [editingStage, setEditingStage] = useState<number | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  // GBP
+  const [gbpConnections, setGbpConnections] = useState<GbpConnection[]>([]);
 
   // SMS Templates
   const [smsTemplates, setSmsTemplates] = useState<Template[]>([
@@ -89,15 +113,34 @@ export default function SettingsPage() {
     const res = await fetch("/api/settings");
     const data = await res.json();
 
-    // Stages
-    if (data.stages) {
-      setStages(data.stages.map((s: { name: string; color: string; is_won: boolean; is_lost: boolean }) => ({
-        name: s.name,
-        color: s.color || "#3498db",
-        isWon: s.is_won,
-        isLost: s.is_lost,
-      })));
+    // Pipelines & Stages
+    if (data.pipelines) {
+      setPipelines(data.pipelines);
+      if (data.pipelines.length > 0 && !selectedPipelineId) {
+        setSelectedPipelineId(data.pipelines[0].id);
+      }
     }
+    if (data.stages) {
+      const grouped: Record<string, Stage[]> = {};
+      for (const s of data.stages) {
+        const pid = s.pipeline_id || "default";
+        if (!grouped[pid]) grouped[pid] = [];
+        grouped[pid].push({
+          id: s.id,
+          name: s.name,
+          color: s.color || "#3498db",
+          isWon: s.is_won,
+          isLost: s.is_lost,
+        });
+      }
+      setAllStages(grouped);
+      // Set stages for the selected pipeline
+      const firstPid = data.pipelines?.[0]?.id || "default";
+      setStages(grouped[selectedPipelineId || firstPid] || []);
+    }
+
+    // GBP
+    if (data.gbpConnections) setGbpConnections(data.gbpConnections);
 
     // SMS Templates
     if (data.smsTemplates?.length > 0) {
@@ -237,28 +280,104 @@ export default function SettingsPage() {
       </div>
 
       {settingsTab === "pipeline" && (
-        <div className="settings-card">
-          <div className="settings-section-title">Pipeline Stages</div>
-          <div className="settings-stage-list">
-            {stages.map((s, i) => (
-              <div key={i} className="settings-stage-row">
-                <div className="settings-stage-dot" style={{ background: s.color }} />
-                <span className="settings-stage-name">{s.name}</span>
-                {s.isWon && <span className="settings-stage-badge" style={{ background: `${T.green}20`, color: T.green }}>Won</span>}
-                {s.isLost && <span className="settings-stage-badge" style={{ background: "#e74c3c20", color: "#e74c3c" }}>Lost</span>}
-                <button className="settings-stage-del" onClick={() => setStages(st => st.filter((_, j) => j !== i))}>×</button>
+        <div>
+          {/* Pipeline Selector */}
+          <div className="settings-card">
+            <div className="settings-section-title">Select Pipeline</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {pipelines.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => { setSelectedPipelineId(p.id); setStages(allStages[p.id] || []); setEditingStage(null); }}
+                  style={{
+                    padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    border: `1px solid ${selectedPipelineId === p.id ? T.orange : T.border}`,
+                    background: selectedPipelineId === p.id ? `${T.orange}15` : T.surface,
+                    color: selectedPipelineId === p.id ? T.orange : T.text,
+                  }}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Pipeline Stages */}
+          <div className="settings-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div className="settings-section-title" style={{ marginBottom: 0 }}>
+                {pipelines.find(p => p.id === selectedPipelineId)?.name || "Pipeline"} — Stages
               </div>
-            ))}
-          </div>
-          <div className="settings-add-row">
-            <input className="settings-input" placeholder="Add new stage..." value={newStage} onChange={e => setNewStage(e.target.value)} onKeyDown={e => e.key === "Enter" && addStage()} />
-            <button className="settings-btn" onClick={addStage}>Add</button>
-          </div>
-          <div className="settings-save">
-            {saved === "stages" && <span className="settings-saved">✓ Saved</span>}
-            <button className="settings-btn" disabled={saving} onClick={() => saveSection("stages", { stages })}>
-              {saving ? "Saving..." : "Save Stages →"}
-            </button>
+              <div style={{ fontSize: 11, color: T.muted }}>Drag to reorder</div>
+            </div>
+            <div className="settings-stage-list">
+              {stages.map((s, i) => (
+                <div
+                  key={i}
+                  className="settings-stage-row"
+                  draggable
+                  onDragStart={() => setDragIdx(i)}
+                  onDragOver={e => { e.preventDefault(); }}
+                  onDrop={() => {
+                    if (dragIdx === null || dragIdx === i) return;
+                    const reordered = [...stages];
+                    const [moved] = reordered.splice(dragIdx, 1);
+                    reordered.splice(i, 0, moved);
+                    setStages(reordered);
+                    setDragIdx(null);
+                  }}
+                  onDragEnd={() => setDragIdx(null)}
+                  style={{
+                    cursor: "grab",
+                    opacity: dragIdx === i ? 0.5 : 1,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  <div style={{ color: T.muted, fontSize: 12, cursor: "grab", marginRight: 4 }}>⠿</div>
+                  <div className="settings-stage-dot" style={{ background: s.color }} />
+                  {editingStage === i ? (
+                    <input
+                      className="settings-input"
+                      style={{ flex: 1, padding: "4px 8px", fontSize: 14 }}
+                      value={s.name}
+                      autoFocus
+                      onChange={e => { const updated = [...stages]; updated[i] = { ...s, name: e.target.value }; setStages(updated); }}
+                      onBlur={() => setEditingStage(null)}
+                      onKeyDown={e => e.key === "Enter" && setEditingStage(null)}
+                    />
+                  ) : (
+                    <span className="settings-stage-name" onClick={() => setEditingStage(i)} style={{ cursor: "text" }}>{s.name}</span>
+                  )}
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                      onClick={() => { const updated = [...stages]; updated[i] = { ...s, isWon: !s.isWon, isLost: false }; setStages(updated); }}
+                      className="settings-stage-badge"
+                      style={{ background: s.isWon ? `${T.green}30` : "rgba(255,255,255,0.05)", color: s.isWon ? T.green : T.muted, border: "none", cursor: "pointer", fontSize: 10 }}
+                    >
+                      Won
+                    </button>
+                    <button
+                      onClick={() => { const updated = [...stages]; updated[i] = { ...s, isLost: !s.isLost, isWon: false }; setStages(updated); }}
+                      className="settings-stage-badge"
+                      style={{ background: s.isLost ? "#e74c3c30" : "rgba(255,255,255,0.05)", color: s.isLost ? "#e74c3c" : T.muted, border: "none", cursor: "pointer", fontSize: 10 }}
+                    >
+                      Lost
+                    </button>
+                  </div>
+                  <button className="settings-stage-del" onClick={() => setStages(st => st.filter((_, j) => j !== i))}>×</button>
+                </div>
+              ))}
+            </div>
+            <div className="settings-add-row">
+              <input className="settings-input" placeholder="Add new stage..." value={newStage} onChange={e => setNewStage(e.target.value)} onKeyDown={e => e.key === "Enter" && addStage()} />
+              <button className="settings-btn" onClick={addStage}>Add</button>
+            </div>
+            <div className="settings-save">
+              {saved === "stages" && <span className="settings-saved">✓ Saved</span>}
+              <button className="settings-btn" disabled={saving} onClick={() => saveSection("stages", { stages, pipelineId: selectedPipelineId })}>
+                {saving ? "Saving..." : "Save Stages →"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -604,6 +723,50 @@ What's the property address?`} />
                 </a>
               )}
             </div>
+          </div>
+
+          {/* Google Business Profile */}
+          <div className="settings-card">
+            <div className="settings-section-title">Google Business Profile</div>
+            {gbpConnections.length > 0 ? (
+              gbpConnections.map(conn => (
+                <div key={conn.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${T.border}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 20 }}>📍</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{conn.location_name || "Google Business Profile"}</div>
+                      <div style={{ fontSize: 12, color: conn.connected ? T.green : T.muted }}>{conn.connected ? conn.connected_email || "Connected" : "Not connected"}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 12, fontSize: 11, color: T.muted }}>
+                      <span style={{ color: conn.auto_review_reply_enabled ? T.green : T.muted }}>Reviews {conn.auto_review_reply_enabled ? "ON" : "OFF"}</span>
+                      <span style={{ color: conn.auto_post_enabled ? T.green : T.muted }}>Posts {conn.auto_post_enabled ? "ON" : "OFF"}</span>
+                      <span style={{ color: conn.monthly_report_enabled ? T.green : T.muted }}>Reports {conn.monthly_report_enabled ? "ON" : "OFF"}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 20 }}>📍</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Google Business Profile</div>
+                    <div style={{ fontSize: 12, color: T.muted }}>Not connected</div>
+                  </div>
+                </div>
+                <a
+                  href="/api/gbp/connect"
+                  style={{
+                    padding: "8px 16px", background: T.orange, borderRadius: 8,
+                    color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", display: "inline-block",
+                  }}
+                >
+                  Connect GBP
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Daily Reports */}

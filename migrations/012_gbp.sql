@@ -89,3 +89,20 @@ CREATE TABLE IF NOT EXISTS gbp_insights (
 );
 
 CREATE INDEX IF NOT EXISTS idx_gbp_insights_conn ON gbp_insights (connection_id, period_start DESC);
+
+-- Review request nudges (3 weekly checks after going live)
+CREATE TABLE IF NOT EXISTS gbp_review_nudges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  connection_id UUID REFERENCES gbp_connections(id),
+  contact_phone TEXT NOT NULL,
+  contact_name TEXT,
+  business_name TEXT,
+  review_link TEXT,
+  nudge_count INTEGER NOT NULL DEFAULT 0, -- 0 = not sent yet, 1-3 = nudges sent
+  next_nudge_at TIMESTAMPTZ,
+  review_received BOOLEAN NOT NULL DEFAULT FALSE,
+  status TEXT NOT NULL DEFAULT 'active', -- active, completed, stopped
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_gbp_nudges_due ON gbp_review_nudges (next_nudge_at) WHERE status = 'active' AND review_received = FALSE;

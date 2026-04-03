@@ -562,3 +562,107 @@ export async function processMonthlyReports(): Promise<{ sent: number }> {
 
   return { sent };
 }
+
+// ── Review Nudge System ─────────────────────────────────────────────
+// When a client hits "Live Client" stage, start the 3-week nudge sequence
+
+export async function startReviewNudges(
+  connectionId: string | null,
+  contactPhone: string,
+  contactName: string,
+  businessName: string,
+  reviewLink: string,
+): Promise<void> {
+  // Schedule first nudge 7 days from now
+  await sql`
+    INSERT INTO gbp_review_nudges (connection_id, contact_phone, contact_name, business_name, review_link, nudge_count, next_nudge_at)
+    VALUES (${connectionId}, ${contactPhone}, ${contactName}, ${businessName}, ${reviewLink}, 0, ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()})
+  `;
+  console.log(`[gbp] Scheduled review nudges for ${contactName} (${businessName})`);
+}
+
+export async function processReviewNudges(): Promise<{ sent: number; completed: number }> {
+  const now = new Date().toISOString();
+
+  const dueNudges = await sql`
+    SELECT * FROM gbp_review_nudges
+    WHERE status = 'active' AND review_received = FALSE AND next_nudge_at <= ${now}
+    ORDER BY next_nudge_at ASC
+    LIMIT 20
+  `;
+
+  let sent = 0;
+  let completed = 0;
+
+  for (const nudge of dueNudges) {
+    const firstName = (nudge.contact_name as string) || "there";
+    const businessName = (nudge.business_name as string) || "your business";
+    const reviewLink = (nudge.review_link as string) || "";
+    const count = (nudge.nudge_count as number) || 0;
+
+    // Check if they already left a review (if we have a GBP connection)
+    if (nudge.connection_id) {
+      try {
+        const token = await getGbpToken(nudge.connection_id as string);
+        if (token) {
+          const conn = await sql`SELECT account_id, location_id FROM gbp_connections WHERE id = ${nudge.connection_id}`;
+          if (conn.length > 0) {
+            const accountId = (conn[0].account_id as string).replace("accounts/", "");
+            const locationId = (conn[0].location_id as string).replace("locations/", "");
+            const reviewData = await listReviews(token, accountId, locationId, 10);
+            const reviews = reviewData.reviews || [];
+            // Check if any recent review mentions the business or is from around the time we started nudging
+            const hasNewReview = reviews.some((r: { createTime?: string }) => {
+              const reviewTime = new Date(r.createTime || "").getTime();
+              const nudgeStart = new Date(nudge.created_at as string).getTime();
+              return reviewTime > nudgeStart;
+            });
+            if (hasNewReview) {
+              await sql`UPDATE gbp_review_nudges SET review_received = TRUE, status = 'completed' WHERE id = ${nudge.id}`;
+              completed++;
+              console.log(`[gbp] Review received from ${firstName}, stopping nudges`);
+              continue;
+            }
+          }
+        }
+      } catch { /* continue with nudge */ }
+    }
+
+    // Send the appropriate nudge
+    const messages: Record<number, string> = {
+      0: `Hey ${firstName}, how's the new site treating you? If you're happy with how ${businessName} looks online, would you mind leaving us a quick Google review? It really helps. ${reviewLink}`,
+      1: `Hey ${firstName}, just checking in. If you've got 30 seconds, a Google review would mean a lot for ${businessName}. ${reviewLink}`,
+      2: `Last ask from me ${firstName}. If ${businessName}'s site has been bringing in calls, a quick review would help us keep helping contractors like you. ${reviewLink}`,
+    };
+
+    const msg = messages[count];
+    if (!msg) {
+      // Done with 3 nudges
+      await sql`UPDATE gbp_review_nudges SET status = 'completed' WHERE id = ${nudge.id}`;
+      completed++;
+      continue;
+    }
+
+    try {
+      await sendLoop(nudge.contact_phone as string, msg);
+      const nextCount = count + 1;
+      const nextNudgeAt = nextCount < 3
+        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
+      await sql`
+        UPDATE gbp_review_nudges SET
+          nudge_count = ${nextCount},
+          next_nudge_at = ${nextNudgeAt},
+          status = ${nextCount >= 3 ? "completed" : "active"}
+        WHERE id = ${nudge.id}
+      `;
+      sent++;
+      console.log(`[gbp] Sent review nudge ${nextCount}/3 to ${firstName}`);
+    } catch (err) {
+      console.error(`[gbp] Failed to send nudge to ${firstName}:`, err);
+    }
+  }
+
+  return { sent, completed };
+}
