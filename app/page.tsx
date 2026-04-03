@@ -587,7 +587,7 @@ export default function Home() {
         </div>
 
         {/* Bottom row — GBP + Agency side by side */}
-        <div className="wp-price-bottom" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 680, margin: "0 auto" }}>
+        <div className="wp-price-bottom" style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 680, margin: "0 auto" }}>
           <div className="wp-price-card" style={{ position: "relative" }}>
             <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "rgba(232,106,42,0.2)", color: "#E86A2A", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5, border: "1px solid rgba(232,106,42,0.3)" }}>ADD-ON</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>GBP MANAGEMENT</div>
