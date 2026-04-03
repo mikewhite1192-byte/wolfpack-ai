@@ -71,6 +71,15 @@
 
     { "path": "/api/outreach/warmup?type=bounce&batch=2", "schedule": "0 21 * * *" },
     { "path": "/api/ai-agent/learn", "schedule": "0 22 * * *" },
-    { "path": "/api/webhooks/maya", "schedule": "*/10 * * * *" }
+    { "path": "/api/webhooks/maya", "schedule": "*/10 * * * *" },
+
+    { "path": "/api/email-assistant/process", "schedule": "15 12 * * *" },
+    { "path": "/api/email-assistant/process", "schedule": "15 14 * * *" },
+    { "path": "/api/email-assistant/process", "schedule": "15 16 * * *" },
+    { "path": "/api/email-assistant/process", "schedule": "15 18 * * *" },
+    { "path": "/api/email-assistant/process", "schedule": "15 20 * * *" },
+    { "path": "/api/email-assistant/process", "schedule": "15 0 * * *" },
+    { "path": "/api/email-assistant/reminders", "schedule": "*/10 * * * *" },
+    { "path": "/api/email-assistant/post-call", "schedule": "0 */2 * * *" }
   ]
 }
