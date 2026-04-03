@@ -24,11 +24,11 @@ const NAV = [
   { label: "Calendar", href: "/dashboard/calendar", icon: "📅" },
   { label: "Analytics", href: "/dashboard/analytics", icon: "📊" },
   { label: "Contacts", href: "/dashboard/contacts", icon: "👥" },
+  { label: "GBP", href: "/dashboard/gbp", icon: "📍" },
   { label: "Settings", href: "/dashboard/settings", icon: "⚙" },
 ];
 
 const ADMIN_NAV = [
-  { label: "Business", href: "/dashboard/owner", icon: "📈" },
   { label: "Outreach", href: "/dashboard/outreach", icon: "📨" },
 ];
 
