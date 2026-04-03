@@ -206,12 +206,25 @@ export async function getCampaignTemplate(
   let hash = 0;
   for (let i = 0; i < contactId.length; i++) { hash = ((hash << 5) - hash) + contactId.charCodeAt(i); hash |= 0; }
   const firstName = (contact.first_name as string) || INTROS[Math.abs(hash) % INTROS.length];
+
+  // Extract city from address if not set directly
+  const city = (contact.city as string) || (() => {
+    const addr = (contact.address as string) || "";
+    const parts = addr.split(",").map((s: string) => s.trim());
+    return parts.length >= 2 ? parts[parts.length - 2] || "" : "";
+  })();
+
   const vars: Record<string, string> = {
     "{{firstName}}": firstName,
+    "{{first_name}}": firstName,
     "{{lastName}}": (contact.last_name as string) || "",
-    "{{company}}": (contact.company as string) || "your company",
+    "{{company}}": (contact.company as string) || "your business",
+    "{{business_name}}": (contact.company as string) || "your business",
     "{{state}}": (contact.state as string) || "",
-    "{{niche}}": (contact.niche as string) || "",
+    "{{city}}": city || "your area",
+    "{{review_count}}": String((contact.review_count as number) || ""),
+    "{{contractor_type}}": (contact.niche as string) || "contractor",
+    "{{niche}}": (contact.niche as string) || "contractor",
   };
 
   for (const [key, val] of Object.entries(vars)) {
