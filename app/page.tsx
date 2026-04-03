@@ -345,20 +345,28 @@ export default function Home() {
           .wp-price-grid { flex-direction: column !important; }
           .wp-nav-links { display: none !important; }
           .wp-mobile-menu { display: flex !important; }
-          .wp-stats { flex-direction: column !important; gap: 20px !important; }
+          .wp-stats { flex-direction: column !important; gap: 32px !important; padding: 50px 20px !important; }
+          .wp-stats > div { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 24px !important; }
+          .wp-stats > div:last-child { border-bottom: none; padding-bottom: 0 !important; }
           .wp-problem-stats { flex-direction: column !important; gap: 32px !important; }
           .wp-section-title { font-size: 36px !important; }
           .wp-nav { padding: 16px 20px !important; }
-          .wp-hero-section { padding: 60px 20px 40px !important; }
+          .wp-hero-section { height: auto !important; min-height: 100vh !important; padding: 0 !important; }
+          .wp-hero-section > div:last-child { padding: 100px 24px 60px !important; }
           .wp-hero-title { font-size: 48px !important; }
           .wp-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
           .wp-how-steps { flex-direction: column !important; }
           .wp-price-card { max-width: 100% !important; }
+          .wp-price-card > div { flex-direction: column !important; }
+          .wp-price-card .wp-price-features { grid-template-columns: 1fr !important; }
+          .wp-price-bottom { grid-template-columns: 1fr !important; }
+          .wp-footer-links { flex-wrap: wrap !important; gap: 16px !important; }
         }
         @media (max-width: 480px) {
           .wp-hero-title { font-size: 38px !important; }
           .wp-problem-num { font-size: 44px !important; }
           .wp-section-heading { font-size: 32px !important; }
+          .wp-stats > div > div:first-child { font-size: 52px !important; }
         }
       `}</style>
 
@@ -579,7 +587,7 @@ export default function Home() {
         </div>
 
         {/* Bottom row — GBP + Agency side by side */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 680, margin: "0 auto" }}>
+        <div className="wp-price-bottom" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 680, margin: "0 auto" }}>
           <div className="wp-price-card" style={{ position: "relative" }}>
             <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "rgba(232,106,42,0.2)", color: "#E86A2A", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5, border: "1px solid rgba(232,106,42,0.3)" }}>ADD-ON</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>GBP MANAGEMENT</div>
@@ -664,7 +672,7 @@ export default function Home() {
         </div>
 
         {/* Nav links */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 24 }}>
+        <div className="wp-footer-links" style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 24 }}>
           {[
             { label: "How It Works", href: "#how" },
             { label: "Pricing", href: "#pricing" },
