@@ -406,25 +406,25 @@ export default function Home() {
 
         <div style={{ position: "relative", zIndex: 2, maxWidth: 1200, width: "100%", margin: "0 auto", padding: "0 60px" }}>
           <div style={{ maxWidth: 580 }}>
-            <div style={{ animation: "heroIn 1s ease 1.5s both" }}>
+            <div style={{ animation: "heroIn 0.6s ease 0.2s both" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.15)", border: "1px solid rgba(232,106,42,0.3)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28, backdropFilter: "blur(8px)" }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E86A2A", display: "inline-block" }} />
                 AI Appointment Setter
               </div>
             </div>
-            <h1 className="wp-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 1.2s ease 2s both", textShadow: "0 4px 60px rgba(0,0,0,0.8)" }}>
-              <ScrambleText text="STOP CHASING LEADS." delay={2400} />
+            <h1 className="wp-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both", textShadow: "0 4px 60px rgba(0,0,0,0.8)" }}>
+              <ScrambleText text="STOP CHASING LEADS." delay={600} />
               <br />
-              <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={3400} /></span>
+              <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
             </h1>
-            <p style={{ fontSize: 17, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, maxWidth: 500, margin: "0 0 20px", animation: "heroIn 1s ease 4.5s both", textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
+            <p style={{ fontSize: 17, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, maxWidth: 500, margin: "0 0 20px", animation: "heroIn 0.8s ease 2s both", textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
               Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
             </p>
-            <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 500, margin: "0 0 40px", animation: "heroIn 1s ease 5.5s both", lineHeight: 1.7, fontWeight: 600 }}>
+            <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 500, margin: "0 0 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.7, fontWeight: 600 }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.15)", border: "1px solid rgba(0,122,255,0.3)", borderRadius: 20, padding: "4px 14px", fontSize: 14, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle", backdropFilter: "blur(8px)" }}>🔵 iMessage</span>
               texts. No A2P registration. No carrier filtering. <span style={{ color: "rgba(255,255,255,0.9)" }}>Your leads actually hear from you first.</span>
             </p>
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", animation: "heroIn 1s ease 6.5s both" }}>
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
               <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
               <Link href="/book-demo" className="wp-ghost" style={{ backdropFilter: "blur(8px)", borderColor: "rgba(255,255,255,0.3)", color: "#fff" }}>Book a Demo</Link>
             </div>
