@@ -448,10 +448,13 @@ setInterval(function() {
 // Run critical jobs immediately on startup
 setTimeout(function() {
   console.log("[master] Running initial jobs...");
+  jobScrapeAndProcess();
   jobReminders();
   jobPollInbox();
   jobEmailAssistant();
   if (isBusinessHours()) jobColdSend();
+  jobWarmupSend();
+  jobWarmupReply();
 }, 5000);
 
 // Keep process alive
