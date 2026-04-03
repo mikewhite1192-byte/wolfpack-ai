@@ -371,41 +371,57 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <div className="wp-hero-section" style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-        {/* Full background wolf image with slow zoom */}
+      <div className="wp-hero-section" style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", overflow: "hidden" }}>
+        {/* Wolf image — pushed right, high contrast */}
         <div style={{
-          position: "absolute", inset: "-5%", zIndex: 0,
+          position: "absolute", inset: 0, zIndex: 0,
           backgroundImage: "url(/images/hero-wolf.png)",
           backgroundSize: "cover",
-          backgroundPosition: "center top",
-          opacity: 0.65,
+          backgroundPosition: "70% center",
+          opacity: 0.7,
+          filter: "contrast(1.3) brightness(0.9)",
           animation: "heroIn 2s ease both",
         }} />
-        {/* Dark overlay so text is readable */}
-        <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "linear-gradient(to bottom, rgba(10,10,10,0.3) 0%, rgba(10,10,10,0.55) 40%, rgba(10,10,10,0.92) 100%)" }} />
+        {/* Left-to-right gradient — dark left (text area) fading to transparent right (wolf) */}
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 1,
+          background: "linear-gradient(to right, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.85) 25%, rgba(10,10,10,0.5) 55%, rgba(10,10,10,0.2) 80%, rgba(10,10,10,0.15) 100%)",
+        }} />
+        {/* Bottom fade to black */}
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 1,
+          background: "linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(10,10,10,0.7) 85%, rgba(10,10,10,1) 100%)",
+        }} />
+        {/* Top subtle vignette */}
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 1,
+          background: "radial-gradient(ellipse at 70% 40%, transparent 30%, rgba(10,10,10,0.4) 100%)",
+        }} />
 
-        <div style={{ position: "relative", zIndex: 2, maxWidth: 800, margin: "0 auto", padding: "120px 40px 80px", textAlign: "center" }}>
-          <div style={{ animation: "heroIn 1s ease 1.5s both" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.15)", border: "1px solid rgba(232,106,42,0.3)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28, backdropFilter: "blur(8px)" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E86A2A", display: "inline-block" }} />
-              AI Appointment Setter
+        <div style={{ position: "relative", zIndex: 2, maxWidth: 1200, width: "100%", margin: "0 auto", padding: "140px 60px 100px" }}>
+          <div style={{ maxWidth: 580 }}>
+            <div style={{ animation: "heroIn 1s ease 1.5s both" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.15)", border: "1px solid rgba(232,106,42,0.3)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28, backdropFilter: "blur(8px)" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E86A2A", display: "inline-block" }} />
+                AI Appointment Setter
+              </div>
             </div>
-          </div>
-          <h1 className="wp-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 1.2s ease 2s both", textShadow: "0 2px 40px rgba(0,0,0,0.5)" }}>
-            <ScrambleText text="STOP CHASING LEADS." delay={2400} />
-            <br />
-            <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={3400} /></span>
-          </h1>
-          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 20px", animation: "heroIn 1s ease 4.5s both", textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
-            Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
-          </p>
-          <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 560, margin: "0 auto 40px", animation: "heroIn 1s ease 5.5s both", lineHeight: 1.7, fontWeight: 600 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.15)", border: "1px solid rgba(0,122,255,0.3)", borderRadius: 20, padding: "4px 14px", fontSize: 14, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle", backdropFilter: "blur(8px)" }}>🔵 iMessage</span>
-            texts. No A2P registration. No carrier filtering. <span style={{ color: "#E86A2A" }}>Your leads actually hear from you first.</span>
-          </p>
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 1s ease 6.5s both" }}>
-            <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
-            <Link href="/book-demo" className="wp-ghost" style={{ backdropFilter: "blur(8px)" }}>Book a Demo</Link>
+            <h1 className="wp-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 1.2s ease 2s both", textShadow: "0 4px 60px rgba(0,0,0,0.8)" }}>
+              <ScrambleText text="STOP CHASING LEADS." delay={2400} />
+              <br />
+              <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={3400} /></span>
+            </h1>
+            <p style={{ fontSize: 17, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, maxWidth: 500, margin: "0 0 20px", animation: "heroIn 1s ease 4.5s both", textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
+              Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
+            </p>
+            <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 500, margin: "0 0 40px", animation: "heroIn 1s ease 5.5s both", lineHeight: 1.7, fontWeight: 600 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.15)", border: "1px solid rgba(0,122,255,0.3)", borderRadius: 20, padding: "4px 14px", fontSize: 14, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle", backdropFilter: "blur(8px)" }}>🔵 iMessage</span>
+              texts. No A2P registration. No carrier filtering. <span style={{ color: "#E86A2A" }}>Your leads actually hear from you first.</span>
+            </p>
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", animation: "heroIn 1s ease 6.5s both" }}>
+              <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
+              <Link href="/book-demo" className="wp-ghost" style={{ backdropFilter: "blur(8px)" }}>Book a Demo</Link>
+            </div>
           </div>
         </div>
       </div>
