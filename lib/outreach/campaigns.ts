@@ -200,9 +200,14 @@ export async function getCampaignTemplate(
 
   let { subject, body } = rows[0] as { subject: string; body: string };
 
-  // Variable substitution
+  // Variable substitution — rotate intros when no real first name
+  const INTROS = ["Hey there", "Hi", "Hey", "Quick question"];
+  const contactId = (contact.id as string) || "";
+  let hash = 0;
+  for (let i = 0; i < contactId.length; i++) { hash = ((hash << 5) - hash) + contactId.charCodeAt(i); hash |= 0; }
+  const firstName = (contact.first_name as string) || INTROS[Math.abs(hash) % INTROS.length];
   const vars: Record<string, string> = {
-    "{{firstName}}": (contact.first_name as string) || "there",
+    "{{firstName}}": firstName,
     "{{lastName}}": (contact.last_name as string) || "",
     "{{company}}": (contact.company as string) || "your company",
     "{{state}}": (contact.state as string) || "",

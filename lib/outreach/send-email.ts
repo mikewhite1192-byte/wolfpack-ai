@@ -6,6 +6,18 @@ const sql = neon(process.env.DATABASE_URL!);
 
 const SIGNATURE = "\nMike, The Wolf Pack AI";
 
+// Rotating intros when we don't have a real first name
+const INTROS = ["Hey there", "Hi", "Hey", "Quick question"];
+function getIntro(contactId: string): string {
+  // Use contact ID to deterministically pick an intro (same contact always gets same intro)
+  let hash = 0;
+  for (let i = 0; i < contactId.length; i++) {
+    hash = ((hash << 5) - hash) + contactId.charCodeAt(i);
+    hash |= 0;
+  }
+  return INTROS[Math.abs(hash) % INTROS.length];
+}
+
 // Send a cold email via SMTP from a warmup address (plain text, no HTML)
 export async function sendColdEmail(
   fromAddress: WarmupAddress,
@@ -124,9 +136,12 @@ export async function getTemplate(step: number, contact: Record<string, unknown>
     return parts.length >= 2 ? parts[parts.length - 2] || "" : "";
   })();
   const reviewCount = String((contact.review_count as number) || "");
+  const contactId = (contact.id as string) || "";
+  const firstName = (contact.first_name as string) || "";
+  const intro = firstName || getIntro(contactId);
   const vars: Record<string, string> = {
-    "{{firstName}}": (contact.first_name as string) || "there",
-    "{{first_name}}": (contact.first_name as string) || "there",
+    "{{firstName}}": intro,
+    "{{first_name}}": intro,
     "{{lastName}}": (contact.last_name as string) || "",
     "{{company}}": (contact.company as string) || "your business",
     "{{business_name}}": (contact.company as string) || "your business",
@@ -147,7 +162,8 @@ export async function getTemplate(step: number, contact: Record<string, unknown>
 
 // 4-touch plain text sequence — no links, no HTML, short and conversational
 function getDefaultTemplate(step: number, contact: Record<string, unknown>): { subject: string; body: string } {
-  const firstName = (contact.first_name as string) || "there";
+  const contactId = (contact.id as string) || "";
+  const firstName = (contact.first_name as string) || getIntro(contactId);
 
   const templates: Record<number, { subject: string; body: string }> = {
     // Email 1 (Day 1) — Main hook

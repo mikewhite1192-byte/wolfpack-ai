@@ -360,13 +360,10 @@ export async function getScraperStats(range?: string) {
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
-function extractFirstName(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2 && parts[0].length > 1 && parts[0][0] === parts[0][0].toUpperCase()) {
-    const businessWords = ["insurance", "agency", "group", "inc", "llc", "corp", "company", "services", "associates", "the"];
-    if (businessWords.some(w => parts[0].toLowerCase() === w)) return "";
-    return parts[0];
-  }
+function extractFirstName(_name: string): string {
+  // Don't extract first names from business names — they're almost never real person names
+  // from Google Maps data (e.g. "Apex Roofing" -> "Apex" is not a person)
+  // Templates will use rotating intros instead of fake first names
   return "";
 }
 
