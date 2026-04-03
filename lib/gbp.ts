@@ -632,7 +632,7 @@ export async function processReviewNudges(): Promise<{ sent: number; completed: 
     const messages: Record<number, string> = {
       0: `Hey ${firstName}, how's the new site treating you? If you're happy with how ${businessName} looks online, would you mind leaving us a quick Google review? It really helps. ${reviewLink}`,
       1: `Hey ${firstName}, just checking in. If you've got 30 seconds, a Google review would mean a lot for ${businessName}. ${reviewLink}`,
-      2: `Last ask from me ${firstName}. If ${businessName}'s site has been bringing in calls, a quick review would help us keep helping contractors like you. ${reviewLink}`,
+      2: `Hey ${firstName}, honest reviews from real clients like you are the biggest thing that helps us grow. If you've got a sec it would truly mean a lot. ${reviewLink}`,
     };
 
     const msg = messages[count];
