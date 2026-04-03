@@ -498,47 +498,78 @@ export default function Home() {
           </h2>
           <p style={{ fontSize: 14, color: "rgba(232,230,227,0.3)" }}>No contracts. Cancel anytime. Set up in 10 minutes.</p>
         </div>
-        <div className="wp-price-grid" style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
-          {[
-            { name: "WOLF PACK AI", price: "$97", period: "/mo", desc: "Everything you need. Blue texts, AI agent, CRM. One price.", featured: true, badge: "ALL-IN-ONE", plan: "pro", features: ["AI Appointment Setter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Self-Learning AI", "CSV Import", "Analytics"], cta: "Get Started" },
-            { name: "GBP MANAGEMENT", price: "$49", period: "/mo", desc: "Your Google Business Profile on autopilot. More visibility, more calls.", featured: false, badge: "ADD-ON", plan: null, features: ["Weekly Auto Posts to Your Listing", "AI Review Replies (Your Voice)", "Negative Review Alerts via iMessage", "Monthly Performance Report (Texted)", "Search Impressions + Clicks Tracking", "Phone Call + Direction Tracking", "Top Search Terms Report", "Photo Uploads + Management", "Business Info Updates", "Hours + Service Area Management", "3-Week Review Request Sequence", "Competitor-Level GBP Presence"], cta: "Add to Plan" },
-            { name: "AGENCY", price: "Custom", period: "", desc: "For agencies managing multiple clients.", featured: false, plan: null, features: ["Everything in Wolf Pack AI", "GBP Management Included", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"], cta: "Contact Us" },
-          ].map((p, i) => (
-            <div key={i} className={`wp-price-card ${p.featured ? "featured" : ""}`} style={{ flex: 1, minWidth: 260, maxWidth: 320, position: "relative" }}>
-              {p.badge && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#E86A2A", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5 }}>{p.badge}</div>}
-              <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>{p.name}</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, color: "#e8eaf0" }}>{p.price}<span style={{ fontSize: 15, color: "rgba(232,230,227,0.3)", fontFamily: "Inter, sans-serif" }}>{p.period}</span></div>
-              <p style={{ fontSize: 13, color: "rgba(232,230,227,0.35)", margin: "8px 0 24px" }}>{p.desc}</p>
-              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px" }}>
-                {p.features.map((f, j) => (
-                  <li key={j} style={{ fontSize: 13, color: "rgba(232,230,227,0.5)", padding: "5px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#2ecc71", fontWeight: 700, fontSize: 11 }}>✓</span>{f}
-                  </li>
-                ))}
-              </ul>
-              {p.plan ? (
+        {/* Main plan — full width on top */}
+        <div style={{ maxWidth: 680, margin: "0 auto 20px" }}>
+          <div className="wp-price-card featured" style={{ position: "relative" }}>
+            <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#E86A2A", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5 }}>ALL-IN-ONE</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 24 }}>
+              <div style={{ flex: 1, minWidth: 240 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>WOLF PACK AI</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 56, color: "#e8eaf0", lineHeight: 1 }}>$97<span style={{ fontSize: 15, color: "rgba(232,230,227,0.3)", fontFamily: "Inter, sans-serif" }}>/mo</span></div>
+                <p style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", margin: "12px 0 20px" }}>Everything you need. Blue texts, AI agent, CRM. One price.</p>
                 <button
                   onClick={async () => {
                     const res = await fetch("/api/stripe/checkout", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ plan: p.plan }),
+                      body: JSON.stringify({ plan: "pro" }),
                     });
                     const data = await res.json();
                     if (data.url) window.location.href = data.url;
                   }}
-                  className={p.featured ? "wp-cta" : "wp-ghost"}
+                  className="wp-cta"
                   style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex", fontFamily: "inherit", fontSize: "inherit" }}
                 >
-                  {p.cta}
+                  Get Started
                 </button>
-              ) : (
-                <Link href="/book-demo" className="wp-ghost" style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
-                  {p.cta}
-                </Link>
-              )}
+              </div>
+              <div style={{ flex: 1, minWidth: 240 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                  {["AI Appointment Setter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Self-Learning AI", "CSV Import", "Analytics"].map((f, j) => (
+                    <div key={j} style={{ fontSize: 13, color: "rgba(232,230,227,0.5)", padding: "5px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "#2ecc71", fontWeight: 700, fontSize: 11 }}>✓</span>{f}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          ))}
+          </div>
+        </div>
+
+        {/* Bottom row — GBP + Agency side by side */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 680, margin: "0 auto" }}>
+          <div className="wp-price-card" style={{ position: "relative" }}>
+            <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "rgba(232,106,42,0.2)", color: "#E86A2A", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5, border: "1px solid rgba(232,106,42,0.3)" }}>ADD-ON</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>GBP MANAGEMENT</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: "#e8eaf0" }}>$49<span style={{ fontSize: 15, color: "rgba(232,230,227,0.3)", fontFamily: "Inter, sans-serif" }}>/mo</span></div>
+            <p style={{ fontSize: 13, color: "rgba(232,230,227,0.35)", margin: "8px 0 20px" }}>Your Google Business Profile on autopilot. More visibility, more calls.</p>
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px" }}>
+              {["Weekly Auto Posts", "AI Review Replies", "Negative Review Alerts", "Monthly Performance Report", "Search + Maps Tracking", "Call + Direction Tracking", "Top Search Terms", "Photo Management", "Business Info Updates", "Service Area Management", "Review Request Sequence", "Competitor-Level Presence"].map((f, j) => (
+                <li key={j} style={{ fontSize: 12, color: "rgba(232,230,227,0.5)", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#2ecc71", fontWeight: 700, fontSize: 10 }}>✓</span>{f}
+                </li>
+              ))}
+            </ul>
+            <Link href="/book-demo" className="wp-ghost" style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
+              Add to Plan
+            </Link>
+          </div>
+
+          <div className="wp-price-card" style={{ position: "relative" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>AGENCY</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: "#e8eaf0" }}>Custom</div>
+            <p style={{ fontSize: 13, color: "rgba(232,230,227,0.35)", margin: "8px 0 20px" }}>For agencies managing multiple clients.</p>
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px" }}>
+              {["Everything in Wolf Pack AI", "GBP Management Included", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"].map((f, j) => (
+                <li key={j} style={{ fontSize: 12, color: "rgba(232,230,227,0.5)", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#2ecc71", fontWeight: 700, fontSize: 10 }}>✓</span>{f}
+                </li>
+              ))}
+            </ul>
+            <Link href="/book-demo" className="wp-ghost" style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
+              Contact Us
+            </Link>
+          </div>
         </div>
       </div>
 
