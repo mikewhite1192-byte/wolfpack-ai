@@ -15,6 +15,15 @@ import {
   getScraperStats,
 } from "@/lib/outreach/google-maps-scraper";
 
+import { neon } from "@neondatabase/serverless";
+const logSql = neon(process.env.DATABASE_URL!);
+
+async function logScrapeActivity(data: { configName?: string; query?: string; phase: string; businessesFound?: number; businessesStored?: number; emailsFound?: number; emailsVerified?: number; contactsAdded?: number; error?: string }) {
+  try {
+    await logSql`INSERT INTO scraper_log (config_name, query, phase, businesses_found, businesses_stored, emails_found, emails_verified, contacts_added, error) VALUES (${data.configName || null}, ${data.query || null}, ${data.phase}, ${data.businessesFound || 0}, ${data.businessesStored || 0}, ${data.emailsFound || 0}, ${data.emailsVerified || 0}, ${data.contactsAdded || 0}, ${data.error || null})`;
+  } catch (e) { console.error("[scraper-log] Error logging:", e); }
+}
+
 // GET /api/outreach/scrape-maps — Vercel cron handler
 // Runs the 3-phase pipeline in rotation:
 //   ?phase=scrape  → Phase 1: scrape Google Maps (store businesses)
@@ -34,11 +43,13 @@ export async function GET(req: NextRequest) {
     if (phase === "emails") {
       const batch = parseInt(url.searchParams.get("batch") || "3");
       const result = await findEmailsPhase(batch);
+      await logScrapeActivity({ phase: "emails", emailsFound: result.found });
       return NextResponse.json(result);
     }
     if (phase === "verify") {
       const batch = parseInt(url.searchParams.get("batch") || "5");
       const result = await verifyAndAddPhase(batch);
+      await logScrapeActivity({ phase: "verify", emailsVerified: result.verified, contactsAdded: result.added });
       return NextResponse.json(result);
     }
     if (phase === "status") {
@@ -124,6 +135,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // ── Get scraper activity log ──
+    if (action === "get-log") {
+      const limit = body.limit || 50;
+      const logs = await logSql`SELECT * FROM scraper_log ORDER BY created_at DESC LIMIT ${limit}`;
+      return NextResponse.json({ logs });
+    }
+
     // ── Get status ──
     if (action === "status") {
       const configs = await getScraperConfigs();
@@ -167,6 +185,8 @@ async function runScrapePhase(configId?: string) {
     maxRating: config.max_rating,
     categoryFilter: config.category_filter,
   });
+
+  await logScrapeActivity({ configName: config.name, query: config.query, phase: "scrape", businessesStored: stored });
 
   return NextResponse.json({
     phase: "scrape",

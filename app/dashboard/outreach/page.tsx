@@ -97,6 +97,9 @@ export default function OutreachPage() {
   const [rampOpen, setRampOpen] = useState(false);
   const [statsRange, setStatsRange] = useState<"today" | "7d" | "30d" | "90d">("7d");
   const [contactCampaignFilter, setContactCampaignFilter] = useState<string>("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [scraperLog, setScraperLog] = useState<any[]>([]);
+  const [logOpen, setLogOpen] = useState(false);
   const [healthCampaignFilter, setHealthCampaignFilter] = useState<string>("");
   const [emailCampaignFilter, setEmailCampaignFilter] = useState<string>("");
   const [scraperDateFilter, setScraperDateFilter] = useState<"today" | "7d" | "30d" | "all">("all");
@@ -1462,7 +1465,7 @@ export default function OutreachPage() {
                         <span>Completed: {cStats.completed || "0"}</span>
                         <span>Invalid: {cStats.invalid || "0"}</span>
                         <span>Unsubscribed: {cStats.unsubscribed || "0"}</span>
-                        <span style={{ color: T.green }}>Scraping {scraperConfigs.filter((sc: Record<string, unknown>) => sc.campaign_id === c.id && sc.enabled).reduce((sum: number, sc: Record<string, unknown>) => sum + ((sc.daily_count as number) || 0), 0)} contacts/day ({scraperConfigs.filter((sc: Record<string, unknown>) => sc.campaign_id === c.id && sc.enabled).length} scrapers)</span>
+                        <span style={{ color: T.green }}>{scraperConfigs.filter((sc: Record<string, unknown>) => sc.campaign_id === c.id && sc.enabled).length} scrapers linked</span>
                       </div>
 
                       {/* Quick actions */}
@@ -1957,6 +1960,51 @@ export default function OutreachPage() {
                   </button>
                   <button className="out-btn-ghost" onClick={exportCSV} style={{ fontSize: 12 }}>Export All CSV</button>
                 </div>
+              </div>
+
+              {/* Activity Log */}
+              <div className="out-card" style={{ marginTop: 20 }}>
+                <div onClick={() => { setLogOpen(!logOpen); if (!logOpen && scraperLog.length === 0) { fetch("/api/outreach/scrape-maps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "get-log", limit: 100 }) }).then(r => r.json()).then(d => setScraperLog(d.logs || [])); } }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+                  <div className="out-label" style={{ marginBottom: 0 }}>Activity Log</div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button className="out-btn-ghost" style={{ fontSize: 11, padding: "4px 10px" }} onClick={e => { e.stopPropagation(); fetch("/api/outreach/scrape-maps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "get-log", limit: 100 }) }).then(r => r.json()).then(d => setScraperLog(d.logs || [])); }}>Refresh</button>
+                    <span style={{ color: T.orange, fontSize: 16, fontWeight: 300, transition: "transform 0.3s", transform: logOpen ? "rotate(45deg)" : "rotate(0)" }}>+</span>
+                  </div>
+                </div>
+                {logOpen && (
+                  <div style={{ marginTop: 14, maxHeight: 400, overflowY: "auto" }}>
+                    {scraperLog.length === 0 ? (
+                      <div style={{ color: T.muted, fontSize: 12, textAlign: "center", padding: 20 }}>No activity logged yet. Logs appear after scraper runs.</div>
+                    ) : (
+                      <table className="out-table">
+                        <thead>
+                          <tr>
+                            <th>Time</th>
+                            <th>Phase</th>
+                            <th>Config</th>
+                            <th>Stored</th>
+                            <th>Emails</th>
+                            <th>Verified</th>
+                            <th>Added</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {scraperLog.map((log: Record<string, unknown>, i: number) => (
+                            <tr key={i}>
+                              <td style={{ fontSize: 10, whiteSpace: "nowrap" }}>{log.created_at ? new Date(log.created_at as string).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}</td>
+                              <td><span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: (log.phase as string) === "scrape" ? `${T.orange}15` : (log.phase as string) === "emails" ? `${T.blue}15` : `${T.green}15`, color: (log.phase as string) === "scrape" ? T.orange : (log.phase as string) === "emails" ? T.blue : T.green, textTransform: "uppercase" }}>{log.phase as string}</span></td>
+                              <td style={{ fontSize: 11, maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{(log.config_name as string) || ""}</td>
+                              <td style={{ textAlign: "center" }}>{(log.businesses_stored as number) || ""}</td>
+                              <td style={{ textAlign: "center" }}>{(log.emails_found as number) || ""}</td>
+                              <td style={{ textAlign: "center" }}>{(log.emails_verified as number) || ""}</td>
+                              <td style={{ textAlign: "center" }}>{(log.contacts_added as number) || ""}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
               </div>
             </>
           )}
