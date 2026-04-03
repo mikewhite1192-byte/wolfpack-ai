@@ -110,7 +110,7 @@ async function run() {
 
     // Phase 2: Find emails
     console.log("[cron] Phase 2: emails");
-    var p = await db.query("SELECT id, name, website FROM scraped_businesses WHERE email_status = 'pending' AND website IS NOT NULL AND email_find_attempts < 2 ORDER BY created_at ASC LIMIT 150");
+    var p = await db.query("SELECT id, name, website FROM scraped_businesses WHERE email_status = 'pending' AND website IS NOT NULL AND email_find_attempts < 2 ORDER BY created_at ASC LIMIT 400");
     var found = 0;
     for (var k = 0; k < p.rows.length; k++) {
       var biz = p.rows[k];
