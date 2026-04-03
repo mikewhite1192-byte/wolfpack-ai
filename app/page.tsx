@@ -370,28 +370,47 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <div className="wp-hero-section" style={{ maxWidth: 900, margin: "0 auto", padding: "100px 40px 60px", textAlign: "center" }}>
-        <div style={{ animation: "heroIn 0.6s ease 0.2s both" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.1)", border: "1px solid rgba(232,106,42,0.25)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E86A2A", display: "inline-block" }} />
-            AI Appointment Setter
+      <div className="wp-hero-section" style={{ maxWidth: 1000, margin: "0 auto", padding: "100px 40px 60px" }}>
+        <div className="wp-hero-grid" style={{ display: "flex", alignItems: "center", gap: 48 }}>
+          {/* Left side — text */}
+          <div style={{ flex: 1, minWidth: 320 }}>
+            <div style={{ animation: "heroIn 0.6s ease 0.2s both" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.1)", border: "1px solid rgba(232,106,42,0.25)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E86A2A", display: "inline-block" }} />
+                AI Appointment Setter
+              </div>
+            </div>
+            <h1 className="wp-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 72, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both" }}>
+              <ScrambleText text="STOP CHASING LEADS." delay={600} />
+              <br />
+              <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
+            </h1>
+            <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 500, margin: "0 0 20px", animation: "heroIn 0.8s ease 2s both" }}>
+              Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
+            </p>
+            <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 500, margin: "0 0 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.7, fontWeight: 600 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.12)", border: "1px solid rgba(0,122,255,0.25)", borderRadius: 20, padding: "4px 14px", fontSize: 14, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle" }}>🔵 iMessage</span>
+              texts. No A2P registration. No carrier filtering. <span style={{ color: "#E86A2A" }}>Your leads actually hear from you first.</span>
+            </p>
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
+              <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
+              <Link href="/book-demo" className="wp-ghost">Book a Demo</Link>
+            </div>
           </div>
-        </div>
-        <h1 className="wp-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both" }}>
-          <ScrambleText text="STOP CHASING LEADS." delay={600} />
-          <br />
-          <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
-        </h1>
-        <p style={{ fontSize: 17, color: "rgba(232,230,227,0.45)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both" }}>
-          Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
-        </p>
-        <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 560, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.7, fontWeight: 600 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.12)", border: "1px solid rgba(0,122,255,0.25)", borderRadius: 20, padding: "4px 14px", fontSize: 14, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle" }}>🔵 iMessage</span>
-          texts. No A2P registration. No carrier filtering. <span style={{ color: "#E86A2A" }}>Your leads actually hear from you first.</span>
-        </p>
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
-          <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
-          <Link href="/book-demo" className="wp-ghost">Book a Demo</Link>
+          {/* Right side — wolf hero image */}
+          <div style={{ flex: 1, minWidth: 300, animation: "heroIn 1.2s ease 0.6s both" }}>
+            <img
+              src="/images/hero-wolf.png"
+              alt="Wolf Pack AI"
+              style={{
+                width: "100%",
+                maxWidth: 480,
+                borderRadius: 16,
+                display: "block",
+                margin: "0 auto",
+              }}
+            />
+          </div>
         </div>
       </div>
 
