@@ -302,25 +302,30 @@ export default function Home() {
   const [demoOpen, setDemoOpen] = useState(false);
 
   return (
-    <div style={{ background: "#0a0a0a", color: "#e8eaf0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden" }}>
+    <div style={{ background: "#0a0a0a", color: "#e8eaf0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden", position: "relative" }}>
+      {/* Grain texture overlay */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.03, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px" }} />
+      <div style={{ position: "relative", zIndex: 1 }}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes heroIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes heroZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
         @keyframes chatPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,106,42,0.4); } 50% { box-shadow: 0 0 0 12px rgba(232,106,42,0); } }
+        @keyframes ctaPulse { 0%, 100% { box-shadow: 0 4px 20px rgba(232,106,42,0.3); } 50% { box-shadow: 0 4px 32px rgba(232,106,42,0.5); } }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
-        .ticker-track { display: flex; gap: 32px; white-space: nowrap; animation: scroll 18s linear infinite; }
-        .ticker-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; flex-shrink: 0; color: rgba(232,230,227,0.5); }
+        .ticker-track { display: flex; gap: 40px; white-space: nowrap; animation: scroll 30s linear infinite; }
+        .ticker-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; flex-shrink: 0; color: rgba(232,230,227,0.7); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 18px; }
 
         .wp-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; max-width: 1100px; margin: 0 auto; }
         .wp-nav a { color: rgba(232,230,227,0.4); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; letter-spacing: 0.5px; }
         .wp-nav a:hover { color: #e8eaf0; }
 
-        .wp-cta { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: #E86A2A; color: #fff; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 700; transition: all 0.3s; border: none; cursor: pointer; }
-        .wp-cta:hover { background: #ff7b3a; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,106,42,0.25); }
-        .wp-ghost { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: rgba(232,230,227,0.6); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.3s; cursor: pointer; }
-        .wp-ghost:hover { border-color: rgba(232,106,42,0.4); color: #E86A2A; }
+        .wp-cta { display: inline-flex; align-items: center; gap: 8px; padding: 16px 36px; background: #E86A2A; color: #fff; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 700; transition: all 0.3s; border: none; cursor: pointer; animation: ctaPulse 3s ease-in-out infinite; letter-spacing: 0.3px; }
+        .wp-cta:hover { background: #ff7b3a; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(232,106,42,0.35); animation: none; }
+        .wp-ghost { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(232,230,227,0.5); border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.3s; cursor: pointer; }
+        .wp-ghost:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
 
         .wp-outcome { padding: 40px; border-radius: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); transition: border-color 0.3s; }
         .wp-outcome:hover { border-color: rgba(232,106,42,0.15); }
@@ -433,15 +438,15 @@ export default function Home() {
       </div>
 
       {/* Stats Bar */}
-      <div className="wp-stats" style={{ display: "flex", gap: 60, justifyContent: "center", padding: "50px 40px", maxWidth: 700, margin: "0 auto" }}>
+      <div className="wp-stats" style={{ display: "flex", justifyContent: "center", maxWidth: 1000, margin: "0 auto", padding: "80px 40px" }}>
         {[
           { num: "3 SEC", label: "Response time" },
           { num: "24/7", label: "Never misses a lead" },
           { num: "10X", label: "More appointments booked" },
         ].map((s, i) => (
-          <div key={i} style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, color: "#E86A2A", letterSpacing: 1 }}>{s.num}</div>
-            <div style={{ fontSize: 12, color: "rgba(232,230,227,0.35)", marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
+          <div key={i} style={{ flex: 1, textAlign: "center", padding: "0 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 72, color: "#E86A2A", letterSpacing: 2, lineHeight: 1 }}>{s.num}</div>
+            <div style={{ fontSize: 13, color: "rgba(232,230,227,0.35)", marginTop: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 500 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -528,10 +533,10 @@ export default function Home() {
 
       {/* Pricing */}
       <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px" }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 8px", letterSpacing: 1 }}>
-            YOUR AI APPOINTMENT SETTER.<br />
-            <span style={{ color: "#E86A2A" }}>STARTING AT $97/MONTH.</span>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 100, color: "#E86A2A", lineHeight: 1, letterSpacing: 2, marginBottom: 8 }}>$97<span style={{ fontSize: 32, color: "rgba(232,230,227,0.3)", fontFamily: "Inter, sans-serif", fontWeight: 400 }}>/mo</span></div>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px", letterSpacing: 1, color: "rgba(232,230,227,0.8)" }}>
+            LESS THAN ONE MISSED APPOINTMENT.
           </h2>
           <p style={{ fontSize: 14, color: "rgba(232,230,227,0.3)" }}>No contracts. Cancel anytime. Set up in 10 minutes.</p>
         </div>
@@ -644,15 +649,39 @@ export default function Home() {
       <ChatWidget />
 
       {/* Footer */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "40px 40px 24px" }}>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(32px, 10vw, 160px)", letterSpacing: "clamp(2px, 0.5vw, 6px)", textAlign: "center", lineHeight: 0.9, marginBottom: 24, color: "rgba(255,255,255,0.06)", userSelect: "none" }}>
-          THE <span style={{ color: "rgba(232,106,42,0.12)" }}>WOLF</span> PACK
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "80px 40px 40px" }}>
+        {/* Closing CTA line */}
+        <div style={{ textAlign: "center", marginBottom: 60 }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, letterSpacing: 1, color: "rgba(232,230,227,0.6)", marginBottom: 16 }}>
+            YOUR COMPETITION ISN&apos;T WAITING.
+          </div>
+          <button onClick={() => setDemoOpen(true)} className="wp-cta" style={{ fontSize: 16, padding: "16px 40px" }}>See It Work On You →</button>
         </div>
+
+        {/* Big logo */}
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(32px, 10vw, 140px)", letterSpacing: "clamp(2px, 0.5vw, 6px)", textAlign: "center", lineHeight: 0.9, marginBottom: 32, color: "rgba(255,255,255,0.04)", userSelect: "none" }}>
+          THE <span style={{ color: "rgba(232,106,42,0.08)" }}>WOLF</span> PACK
+        </div>
+
+        {/* Nav links */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 24 }}>
+          {[
+            { label: "How It Works", href: "#how" },
+            { label: "Pricing", href: "#pricing" },
+            { label: "Book a Demo", href: "/book-demo" },
+            { label: "FAQ", href: "#faq" },
+          ].map(link => (
+            <Link key={link.label} href={link.href} style={{ color: "rgba(232,230,227,0.3)", textDecoration: "none", fontSize: 13, fontWeight: 500, transition: "color 0.2s" }}>{link.label}</Link>
+          ))}
+        </div>
+
+        {/* Legal */}
         <div style={{ display: "flex", justifyContent: "center", gap: 24, alignItems: "center" }}>
-          <Link href="/privacy" style={{ color: "rgba(232,230,227,0.25)", textDecoration: "none", fontSize: 12 }}>Privacy</Link>
-          <Link href="/terms" style={{ color: "rgba(232,230,227,0.25)", textDecoration: "none", fontSize: 12 }}>Terms</Link>
-          <span style={{ fontSize: 11, color: "rgba(232,230,227,0.15)" }}>© {new Date().getFullYear()}</span>
+          <Link href="/privacy" style={{ color: "rgba(232,230,227,0.2)", textDecoration: "none", fontSize: 11 }}>Privacy</Link>
+          <Link href="/terms" style={{ color: "rgba(232,230,227,0.2)", textDecoration: "none", fontSize: 11 }}>Terms</Link>
+          <span style={{ fontSize: 11, color: "rgba(232,230,227,0.12)" }}>© {new Date().getFullYear()} The Wolf Pack AI</span>
         </div>
+      </div>
       </div>
     </div>
   );
