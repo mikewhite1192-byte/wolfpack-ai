@@ -221,14 +221,19 @@ function ChatWidget() {
         onClick={() => setOpen(!open)}
         style={{
           position: "fixed", bottom: 24, right: 24, width: 56, height: 56,
-          borderRadius: "50%", background: "#E86A2A", border: "none", cursor: "pointer",
+          borderRadius: "50%", background: "#E86A2A", border: "2px solid rgba(255,255,255,0.1)", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 20px rgba(232,106,42,0.4)", zIndex: 9998,
-          fontSize: 24, color: "#fff", transition: "transform 0.2s",
-          transform: open ? "rotate(45deg)" : "none",
+          boxShadow: "0 4px 24px rgba(232,106,42,0.35)", zIndex: 9998,
+          color: "#fff", transition: "all 0.3s ease",
+          transform: open ? "rotate(45deg) scale(0.95)" : "none",
+          animation: open ? "none" : "chatPulse 2.5s ease-in-out infinite",
         }}
       >
-        {open ? "+" : "💬"}
+        {open ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        ) : (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        )}
       </button>
 
       {/* Chat window */}
@@ -302,6 +307,7 @@ export default function Home() {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes heroIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes heroZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
+        @keyframes chatPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,106,42,0.4); } 50% { box-shadow: 0 0 0 12px rgba(232,106,42,0); } }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
         .ticker-track { display: flex; gap: 32px; white-space: nowrap; animation: scroll 18s linear infinite; }
@@ -371,13 +377,13 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <div className="wp-hero-section" style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", overflow: "hidden" }}>
+      <div className="wp-hero-section" style={{ position: "relative", height: "92vh", minHeight: 600, maxHeight: 900, display: "flex", alignItems: "center", overflow: "hidden" }}>
         {/* Wolf image — pushed right, high contrast */}
         <div style={{
           position: "absolute", inset: 0, zIndex: 0,
           backgroundImage: "url(/images/hero-wolf.png)",
           backgroundSize: "cover",
-          backgroundPosition: "70% center",
+          backgroundPosition: "70% 35%",
           opacity: 0.7,
           filter: "contrast(1.3) brightness(0.9)",
           animation: "heroIn 2s ease both",
@@ -398,7 +404,7 @@ export default function Home() {
           background: "radial-gradient(ellipse at 70% 40%, transparent 30%, rgba(10,10,10,0.4) 100%)",
         }} />
 
-        <div style={{ position: "relative", zIndex: 2, maxWidth: 1200, width: "100%", margin: "0 auto", padding: "140px 60px 100px" }}>
+        <div style={{ position: "relative", zIndex: 2, maxWidth: 1200, width: "100%", margin: "0 auto", padding: "0 60px" }}>
           <div style={{ maxWidth: 580 }}>
             <div style={{ animation: "heroIn 1s ease 1.5s both" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.15)", border: "1px solid rgba(232,106,42,0.3)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28, backdropFilter: "blur(8px)" }}>
@@ -416,11 +422,11 @@ export default function Home() {
             </p>
             <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 500, margin: "0 0 40px", animation: "heroIn 1s ease 5.5s both", lineHeight: 1.7, fontWeight: 600 }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.15)", border: "1px solid rgba(0,122,255,0.3)", borderRadius: 20, padding: "4px 14px", fontSize: 14, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle", backdropFilter: "blur(8px)" }}>🔵 iMessage</span>
-              texts. No A2P registration. No carrier filtering. <span style={{ color: "#E86A2A" }}>Your leads actually hear from you first.</span>
+              texts. No A2P registration. No carrier filtering. <span style={{ color: "rgba(255,255,255,0.9)" }}>Your leads actually hear from you first.</span>
             </p>
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", animation: "heroIn 1s ease 6.5s both" }}>
               <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
-              <Link href="/book-demo" className="wp-ghost" style={{ backdropFilter: "blur(8px)" }}>Book a Demo</Link>
+              <Link href="/book-demo" className="wp-ghost" style={{ backdropFilter: "blur(8px)", borderColor: "rgba(255,255,255,0.3)", color: "#fff" }}>Book a Demo</Link>
             </div>
           </div>
         </div>
