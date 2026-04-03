@@ -276,6 +276,10 @@ export async function verifyAndAddPhase(batchSize: number = 5): Promise<{ verifi
       firstName: extractFirstName(biz.name as string),
       company: biz.name as string,
       state: extractState(biz.address as string || "") || "",
+      city: extractCity(biz.address as string || ""),
+      reviewCount: (biz.review_count as number) || undefined,
+      niche: (biz.category as string) || undefined,
+      address: (biz.address as string) || undefined,
     }));
 
     const result = await addToSequence(contacts, undefined, campaignId || undefined);
@@ -370,4 +374,15 @@ function extractState(address: string): string {
   if (!address) return "";
   const match = address.match(/\b([A-Z]{2})\b\s*\d{5}/);
   return match?.[1] || "";
+}
+
+function extractCity(address: string): string {
+  if (!address) return "";
+  const parts = address.split(",").map(s => s.trim());
+  if (parts.length >= 2) {
+    // City is usually the second to last part (before "STATE ZIP")
+    const cityPart = parts[parts.length - 2];
+    return cityPart || "";
+  }
+  return "";
 }

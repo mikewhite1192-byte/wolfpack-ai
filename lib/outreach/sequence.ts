@@ -21,6 +21,10 @@ export async function addToSequence(contacts: {
   company?: string;
   state?: string;
   licenseNumber?: string;
+  city?: string;
+  reviewCount?: number;
+  niche?: string;
+  address?: string;
 }[], assignedSender?: string, campaignId?: string): Promise<{ added: number; skipped: number }> {
   let added = 0;
   let skipped = 0;
@@ -35,8 +39,8 @@ export async function addToSequence(contacts: {
     if (existing.length > 0) { skipped++; continue; }
 
     await sql`
-      INSERT INTO outreach_contacts (email, first_name, last_name, company, state, license_number, sequence_status, sequence_step, next_email_at, assigned_sender, campaign_id)
-      VALUES (${email}, ${c.firstName || null}, ${c.lastName || null}, ${c.company || null}, ${c.state || null}, ${c.licenseNumber || null}, 'active', 1, NOW(), ${assignedSender || null}, ${campaignId || null})
+      INSERT INTO outreach_contacts (email, first_name, last_name, company, state, license_number, sequence_status, sequence_step, next_email_at, assigned_sender, campaign_id, city, review_count, niche, address)
+      VALUES (${email}, ${c.firstName || null}, ${c.lastName || null}, ${c.company || null}, ${c.state || null}, ${c.licenseNumber || null}, 'active', 1, NOW(), ${assignedSender || null}, ${campaignId || null}, ${c.city || null}, ${c.reviewCount || null}, ${c.niche || null}, ${c.address || null})
     `;
     added++;
   }

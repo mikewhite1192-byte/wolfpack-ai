@@ -122,7 +122,18 @@ async function run() {
       }
     }
 
-    console.log(`\n[cron] Done! ${totalStored} scraped, ${emailsFound} emails found`);
+    // Phase 3: Trigger verify on Vercel (processes found emails into outreach sequence)
+    console.log("[cron] Phase 3: triggering verify...");
+    for (var v = 0; v < 5; v++) {
+      try {
+        var vr = await fetch("https://thewolfpack.ai/api/outreach/scrape-maps?phase=verify&batch=10", { signal: AbortSignal.timeout(30000) });
+        var vd = await vr.json();
+        console.log("[cron] Verify batch " + (v+1) + ": " + (vd.verified || 0) + " verified, " + (vd.added || 0) + " added");
+        if ((vd.verified || 0) === 0) break;
+      } catch(e) { console.log("[cron] Verify error: " + e.message); break; }
+    }
+
+    console.log("\n[cron] Done! " + totalStored + " scraped, " + emailsFound + " emails found");
   } finally {
     await db.end();
   }

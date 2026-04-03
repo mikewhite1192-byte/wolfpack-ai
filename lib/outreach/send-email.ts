@@ -118,11 +118,23 @@ export async function getTemplate(step: number, contact: Record<string, unknown>
   let { subject, body } = templates[0] as { subject: string; body: string };
 
   // Variable substitution
+  const city = (contact.city as string) || (() => {
+    const addr = (contact.address as string) || "";
+    const parts = addr.split(",").map((s: string) => s.trim());
+    return parts.length >= 2 ? parts[parts.length - 2] || "" : "";
+  })();
+  const reviewCount = String((contact.review_count as number) || "");
   const vars: Record<string, string> = {
     "{{firstName}}": (contact.first_name as string) || "there",
+    "{{first_name}}": (contact.first_name as string) || "there",
     "{{lastName}}": (contact.last_name as string) || "",
-    "{{company}}": (contact.company as string) || "your agency",
+    "{{company}}": (contact.company as string) || "your business",
+    "{{business_name}}": (contact.company as string) || "your business",
     "{{state}}": (contact.state as string) || "",
+    "{{city}}": city || "your area",
+    "{{review_count}}": reviewCount,
+    "{{contractor_type}}": (contact.niche as string) || "contractor",
+    "{{niche}}": (contact.niche as string) || "contractor",
   };
 
   for (const [key, val] of Object.entries(vars)) {
