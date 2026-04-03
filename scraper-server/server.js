@@ -122,9 +122,27 @@ async function isBlocked(page) {
 }
 
 // ── Extract Business Data ───────────────────────────────────────────
+const JUNK_NAMES = ["results", "google maps", "map", "search", "directions", ""];
+
 async function extractBiz(page) {
   const b = { name: "", phone: "", email: "", website: "", address: "", rating: null, reviewCount: null, category: "" };
-  try { b.name = await page.$eval("h1", el => el.textContent || "").catch(() => ""); } catch {}
+
+  // Wait for the business detail panel to load (h1 inside the detail pane, not the search page)
+  try {
+    await page.waitForSelector('h1:not([class*="searchbox"])', { timeout: 5000 });
+  } catch {
+    // Detail panel didn't load — skip this one
+    return b;
+  }
+
+  try { b.name = await page.$eval("h1", el => el.textContent?.trim() || ""); } catch {}
+
+  // Reject junk names that come from the search page itself
+  if (!b.name || JUNK_NAMES.includes(b.name.toLowerCase())) {
+    b.name = "";
+    return b;
+  }
+
   try {
     const l = await page.$eval('div[role="img"][aria-label*="stars"]', el => el.getAttribute("aria-label") || "");
     const m = l.match(/([\d.]+)/);
