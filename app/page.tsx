@@ -378,8 +378,8 @@ export default function Home() {
           backgroundImage: "url(/images/hero-wolf.png)",
           backgroundSize: "cover",
           backgroundPosition: "center top",
-          opacity: 0.5,
-          animation: "heroIn 2s ease both, heroZoom 20s ease-in-out infinite alternate",
+          opacity: 0.65,
+          animation: "heroIn 2s ease both, heroZoom 12s ease-in-out infinite alternate",
         }} />
         {/* Dark overlay so text is readable */}
         <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "linear-gradient(to bottom, rgba(10,10,10,0.3) 0%, rgba(10,10,10,0.55) 40%, rgba(10,10,10,0.92) 100%)" }} />
@@ -396,7 +396,7 @@ export default function Home() {
             <br />
             <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
           </h1>
-          <p style={{ fontSize: 17, color: "rgba(232,230,227,0.6)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both" }}>
+          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 20px", animation: "heroIn 0.8s ease 2s both", textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
             Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
           </p>
           <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 560, margin: "0 auto 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.7, fontWeight: 600 }}>
