@@ -176,6 +176,8 @@ export default function OutreachPage() {
   const [selectedReply, setSelectedReply] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
+  const [threadMessages, setThreadMessages] = useState<Array<{ direction: string; from: string; body: string; subject: string; sent_at: string }>>([]);
+  const [loadingThread, setLoadingThread] = useState(false);
 
   // Warmup addresses (with IDs for sender assignment)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -687,9 +689,31 @@ export default function OutreachPage() {
       body: JSON.stringify({ action: "reply", replyId, body: replyText }),
     });
     setReplyText("");
-    setSelectedReply(null);
     setReplying(false);
     loadInbox();
+    // Reload thread after sending
+    loadThread(replyId);
+  }
+
+  async function loadThread(replyId: string) {
+    setLoadingThread(true);
+    try {
+      const res = await fetch(`/api/outreach/inbox?thread=${replyId}`);
+      const data = await res.json();
+      setThreadMessages(data.thread || []);
+    } catch { setThreadMessages([]); }
+    setLoadingThread(false);
+  }
+
+  function openReply(replyId: string) {
+    if (selectedReply === replyId) {
+      setSelectedReply(null);
+      setThreadMessages([]);
+    } else {
+      setSelectedReply(replyId);
+      markAsRead(replyId);
+      loadThread(replyId);
+    }
   }
 
   const email = user?.primaryEmailAddress?.emailAddress || "";
@@ -2094,7 +2118,7 @@ export default function OutreachPage() {
                       borderColor: !r.is_read ? `${T.orange}30` : T.border,
                       background: !r.is_read ? "rgba(232,106,42,0.03)" : T.surface,
                     }}
-                    onClick={() => { markAsRead(r.id); setSelectedReply(selectedReply === r.id ? null : r.id); }}
+                    onClick={() => openReply(r.id)}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div style={{ flex: 1 }}>
@@ -2130,15 +2154,42 @@ export default function OutreachPage() {
                       </div>
                     </div>
 
-                    {/* Expanded view */}
+                    {/* Expanded view — full conversation thread */}
                     {selectedReply === r.id && (
                       <div style={{ marginTop: 14, borderTop: `1px solid ${T.border}`, paddingTop: 14 }}>
-                        <div style={{ fontSize: 13, color: T.text, whiteSpace: "pre-wrap", lineHeight: 1.6, maxHeight: 300, overflow: "auto" }}>
-                          {r.body}
-                        </div>
+                        {/* Thread */}
+                        {loadingThread ? (
+                          <div style={{ color: T.muted, fontSize: 12, textAlign: "center", padding: 20 }}>Loading conversation...</div>
+                        ) : threadMessages.length > 0 ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 500, overflowY: "auto", marginBottom: 14 }}>
+                            {threadMessages.map((msg, idx) => (
+                              <div key={idx} style={{
+                                padding: 12,
+                                borderRadius: 8,
+                                background: msg.direction === "outbound" ? "rgba(232,106,42,0.06)" : "rgba(255,255,255,0.03)",
+                                borderLeft: `3px solid ${msg.direction === "outbound" ? T.orange : T.blue}`,
+                              }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: msg.direction === "outbound" ? T.orange : T.blue }}>
+                                    {msg.direction === "outbound" ? `You (${msg.from})` : msg.from}
+                                  </span>
+                                  <span style={{ fontSize: 10, color: T.muted }}>
+                                    {new Date(msg.sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                                  </span>
+                                </div>
+                                {msg.subject && idx === 0 && <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 4 }}>{msg.subject}</div>}
+                                <div style={{ fontSize: 13, color: T.text, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{msg.body}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 13, color: T.text, whiteSpace: "pre-wrap", lineHeight: 1.6, maxHeight: 300, overflow: "auto", marginBottom: 14 }}>
+                            {r.body}
+                          </div>
+                        )}
 
                         {/* Reply box */}
-                        <div style={{ marginTop: 14 }}>
+                        <div>
                           <textarea
                             value={replyText}
                             onChange={e => setReplyText(e.target.value)}

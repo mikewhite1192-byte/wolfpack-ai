@@ -13,7 +13,15 @@ import {
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
+    const threadReplyId = url.searchParams.get("thread");
     const isPoll = url.searchParams.get("poll") === "true";
+
+    // Get full conversation thread for a reply
+    if (threadReplyId) {
+      const { getConversationThread } = await import("@/lib/outreach/campaign-inbox");
+      const thread = await getConversationThread(threadReplyId);
+      return NextResponse.json({ thread });
+    }
 
     if (isPoll) {
       const batchParam = url.searchParams.get("batch");
