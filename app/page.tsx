@@ -497,9 +497,11 @@ export default function Home() {
       </div>
 
       {/* Problem Section */}
-      <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 30%, #111 70%, #0e0e0e 100%)" }}>
+      <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 30%, #111 70%, #0e0e0e 100%)", overflow: "hidden" }}>
         {/* Section ambient glow */}
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "70%", height: "100%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.04) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(60px)" }} />
+        {/* Howling wolf silhouette */}
+        <img src="/Howling_wolf.png" alt="" style={{ position: "absolute", top: "50%", right: "-5%", transform: "translateY(-50%)", width: 500, height: "auto", opacity: 0.025, pointerEvents: "none", userSelect: "none" }} />
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "80px 40px 60px", textAlign: "center", position: "relative" }}>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1 }}>
           EVERY MINUTE YOU WAIT{" "}
@@ -526,9 +528,11 @@ export default function Home() {
       </div>
 
       {/* The Difference — emotional hook, comes first */}
-      <div style={{ position: "relative", background: "linear-gradient(180deg, #0e0e0e 0%, #0a0a0a 50%, #0a0a0a 100%)" }}>
+      <div style={{ position: "relative", background: "linear-gradient(180deg, #0e0e0e 0%, #0a0a0a 50%, #0a0a0a 100%)", overflow: "hidden" }}>
         {/* Section ambient glow */}
         <div style={{ position: "absolute", top: "20%", right: "0%", width: "50%", height: "60%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(0,122,255,0.03) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
+        {/* Wolf head silhouette */}
+        <img src="/Wolf_Head.png" alt="" style={{ position: "absolute", top: "50%", left: "-3%", transform: "translateY(-50%)", width: 380, height: "auto", opacity: 0.03, pointerEvents: "none", userSelect: "none" }} />
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px", position: "relative" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>The Difference</div>
@@ -761,8 +765,10 @@ export default function Home() {
       </div>
 
       {/* Pricing */}
-      <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 20%, #111 50%, #0e0e0e 80%, #0a0a0a 100%)" }}>
+      <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 20%, #111 50%, #0e0e0e 80%, #0a0a0a 100%)", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translateX(-50%)", width: "60%", height: "50%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.05) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
+        {/* Wolf prints silhouette */}
+        <img src="/Wolf_Prints.png" alt="" style={{ position: "absolute", bottom: "5%", right: "2%", width: 200, height: "auto", opacity: 0.025, pointerEvents: "none", userSelect: "none", transform: "rotate(-15deg)" }} />
       <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px", position: "relative" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>Pricing</div>
@@ -862,7 +868,9 @@ export default function Home() {
       </div>
 
       {/* Final CTA */}
-      <div style={{ padding: "60px 40px 80px", textAlign: "center", background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 50%, #0f0c0a 100%)" }}>
+      <div style={{ padding: "60px 40px 80px", textAlign: "center", background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 50%, #0f0c0a 100%)", position: "relative", overflow: "hidden" }}>
+        {/* Wolf pack silhouette */}
+        <img src="/Wolf_Pack.png" alt="" style={{ position: "absolute", bottom: "-10%", left: "50%", transform: "translateX(-50%)", width: 700, height: "auto", opacity: 0.02, pointerEvents: "none", userSelect: "none" }} />
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: "0 0 16px", letterSpacing: 1, lineHeight: 1.1 }}>
           STOP LOSING APPOINTMENTS TO<br />
           <span style={{ color: "#E86A2A" }}>WHOEVER RESPONDED FASTER</span>
