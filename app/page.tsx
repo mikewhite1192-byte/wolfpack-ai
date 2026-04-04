@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 
@@ -327,8 +328,23 @@ export default function Home() {
         .wp-ghost { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(232,230,227,0.5); border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.3s; cursor: pointer; }
         .wp-ghost:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
 
-        .wp-outcome { padding: 40px; border-radius: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); transition: border-color 0.3s; }
-        .wp-outcome:hover { border-color: rgba(232,106,42,0.15); }
+        .wp-outcome { padding: 36px; border-radius: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .wp-outcome::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(232,106,42,0.3), transparent); opacity: 0; transition: opacity 0.4s; }
+        .wp-outcome:hover { border-color: rgba(232,106,42,0.2); background: rgba(232,106,42,0.03); transform: translateY(-2px); }
+        .wp-outcome:hover::before { opacity: 1; }
+        .wp-outcome-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 20px; background: rgba(232,106,42,0.08); border: 1px solid rgba(232,106,42,0.15); }
+        .wp-step { flex: 1; min-width: 260; padding: 36px; border-radius: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); position: relative; transition: all 0.4s ease; }
+        .wp-step:hover { border-color: rgba(232,106,42,0.15); background: rgba(232,106,42,0.02); }
+        .wp-step-num { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: #E86A2A; line-height: 1; margin-bottom: 16px; opacity: 0.9; }
+        .wp-step-connector { display: flex; align-items: center; color: rgba(232,106,42,0.3); font-size: 24px; padding: 0 4px; }
+        .wp-proof-bar { max-width: 900px; margin: 0 auto; padding: 48px 40px; display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
+        .wp-proof-item { text-align: center; }
+        .wp-proof-num { font-family: 'Bebas Neue', sans-serif; font-size: 44px; color: #E86A2A; line-height: 1; }
+        .wp-proof-label { font-size: 12px; color: rgba(232,230,227,0.35); margin-top: 6px; letter-spacing: 0.5px; }
+        @media (max-width: 768px) {
+          .wp-step-connector { display: none !important; }
+          .wp-proof-bar { gap: 32px !important; padding: 32px 20px !important; }
+        }
 
         .wp-price-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 36px; transition: all 0.3s; }
         .wp-price-card:hover { border-color: rgba(232,106,42,0.2); }
@@ -490,41 +506,87 @@ export default function Home() {
       </div>
 
       {/* How It Works */}
-      <div id="how" style={{ maxWidth: 900, margin: "0 auto", padding: "60px 40px" }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 8px", letterSpacing: 1 }}>THREE STEPS. ONE FULL CALENDAR.</h2>
+      <div id="how" style={{ maxWidth: 960, margin: "0 auto", padding: "80px 40px 40px" }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>How It Works</div>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1.05 }}>
+            THREE STEPS. <span style={{ color: "#E86A2A" }}>ONE FULL CALENDAR.</span>
+          </h2>
+          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", maxWidth: 440, margin: "0 auto" }}>You don&#39;t learn software. You just get appointments.</p>
         </div>
-        <div className="wp-how-steps" style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+        <div className="wp-how-steps" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "stretch" }}>
           {[
-            { num: "01", title: "Lead Comes In", desc: "From ads, your website, referrals — doesn't matter. The AI picks it up instantly." },
-            { num: "02", title: "AI Sets The Appointment", desc: "Texts back in 3 seconds via iMessage. Qualifies. Handles objections. Books directly on your calendar." },
-            { num: "03", title: "You Just Show Up", desc: "Calendar invite sent. Google Meet link attached. You just show up and close." },
+            { num: "01", title: "Lead comes in", desc: "Ads, website, referral, Google — doesn't matter where. The AI picks it up before you even see the notification." },
+            { num: "02", title: "AI books the appointment", desc: "Texts back in 3 seconds via iMessage. Qualifies. Handles objections. Sends the calendar invite. Done." },
+            { num: "03", title: "You show up and close", desc: "Calendar invite with Google Meet link. The lead is warmed up, qualified, and expecting your call." },
           ].map((s, i) => (
-            <div key={i} style={{ flex: 1, minWidth: 240, padding: "32px", borderRadius: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: "#E86A2A", marginBottom: 12 }}>{s.num}</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#e8eaf0", marginBottom: 8 }}>{s.title}</div>
-              <div style={{ fontSize: 13, color: "rgba(232,230,227,0.4)", lineHeight: 1.6 }}>{s.desc}</div>
+            <React.Fragment key={i}>
+              <div className="wp-step">
+                <div className="wp-step-num">{s.num}</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#e8eaf0", marginBottom: 10 }}>{s.title}</div>
+                <div style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.7 }}>{s.desc}</div>
+              </div>
+              {i < 2 && <div className="wp-step-connector">&#8594;</div>}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Proof Bar */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", margin: "20px 0" }}>
+        <div className="wp-proof-bar">
+          {[
+            { num: "47", label: "Appointments booked in 30 days" },
+            { num: "3 SEC", label: "Average response time" },
+            { num: "11 DAYS", label: "Longest nurture to booking" },
+            { num: "$0", label: "Extra staff needed" },
+          ].map((p, i) => (
+            <div key={i} className="wp-proof-item">
+              <div className="wp-proof-num">{p.num}</div>
+              <div className="wp-proof-label">{p.label}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* Outcomes */}
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px" }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1 }}>WHAT CHANGES WHEN YOU TURN IT ON</h2>
-          <p style={{ fontSize: 14, color: "rgba(232,230,227,0.35)", maxWidth: 480, margin: "0 auto" }}>Not features. Appointments.</p>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px" }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>The Difference</div>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 14px", letterSpacing: 1, lineHeight: 1.05 }}>
+            THIS ISN&#39;T SOFTWARE. <span style={{ color: "#E86A2A" }}>IT&#39;S A CLOSER.</span>
+          </h2>
+          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", maxWidth: 520, margin: "0 auto", lineHeight: 1.6 }}>
+            You didn&#39;t start your business to sit in a CRM. Wolf Pack handles the grind so you handle the deals.
+          </p>
         </div>
         <div className="wp-outcomes-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           {[
-            { title: "Your calendar fills itself", desc: "The AI's only job is booking appointments. It texts, qualifies, handles objections, and sends the calendar invite. You just show up." },
-            { title: "Leads stop going cold", desc: "3 second response time every single time. 2am Sunday, middle of a closing, driving between appointments. The AI never misses." },
-            { title: "Blue texts get through", desc: "Your competitors send green SMS texts that get filtered. You send iMessages through Apple's network directly. No registration. No filtering. No competition." },
-            { title: "No lead gets forgotten", desc: "Day 1, 3, 7, 14. Every cold lead gets a follow up with a different angle every time. The AI came back on a lead 11 days later and booked them." },
+            {
+              icon: "📅",
+              title: "Your phone buzzes with booked appointments",
+              desc: "Not notifications to follow up. Not reminders you missed something. Actual confirmed appointments, already on your calendar, with qualified leads ready to talk.",
+            },
+            {
+              icon: "🌙",
+              title: "2am lead? Handled before you wake up",
+              desc: "Sunday night. Holiday weekend. Middle of a closing. Doesn't matter. The AI responds in 3 seconds, every single time. Your competitors respond Monday morning. You already booked it.",
+            },
+            {
+              icon: "🔵",
+              title: "Blue bubble. Not spam folder.",
+              desc: "Your competitors send green SMS texts that get filtered by carriers. You send real iMessages through Apple's network. No registration. No filtering. The message actually lands.",
+            },
+            {
+              icon: "🔁",
+              title: "The lead you forgot about? We didn't.",
+              desc: "Day 1, 3, 7, 14 — different angle every time. The AI came back on a lead 11 days later and booked them. That's revenue you would've lost.",
+            },
           ].map((o, i) => (
             <div key={i} className="wp-outcome">
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#e8eaf0", marginBottom: 10 }}>{o.title}</div>
-              <div style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.7 }}>{o.desc}</div>
+              <div className="wp-outcome-icon">{o.icon}</div>
+              <div style={{ fontSize: 19, fontWeight: 700, color: "#e8eaf0", marginBottom: 10, lineHeight: 1.3 }}>{o.title}</div>
+              <div style={{ fontSize: 14, color: "rgba(232,230,227,0.45)", lineHeight: 1.75 }}>{o.desc}</div>
             </div>
           ))}
         </div>
