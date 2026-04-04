@@ -305,7 +305,20 @@ export default function Home() {
   return (
     <div style={{ background: "#0a0a0a", color: "#e8eaf0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden", position: "relative" }}>
       {/* Grain texture overlay */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.03, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px" }} />
+
+      {/* Ambient gradient orbs — fixed, layered behind content */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {/* Top-left warm glow */}
+        <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "50%", height: "50%", borderRadius: "50%", background: "radial-gradient(circle, rgba(232,106,42,0.06) 0%, transparent 70%)", filter: "blur(80px)" }} />
+        {/* Center-right blue glow */}
+        <div style={{ position: "absolute", top: "30%", right: "-5%", width: "40%", height: "40%", borderRadius: "50%", background: "radial-gradient(circle, rgba(0,122,255,0.04) 0%, transparent 70%)", filter: "blur(80px)" }} />
+        {/* Bottom-center warm glow */}
+        <div style={{ position: "absolute", bottom: "5%", left: "30%", width: "45%", height: "35%", borderRadius: "50%", background: "radial-gradient(circle, rgba(232,106,42,0.04) 0%, transparent 70%)", filter: "blur(100px)" }} />
+      </div>
+
+      {/* Dot grid pattern — very subtle */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.025, backgroundImage: "radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
       <div style={{ position: "relative", zIndex: 1 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -483,7 +496,10 @@ export default function Home() {
       </div>
 
       {/* Problem Section */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "80px 40px 60px", textAlign: "center" }}>
+      <div style={{ position: "relative" }}>
+        {/* Section ambient glow */}
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "70%", height: "100%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.04) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(60px)" }} />
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "80px 40px 60px", textAlign: "center", position: "relative" }}>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1 }}>
           EVERY MINUTE YOU WAIT{" "}
           <span style={{ color: "#E86A2A" }}>YOUR LEAD IS TEXTING SOMEONE ELSE</span>
@@ -506,9 +522,13 @@ export default function Home() {
           </div>
         </div>
       </div>
+      </div>
 
       {/* The Difference — emotional hook, comes first */}
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px" }}>
+      <div style={{ position: "relative" }}>
+        {/* Section ambient glow */}
+        <div style={{ position: "absolute", top: "20%", right: "0%", width: "50%", height: "60%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(0,122,255,0.03) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px", position: "relative" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>The Difference</div>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 14px", letterSpacing: 1, lineHeight: 1.05 }}>
@@ -548,6 +568,7 @@ export default function Home() {
             </div>
           ))}
         </div>
+      </div>
       </div>
 
       {/* Proof Bar */}
@@ -739,7 +760,9 @@ export default function Home() {
       </div>
 
       {/* Pricing */}
-      <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px" }}>
+      <div style={{ position: "relative" }}>
+        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translateX(-50%)", width: "60%", height: "50%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.05) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
+      <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px", position: "relative" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>Pricing</div>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1.05 }}>
@@ -820,6 +843,7 @@ export default function Home() {
             </Link>
           </div>
         </div>
+      </div>
       </div>
 
       {/* FAQ */}
