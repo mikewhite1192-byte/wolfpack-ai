@@ -298,6 +298,225 @@ function ChatWidget() {
   );
 }
 
+// ── Animated Dashboard ─────────────────────────────────────────────────────
+const ALL_CONVERSATIONS = [
+  { name: "Marcus J.", msg: "Yeah Thursday at 2 works for me", time: "Just now", blue: true },
+  { name: "Sarah K.", msg: "What's the pricing for a full rewire?", time: "1m ago", blue: true },
+  { name: "David R.", msg: "Sounds good, send me the calendar link", time: "3m ago", blue: false },
+  { name: "Angela P.", msg: "Can you come out tomorrow morning?", time: "Just now", blue: true },
+  { name: "Tom W.", msg: "We need the whole house done ASAP", time: "2m ago", blue: true },
+  { name: "Jessica L.", msg: "Perfect, I'll be there at 10", time: "Just now", blue: false },
+  { name: "Brian M.", msg: "How soon can you start?", time: "1m ago", blue: true },
+  { name: "Kelly H.", msg: "That quote works for us. Let's book it", time: "Just now", blue: true },
+  { name: "Robert C.", msg: "My neighbor recommended you guys", time: "4m ago", blue: false },
+];
+
+const ALL_APPOINTMENTS = [
+  { name: "Marcus J.", time: "Thu 2:00 PM", status: "Confirmed" as const },
+  { name: "Lisa M.", time: "Fri 10:00 AM", status: "Confirmed" as const },
+  { name: "James W.", time: "Fri 3:30 PM", status: "Pending" as const },
+  { name: "Angela P.", time: "Mon 9:00 AM", status: "Confirmed" as const },
+  { name: "Tom W.", time: "Mon 1:30 PM", status: "Confirmed" as const },
+  { name: "Kelly H.", time: "Tue 11:00 AM", status: "Pending" as const },
+];
+
+function AnimatedDashboard() {
+  const [convIndex, setConvIndex] = useState(0);
+  const [apptIndex, setApptIndex] = useState(0);
+  const [stats, setStats] = useState({ appts: 0, convos: 0, pipeline: 0, response: 0 });
+  const [pipelineWidths, setPipelineWidths] = useState([0, 0, 0, 0, 0]);
+  const [isVisible, setIsVisible] = useState(false);
+  const dashRef = useRef<HTMLDivElement>(null);
+
+  // Intersection observer — start animations when visible
+  useEffect(() => {
+    const el = dashRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setIsVisible(true); obs.disconnect(); }
+    }, { threshold: 0.2 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Count up stats
+  useEffect(() => {
+    if (!isVisible) return;
+    const targets = { appts: 6, convos: 12, pipeline: 342, response: 3 };
+    const duration = 1500;
+    const steps = 30;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const progress = Math.min(step / steps, 1);
+      const ease = 1 - Math.pow(1 - progress, 3); // ease out cubic
+      setStats({
+        appts: Math.round(targets.appts * ease),
+        convos: Math.round(targets.convos * ease),
+        pipeline: Math.round(targets.pipeline * ease),
+        response: Math.round(targets.response * ease),
+      });
+      if (step >= steps) clearInterval(timer);
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [isVisible]);
+
+  // Animate pipeline bars
+  useEffect(() => {
+    if (!isVisible) return;
+    const targets = [85, 55, 45, 25, 35];
+    const timer = setTimeout(() => setPipelineWidths(targets), 300);
+    return () => clearTimeout(timer);
+  }, [isVisible]);
+
+  // Cycle conversations
+  useEffect(() => {
+    if (!isVisible) return;
+    const timer = setInterval(() => {
+      setConvIndex(prev => (prev + 1) % (ALL_CONVERSATIONS.length - 2));
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [isVisible]);
+
+  // Cycle appointments
+  useEffect(() => {
+    if (!isVisible) return;
+    const timer = setInterval(() => {
+      setApptIndex(prev => (prev + 1) % (ALL_APPOINTMENTS.length - 2));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [isVisible]);
+
+  const visibleConvos = ALL_CONVERSATIONS.slice(convIndex, convIndex + 3);
+  const visibleAppts = ALL_APPOINTMENTS.slice(apptIndex, apptIndex + 3);
+  const pipelineData = [
+    { stage: "New Lead", count: 8, color: "#007AFF" },
+    { stage: "Qualified", count: 5, color: "#E86A2A" },
+    { stage: "Appointment Set", count: 4, color: "#f5a623" },
+    { stage: "Proposal Sent", count: 2, color: "#9b59b6" },
+    { stage: "Won", count: 3, color: "#2ecc71" },
+  ];
+
+  return (
+    <div ref={dashRef} style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px 20px", perspective: 1200, position: "relative" }}>
+      <div className="wp-dash-wrap" style={{ transform: "rotateX(4deg) rotateY(-1deg)", transformOrigin: "center center", position: "relative" }}>
+        <div style={{ position: "absolute", inset: -40, background: "radial-gradient(ellipse at center, rgba(232,106,42,0.08) 0%, transparent 70%)", zIndex: 0, borderRadius: 40, filter: "blur(40px)" }} />
+        <div className="wp-dash" style={{
+          position: "relative", zIndex: 1, background: "rgba(17,17,17,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+          border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 0, overflow: "hidden",
+          boxShadow: "0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.06)",
+        }}>
+          {/* Title bar */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500, letterSpacing: 0.5 }}>Wolf Pack AI — Dashboard</div>
+            <div style={{ width: 50 }} />
+          </div>
+
+          <div style={{ display: "flex", minHeight: 340 }}>
+            {/* Sidebar */}
+            <div className="wp-dash-sidebar" style={{ width: 180, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "16px 12px", flexShrink: 0, background: "rgba(0,0,0,0.2)" }}>
+              {[
+                { icon: "📊", label: "Dashboard", active: true },
+                { icon: "💬", label: "Conversations", badge: stats.convos || undefined },
+                { icon: "📋", label: "Pipeline" },
+                { icon: "📅", label: "Calendar" },
+                { icon: "👥", label: "Contacts" },
+                { icon: "📧", label: "Email" },
+                { icon: "⚙️", label: "Settings" },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, marginBottom: 2, fontSize: 12, fontWeight: 500,
+                  background: item.active ? "rgba(232,106,42,0.12)" : "transparent",
+                  color: item.active ? "#E86A2A" : "rgba(255,255,255,0.35)",
+                }}>
+                  <span style={{ fontSize: 13 }}>{item.icon}</span>
+                  <span>{item.label}</span>
+                  {item.badge && (
+                    <span style={{ marginLeft: "auto", background: "#E86A2A", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8 }}>{item.badge}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Main content */}
+            <div style={{ flex: 1, padding: 20, overflow: "hidden" }}>
+              {/* Stats row */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+                {[
+                  { label: "Appointments Today", value: stats.appts.toString(), color: "#E86A2A" },
+                  { label: "Active Conversations", value: stats.convos.toString(), color: "#007AFF" },
+                  { label: "Pipeline Value", value: `$${(stats.pipeline / 10).toFixed(1)}k`, color: "#2ecc71" },
+                  { label: "Response Time", value: `${stats.response}s`, color: "#f5a623" },
+                ].map((stat, i) => (
+                  <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 }}>{stat.value}</div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {/* Live conversations — cycling */}
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 14 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Live Conversations</div>
+                  {visibleConvos.map((c, i) => (
+                    <div key={`${convIndex}-${i}`} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none", animation: "fadeUp 0.4s ease both", animationDelay: `${i * 0.08}s` }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: `rgba(232,106,42,${0.15 + i * 0.05})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#E86A2A", flexShrink: 0 }}>
+                        {c.name.charAt(0)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>{c.name}</span>
+                          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{c.time}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {c.blue && <span style={{ color: "#007AFF", marginRight: 4, fontSize: 8 }}>●</span>}
+                          {c.msg}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pipeline — animated bars */}
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 14 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Pipeline</div>
+                  {pipelineData.map((s, i) => (
+                    <div key={i} style={{ marginBottom: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{s.stage}</span>
+                        <span style={{ fontSize: 11, color: s.color, fontWeight: 700 }}>{s.count}</span>
+                      </div>
+                      <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 2, background: s.color, width: `${pipelineWidths[i]}%`, opacity: 0.6, transition: "width 1s cubic-bezier(0.22, 1, 0.36, 1)", transitionDelay: `${i * 0.15}s` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Appointment ticker — cycling */}
+              <div style={{ marginTop: 12, display: "flex", gap: 8, overflow: "hidden" }}>
+                {visibleAppts.map((a, i) => (
+                  <div key={`${apptIndex}-${i}`} style={{ flex: 1, background: "rgba(46,204,113,0.06)", border: "1px solid rgba(46,204,113,0.12)", borderRadius: 8, padding: "8px 12px", animation: "fadeUp 0.4s ease both", animationDelay: `${i * 0.1}s` }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{a.name}</div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{a.time} · <span style={{ color: a.status === "Confirmed" ? "#2ecc71" : "#f5a623" }}>{a.status}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function Home() {
   const [demoOpen, setDemoOpen] = useState(false);
@@ -593,140 +812,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Dashboard Preview */}
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px 20px", perspective: 1200, position: "relative" }}>
-        <div className="wp-dash-wrap" style={{ transform: "rotateX(4deg) rotateY(-1deg)", transformOrigin: "center center", position: "relative" }}>
-          {/* Glow behind */}
-          <div style={{ position: "absolute", inset: -40, background: "radial-gradient(ellipse at center, rgba(232,106,42,0.08) 0%, transparent 70%)", zIndex: 0, borderRadius: 40, filter: "blur(40px)" }} />
-
-          {/* Dashboard frame */}
-          <div className="wp-dash" style={{
-            position: "relative", zIndex: 1, background: "rgba(17,17,17,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 0, overflow: "hidden",
-            boxShadow: "0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.06)",
-          }}>
-            {/* Title bar */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
-              </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500, letterSpacing: 0.5 }}>Wolf Pack AI — Dashboard</div>
-              <div style={{ width: 50 }} />
-            </div>
-
-            <div style={{ display: "flex", minHeight: 340 }}>
-              {/* Sidebar */}
-              <div className="wp-dash-sidebar" style={{ width: 180, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "16px 12px", flexShrink: 0, background: "rgba(0,0,0,0.2)" }}>
-                {[
-                  { icon: "📊", label: "Dashboard", active: true },
-                  { icon: "💬", label: "Conversations", badge: 3 },
-                  { icon: "📋", label: "Pipeline" },
-                  { icon: "📅", label: "Calendar" },
-                  { icon: "👥", label: "Contacts" },
-                  { icon: "📧", label: "Email" },
-                  { icon: "⚙️", label: "Settings" },
-                ].map((item, i) => (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, marginBottom: 2, fontSize: 12, fontWeight: 500,
-                    background: item.active ? "rgba(232,106,42,0.12)" : "transparent",
-                    color: item.active ? "#E86A2A" : "rgba(255,255,255,0.35)",
-                  }}>
-                    <span style={{ fontSize: 13 }}>{item.icon}</span>
-                    <span>{item.label}</span>
-                    {item.badge && (
-                      <span style={{ marginLeft: "auto", background: "#E86A2A", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8 }}>{item.badge}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Main content */}
-              <div style={{ flex: 1, padding: 20, overflow: "hidden" }}>
-                {/* Stats row */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
-                  {[
-                    { label: "Appointments Today", value: "6", color: "#E86A2A" },
-                    { label: "Active Conversations", value: "12", color: "#007AFF" },
-                    { label: "Pipeline Value", value: "$34.2k", color: "#2ecc71" },
-                    { label: "Response Time", value: "3s", color: "#f5a623" },
-                  ].map((stat, i) => (
-                    <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px" }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 }}>{stat.value}</div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  {/* Recent conversations */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 14 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Live Conversations</div>
-                    {[
-                      { name: "Marcus J.", msg: "Yeah Thursday at 2 works for me", time: "Just now", blue: true },
-                      { name: "Sarah K.", msg: "What's the pricing for a full rewire?", time: "2m ago", blue: true },
-                      { name: "David R.", msg: "Sounds good, send me the calendar link", time: "5m ago", blue: false },
-                    ].map((c, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, background: `rgba(232,106,42,${0.15 + i * 0.05})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#E86A2A", flexShrink: 0 }}>
-                          {c.name.charAt(0)}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>{c.name}</span>
-                            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{c.time}</span>
-                          </div>
-                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {c.blue && <span style={{ color: "#007AFF", marginRight: 4, fontSize: 8 }}>●</span>}
-                            {c.msg}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Pipeline mini */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 14 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Pipeline</div>
-                    {[
-                      { stage: "New Lead", count: 8, color: "#007AFF", width: "85%" },
-                      { stage: "Qualified", count: 5, color: "#E86A2A", width: "55%" },
-                      { stage: "Appointment Set", count: 4, color: "#f5a623", width: "45%" },
-                      { stage: "Proposal Sent", count: 2, color: "#9b59b6", width: "25%" },
-                      { stage: "Won", count: 3, color: "#2ecc71", width: "35%" },
-                    ].map((s, i) => (
-                      <div key={i} style={{ marginBottom: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{s.stage}</span>
-                          <span style={{ fontSize: 11, color: s.color, fontWeight: 700 }}>{s.count}</span>
-                        </div>
-                        <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: 2, background: s.color, width: s.width, opacity: 0.6 }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Appointment ticker at bottom */}
-                <div style={{ marginTop: 12, display: "flex", gap: 8, overflow: "hidden" }}>
-                  {[
-                    { name: "Marcus J.", time: "Thu 2:00 PM", status: "Confirmed" },
-                    { name: "Lisa M.", time: "Fri 10:00 AM", status: "Confirmed" },
-                    { name: "James W.", time: "Fri 3:30 PM", status: "Pending" },
-                  ].map((a, i) => (
-                    <div key={i} style={{ flex: 1, background: "rgba(46,204,113,0.06)", border: "1px solid rgba(46,204,113,0.12)", borderRadius: 8, padding: "8px 12px" }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{a.name}</div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{a.time} · <span style={{ color: a.status === "Confirmed" ? "#2ecc71" : "#f5a623" }}>{a.status}</span></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Dashboard Preview — Animated */}
+      <AnimatedDashboard />
 
       {/* How It Works */}
       <div id="how" style={{ maxWidth: 960, margin: "0 auto", padding: "80px 40px 40px", position: "relative" }}>
