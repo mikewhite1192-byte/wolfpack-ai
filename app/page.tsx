@@ -320,53 +320,6 @@ export default function Home() {
       {/* Dot grid pattern — very subtle */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.025, backgroundImage: "radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-      {/* Wolf silhouettes — layered behind content */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        {/* Howling wolf — behind problem/difference section */}
-        <svg viewBox="0 0 400 500" style={{ position: "absolute", top: "12%", right: "-2%", width: 500, height: 600, opacity: 0.025 }} fill="white">
-          <path d="M200,480 L200,320 Q180,300 160,260 Q140,220 150,180 Q155,160 170,145 L175,120 Q170,100 180,80 Q190,60 200,50 Q205,40 200,25 L210,40 Q220,35 225,20 L225,45 Q235,55 240,70 Q250,90 245,110 L250,130 Q265,145 275,165 Q290,200 280,240 Q265,280 240,310 L240,480 Z M170,145 Q160,150 145,145 Q130,138 125,125 Q128,132 135,135 Q145,138 155,135 Q162,140 170,145 Z M250,130 Q260,135 275,130 Q290,123 295,110 Q292,117 285,120 Q275,123 265,120 Q258,125 250,130 Z M175,120 Q178,115 185,112 Q192,112 198,118 M245,110 Q242,105 235,102 Q228,102 222,108 M190,95 Q195,85 200,80 Q205,85 210,95 Q205,92 200,90 Q195,92 190,95 Z" />
-        </svg>
-
-        {/* Wolf head profile — behind outcomes section, left side */}
-        <svg viewBox="0 0 300 300" style={{ position: "absolute", top: "28%", left: "-3%", width: 400, height: 400, opacity: 0.02 }} fill="white">
-          <path d="M60,280 Q70,240 90,210 Q100,195 100,175 Q95,155 100,135 Q105,120 115,110 L110,80 Q115,60 130,45 Q135,35 130,15 L145,35 Q155,25 160,10 L158,40 Q170,50 180,65 Q195,85 195,110 Q200,125 210,140 Q225,160 235,180 Q245,200 240,225 Q235,245 220,260 Q200,275 175,280 Z M115,110 Q105,108 95,100 Q88,90 90,80 Q92,88 98,92 Q106,96 112,95 Q114,102 115,110 Z M130,75 Q135,65 140,60 Q145,65 148,75 Q143,72 140,70 Q135,72 130,75 Z" />
-        </svg>
-
-        {/* Paw prints — scattered near pricing */}
-        <svg viewBox="0 0 120 120" style={{ position: "absolute", top: "68%", right: "5%", width: 120, height: 120, opacity: 0.03 }} fill="white">
-          <ellipse cx="60" cy="75" rx="22" ry="28" />
-          <ellipse cx="35" cy="42" rx="12" ry="15" transform="rotate(-15 35 42)" />
-          <ellipse cx="60" cy="32" rx="11" ry="14" />
-          <ellipse cx="85" cy="42" rx="12" ry="15" transform="rotate(15 85 42)" />
-        </svg>
-        <svg viewBox="0 0 120 120" style={{ position: "absolute", top: "72%", right: "12%", width: 80, height: 80, opacity: 0.02, transform: "rotate(-20deg)" }} fill="white">
-          <ellipse cx="60" cy="75" rx="22" ry="28" />
-          <ellipse cx="35" cy="42" rx="12" ry="15" transform="rotate(-15 35 42)" />
-          <ellipse cx="60" cy="32" rx="11" ry="14" />
-          <ellipse cx="85" cy="42" rx="12" ry="15" transform="rotate(15 85 42)" />
-        </svg>
-
-        {/* Pack of wolves silhouette — behind FAQ/final CTA area */}
-        <svg viewBox="0 0 800 300" style={{ position: "absolute", bottom: "3%", left: "50%", transform: "translateX(-50%)", width: 900, height: 340, opacity: 0.018 }} fill="white">
-          {/* Wolf 1 — left, howling */}
-          <path d="M80,280 L80,200 Q70,180 65,155 Q60,130 70,110 L72,85 Q68,70 75,55 Q82,42 88,35 Q90,28 87,18 L95,30 Q100,25 103,15 L102,35 Q110,45 115,60 Q120,78 116,95 L120,110 Q130,130 125,160 Q118,185 110,200 L110,280 Z" />
-          {/* Wolf 2 — center-left, standing alert */}
-          <path d="M220,280 L220,195 Q210,175 210,155 Q212,135 220,120 L218,95 Q215,80 222,65 Q228,52 235,45 Q237,38 235,28 L242,38 Q248,32 250,22 L249,42 Q256,52 260,65 Q265,82 262,100 L265,118 Q275,138 272,160 Q268,180 260,198 L260,280 Z" />
-          {/* Wolf 3 — center, head down */}
-          <path d="M380,280 L380,210 Q370,195 368,175 Q368,155 375,140 Q378,128 385,120 L382,100 Q380,85 385,72 Q392,58 398,52 Q400,45 398,38 L405,48 Q410,42 412,35 L411,52 Q418,60 422,72 Q426,88 424,105 L428,122 Q435,140 432,162 Q428,182 420,200 L420,280 Z" />
-          {/* Wolf 4 — center-right, looking right */}
-          <path d="M540,280 L540,200 Q530,182 528,162 Q528,142 535,125 L533,105 Q530,88 536,74 Q542,60 548,52 Q550,44 548,34 L555,45 Q560,38 563,28 L562,48 Q568,58 572,72 Q577,90 574,108 L578,128 Q586,148 582,170 Q577,190 568,205 L568,280 Z" />
-          {/* Wolf 5 — right, howling up */}
-          <path d="M680,280 L680,195 Q668,175 662,150 Q658,125 668,105 L665,80 Q662,65 668,50 Q675,38 682,30 Q684,22 682,12 L690,25 Q695,18 698,8 L697,28 Q705,40 710,55 Q715,72 712,90 L715,108 Q725,130 720,155 Q714,180 705,198 L705,280 Z" />
-        </svg>
-
-        {/* Single large wolf eye — behind dashboard mockup */}
-        <svg viewBox="0 0 200 80" style={{ position: "absolute", top: "48%", left: "50%", transform: "translateX(-50%)", width: 300, height: 120, opacity: 0.02 }} fill="white">
-          <path d="M10,40 Q50,5 100,5 Q150,5 190,40 Q150,75 100,75 Q50,75 10,40 Z" />
-          <circle cx="100" cy="40" r="20" fill="#0a0a0a" />
-          <circle cx="100" cy="40" r="10" fill="white" />
-        </svg>
-      </div>
       <div style={{ position: "relative", zIndex: 1 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -544,7 +497,7 @@ export default function Home() {
       </div>
 
       {/* Problem Section */}
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 30%, #111 70%, #0e0e0e 100%)" }}>
         {/* Section ambient glow */}
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "70%", height: "100%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.04) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(60px)" }} />
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "80px 40px 60px", textAlign: "center", position: "relative" }}>
@@ -573,7 +526,7 @@ export default function Home() {
       </div>
 
       {/* The Difference — emotional hook, comes first */}
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", background: "linear-gradient(180deg, #0e0e0e 0%, #0a0a0a 50%, #0a0a0a 100%)" }}>
         {/* Section ambient glow */}
         <div style={{ position: "absolute", top: "20%", right: "0%", width: "50%", height: "60%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(0,122,255,0.03) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px", position: "relative" }}>
@@ -620,7 +573,7 @@ export default function Home() {
       </div>
 
       {/* Proof Bar */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", margin: "20px 0" }}>
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "linear-gradient(180deg, #0c0c0c, #0f0f0f, #0c0c0c)" }}>
         <div className="wp-proof-bar">
           {[
             { num: "47", label: "Appointments booked in 30 days" },
@@ -637,7 +590,7 @@ export default function Home() {
       </div>
 
       {/* Dashboard Preview */}
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px 20px", perspective: 1200 }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px 20px", perspective: 1200, position: "relative" }}>
         <div className="wp-dash-wrap" style={{ transform: "rotateX(4deg) rotateY(-1deg)", transformOrigin: "center center", position: "relative" }}>
           {/* Glow behind */}
           <div style={{ position: "absolute", inset: -40, background: "radial-gradient(ellipse at center, rgba(232,106,42,0.08) 0%, transparent 70%)", zIndex: 0, borderRadius: 40, filter: "blur(40px)" }} />
@@ -772,7 +725,7 @@ export default function Home() {
       </div>
 
       {/* How It Works */}
-      <div id="how" style={{ maxWidth: 960, margin: "0 auto", padding: "80px 40px 40px" }}>
+      <div id="how" style={{ maxWidth: 960, margin: "0 auto", padding: "80px 40px 40px", position: "relative" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>How It Works</div>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1.05 }}>
@@ -799,8 +752,8 @@ export default function Home() {
       </div>
 
       {/* Demo CTA */}
-      <div style={{ padding: "60px 40px" }}>
-        <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.3)", background: "#0a0a0a" }}>
+      <div style={{ padding: "80px 40px", background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 40%, #0d0b09 60%, #0a0a0a 100%)" }}>
+        <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.25)", background: "linear-gradient(180deg, rgba(232,106,42,0.04), rgba(232,106,42,0.01))", boxShadow: "0 0 60px rgba(232,106,42,0.06)" }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>SEE IT <span style={{ color: "#E86A2A" }}>WORK ON YOU</span></h2>
           <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your number. Wolf Pack AI texts you back in 3 seconds, qualifies you, and books an appointment on your calendar. Experience exactly what your leads will.</p>
           <button onClick={() => setDemoOpen(true)} className="wp-cta">Text Me Now →</button>
@@ -808,7 +761,7 @@ export default function Home() {
       </div>
 
       {/* Pricing */}
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 20%, #111 50%, #0e0e0e 80%, #0a0a0a 100%)" }}>
         <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translateX(-50%)", width: "60%", height: "50%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.05) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
       <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px", position: "relative" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
@@ -895,7 +848,7 @@ export default function Home() {
       </div>
 
       {/* FAQ */}
-      <div id="faq" style={{ maxWidth: 640, margin: "0 auto", padding: "60px 40px" }}>
+      <div id="faq" style={{ maxWidth: 640, margin: "0 auto", padding: "60px 40px", position: "relative" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: 0, letterSpacing: 1 }}>Questions? We Got You.</h2>
         </div>
@@ -909,7 +862,7 @@ export default function Home() {
       </div>
 
       {/* Final CTA */}
-      <div style={{ padding: "60px 40px 80px", textAlign: "center" }}>
+      <div style={{ padding: "60px 40px 80px", textAlign: "center", background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 50%, #0f0c0a 100%)" }}>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: "0 0 16px", letterSpacing: 1, lineHeight: 1.1 }}>
           STOP LOSING APPOINTMENTS TO<br />
           <span style={{ color: "#E86A2A" }}>WHOEVER RESPONDED FASTER</span>
