@@ -487,7 +487,7 @@ function AnimatedDashboard() {
             <div style={{ width: 50 }} />
           </div>
 
-          <div style={{ display: "flex", minHeight: 420 }}>
+          <div className="wp-dash-main" style={{ display: "flex", minHeight: 420 }}>
             {/* Sidebar */}
             <div className="wp-dash-sidebar" style={{ width: 180, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "16px 12px", flexShrink: 0, background: "rgba(0,0,0,0.2)" }}>
               {[
@@ -516,7 +516,7 @@ function AnimatedDashboard() {
             {/* Main content */}
             <div style={{ flex: 1, padding: 20, overflow: "hidden" }}>
               {/* Stats row — bigger numbers */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+              <div className="wp-dash-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
                 {[
                   { label: "Appointments Today", value: stats.appts.toString(), color: "#E86A2A" },
                   { label: "Active Conversations", value: stats.convos.toString(), color: "#007AFF" },
@@ -535,7 +535,7 @@ function AnimatedDashboard() {
                 ))}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="wp-dash-content" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {/* Live conversations — one at a time, slide from top */}
                 <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 16 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Live Conversations</div>
@@ -582,7 +582,7 @@ function AnimatedDashboard() {
               </div>
 
               {/* Appointments — pop in one at a time, 2x2 grid */}
-              <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div className="wp-dash-appts" style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {appts.map(a => (
                   <div key={a.id} style={{
                     background: "rgba(46,204,113,0.06)", border: "1px solid rgba(46,204,113,0.15)", borderRadius: 10, padding: "12px 16px",
@@ -674,6 +674,10 @@ export default function Home() {
           .wp-proof-bar { gap: 32px !important; padding: 32px 20px !important; }
           .wp-dash-sidebar { display: none !important; }
           .wp-dash-wrap { transform: none !important; }
+          .wp-dash-stats { grid-template-columns: repeat(2, 1fr) !important; }
+          .wp-dash-content { grid-template-columns: 1fr !important; }
+          .wp-dash-appts { grid-template-columns: 1fr !important; }
+          .wp-dash-main { padding: 14px !important; min-height: auto !important; }
           .wp-compare-grid { grid-template-columns: 1fr !important; }
         }
 
