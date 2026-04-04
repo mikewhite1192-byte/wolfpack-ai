@@ -344,6 +344,7 @@ function AnimatedDashboard() {
   const [stats, setStats] = useState({ appts: 0, convos: 0, pipeline: 0, response: 0 });
   const [statsComplete, setStatsComplete] = useState(false);
   const [pipelineWidths, setPipelineWidths] = useState([0, 0, 0, 0, 0]);
+  const [pipelineCounts, setPipelineCounts] = useState([0, 0, 0, 0, 0]);
   const [isVisible, setIsVisible] = useState(false);
   const dashRef = useRef<HTMLDivElement>(null);
   const convPtr = useRef(0);
@@ -360,14 +361,14 @@ function AnimatedDashboard() {
     return () => obs.disconnect();
   }, []);
 
-  // Count up stats — more dramatic
+  // Count up stats — dramatic initial, then keep ticking
   useEffect(() => {
     if (!isVisible) return;
     const targets = { appts: 6, convos: 12, pipeline: 342, response: 3 };
     const duration = 2500;
     const steps = 60;
     let step = 0;
-    const timer = setInterval(() => {
+    const countUp = setInterval(() => {
       step++;
       const progress = Math.min(step / steps, 1);
       const ease = 1 - Math.pow(1 - progress, 5);
@@ -377,16 +378,56 @@ function AnimatedDashboard() {
         pipeline: Math.round(targets.pipeline * ease),
         response: Math.round(targets.response * ease),
       });
-      if (step >= steps) { clearInterval(timer); setStatsComplete(true); }
+      if (step >= steps) {
+        clearInterval(countUp);
+        setStatsComplete(true);
+
+        // After initial count, keep incrementing
+        const liveTimer = setInterval(() => {
+          setStats(prev => {
+            const r = Math.random();
+            if (r < 0.3) return { ...prev, appts: prev.appts + 1 };
+            if (r < 0.6) return { ...prev, convos: prev.convos + 1 };
+            return { ...prev, pipeline: prev.pipeline + Math.floor(Math.random() * 30 + 10) };
+          });
+        }, 3000);
+        // Store cleanup ref — won't leak since component lives for page lifetime
+        return () => clearInterval(liveTimer);
+      }
     }, duration / steps);
-    return () => clearInterval(timer);
+    return () => clearInterval(countUp);
   }, [isVisible]);
 
-  // Pipeline bars
+  // Pipeline bars + counts — animate in, then keep growing
   useEffect(() => {
     if (!isVisible) return;
-    const timer = setTimeout(() => setPipelineWidths([85, 55, 45, 25, 35]), 300);
-    return () => clearTimeout(timer);
+    const targetWidths = [85, 55, 45, 25, 35];
+    const targetCounts = [8, 5, 4, 2, 3];
+    const timer = setTimeout(() => {
+      setPipelineWidths(targetWidths);
+      setPipelineCounts(targetCounts);
+    }, 300);
+
+    // After initial fill, keep the pipeline moving
+    const liveTimer = setTimeout(() => {
+      const ticker = setInterval(() => {
+        setPipelineCounts(prev => {
+          const idx = Math.floor(Math.random() * 5);
+          const next = [...prev];
+          next[idx] = next[idx] + 1;
+          return next;
+        });
+        setPipelineWidths(prev => {
+          const idx = Math.floor(Math.random() * 5);
+          const next = [...prev];
+          next[idx] = Math.min(next[idx] + Math.floor(Math.random() * 5 + 2), 98);
+          return next;
+        });
+      }, 4000);
+      return () => clearInterval(ticker);
+    }, 3000);
+
+    return () => { clearTimeout(timer); clearTimeout(liveTimer); };
   }, [isVisible]);
 
   // Conversations — one at a time, queue-based
@@ -418,12 +459,12 @@ function AnimatedDashboard() {
     return () => clearInterval(timer);
   }, [isVisible]);
 
-  const pipelineData = [
-    { stage: "New Lead", count: 8, color: "#007AFF" },
-    { stage: "Qualified", count: 5, color: "#E86A2A" },
-    { stage: "Appointment Set", count: 4, color: "#f5a623" },
-    { stage: "Proposal Sent", count: 2, color: "#9b59b6" },
-    { stage: "Won", count: 3, color: "#2ecc71" },
+  const pipelineStages = [
+    { stage: "New Lead", color: "#007AFF" },
+    { stage: "Qualified", color: "#E86A2A" },
+    { stage: "Appointment Set", color: "#f5a623" },
+    { stage: "Proposal Sent", color: "#9b59b6" },
+    { stage: "Won", color: "#2ecc71" },
   ];
 
   return (
@@ -483,10 +524,11 @@ function AnimatedDashboard() {
                   { label: "Response Time", value: `${stats.response}s`, color: "#f5a623" },
                 ].map((stat, i) => (
                   <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "14px 16px", transition: "transform 0.3s" }}>
-                    <div style={{
+                    <div key={stat.value} style={{
                       fontSize: 30, fontWeight: 800, color: stat.color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5,
                       textShadow: `0 0 20px ${stat.color}40`,
-                      animation: statsComplete ? "statsPulse 0.4s ease" : "none",
+                      animation: statsComplete ? "statsPulse 0.3s ease" : "none",
+                      transition: "text-shadow 0.3s",
                     }}>{stat.value}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{stat.label}</div>
                   </div>
@@ -525,11 +567,11 @@ function AnimatedDashboard() {
                 {/* Pipeline — animated bars, taller */}
                 <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 16 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Pipeline</div>
-                  {pipelineData.map((s, i) => (
+                  {pipelineStages.map((s, i) => (
                     <div key={i} style={{ marginBottom: 10 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                         <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>{s.stage}</span>
-                        <span style={{ fontSize: 12, color: s.color, fontWeight: 700 }}>{s.count}</span>
+                        <span style={{ fontSize: 12, color: s.color, fontWeight: 700, transition: "all 0.3s" }}>{pipelineCounts[i]}</span>
                       </div>
                       <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 3, background: s.color, width: `${pipelineWidths[i]}%`, opacity: 0.7, transition: "width 1.2s cubic-bezier(0.22, 1, 0.36, 1)", transitionDelay: `${i * 0.2}s` }} />
