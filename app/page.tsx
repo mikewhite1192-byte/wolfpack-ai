@@ -505,51 +505,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* How It Works */}
-      <div id="how" style={{ maxWidth: 960, margin: "0 auto", padding: "80px 40px 40px" }}>
-        <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>How It Works</div>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1.05 }}>
-            THREE STEPS. <span style={{ color: "#E86A2A" }}>ONE FULL CALENDAR.</span>
-          </h2>
-          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", maxWidth: 440, margin: "0 auto" }}>You don&#39;t learn software. You just get appointments.</p>
-        </div>
-        <div className="wp-how-steps" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "stretch" }}>
-          {[
-            { num: "01", title: "Lead comes in", desc: "Ads, website, referral, Google — doesn't matter where. The AI picks it up before you even see the notification." },
-            { num: "02", title: "AI books the appointment", desc: "Texts back in 3 seconds via iMessage. Qualifies. Handles objections. Sends the calendar invite. Done." },
-            { num: "03", title: "You show up and close", desc: "Calendar invite with Google Meet link. The lead is warmed up, qualified, and expecting your call." },
-          ].map((s, i) => (
-            <React.Fragment key={i}>
-              <div className="wp-step">
-                <div className="wp-step-num">{s.num}</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: "#e8eaf0", marginBottom: 10 }}>{s.title}</div>
-                <div style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.7 }}>{s.desc}</div>
-              </div>
-              {i < 2 && <div className="wp-step-connector">&#8594;</div>}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-
-      {/* Proof Bar */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", margin: "20px 0" }}>
-        <div className="wp-proof-bar">
-          {[
-            { num: "47", label: "Appointments booked in 30 days" },
-            { num: "3 SEC", label: "Average response time" },
-            { num: "11 DAYS", label: "Longest nurture to booking" },
-            { num: "$0", label: "Extra staff needed" },
-          ].map((p, i) => (
-            <div key={i} className="wp-proof-item">
-              <div className="wp-proof-num">{p.num}</div>
-              <div className="wp-proof-label">{p.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Outcomes */}
+      {/* The Difference — emotional hook, comes first */}
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>The Difference</div>
@@ -592,6 +548,50 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Proof Bar */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", margin: "20px 0" }}>
+        <div className="wp-proof-bar">
+          {[
+            { num: "47", label: "Appointments booked in 30 days" },
+            { num: "3 SEC", label: "Average response time" },
+            { num: "11 DAYS", label: "Longest nurture to booking" },
+            { num: "$0", label: "Extra staff needed" },
+          ].map((p, i) => (
+            <div key={i} className="wp-proof-item">
+              <div className="wp-proof-num">{p.num}</div>
+              <div className="wp-proof-label">{p.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <div id="how" style={{ maxWidth: 960, margin: "0 auto", padding: "80px 40px 40px" }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>How It Works</div>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1.05 }}>
+            THREE STEPS. <span style={{ color: "#E86A2A" }}>ONE FULL CALENDAR.</span>
+          </h2>
+          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", maxWidth: 440, margin: "0 auto" }}>You don&#39;t learn software. You just get appointments.</p>
+        </div>
+        <div className="wp-how-steps" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "stretch" }}>
+          {[
+            { num: "01", title: "Lead comes in", desc: "Ads, website, referral, Google — doesn't matter where. The AI picks it up before you even see the notification." },
+            { num: "02", title: "AI books the appointment", desc: "Texts back in 3 seconds via iMessage. Qualifies. Handles objections. Sends the calendar invite. Done." },
+            { num: "03", title: "You show up and close", desc: "Calendar invite with Google Meet link. The lead is warmed up, qualified, and expecting your call." },
+          ].map((s, i) => (
+            <React.Fragment key={i}>
+              <div className="wp-step">
+                <div className="wp-step-num">{s.num}</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#e8eaf0", marginBottom: 10 }}>{s.title}</div>
+                <div style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.7 }}>{s.desc}</div>
+              </div>
+              {i < 2 && <div className="wp-step-connector">&#8594;</div>}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
       {/* Demo CTA */}
       <div style={{ padding: "60px 40px" }}>
         <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.3)", background: "#0a0a0a" }}>
@@ -604,11 +604,11 @@ export default function Home() {
       {/* Pricing */}
       <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 100, color: "#E86A2A", lineHeight: 1, letterSpacing: 2, marginBottom: 8 }}>$97<span style={{ fontSize: 32, color: "rgba(232,230,227,0.3)", fontFamily: "Inter, sans-serif", fontWeight: 400 }}>/mo</span></div>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px", letterSpacing: 1, color: "rgba(232,230,227,0.8)" }}>
-            LESS THAN ONE MISSED APPOINTMENT.
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>Pricing</div>
+          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1.05 }}>
+            ONE MISSED APPOINTMENT COSTS MORE THAN THIS.
           </h2>
-          <p style={{ fontSize: 14, color: "rgba(232,230,227,0.3)" }}>No contracts. Cancel anytime. Set up in 10 minutes.</p>
+          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", maxWidth: 480, margin: "0 auto" }}>No contracts. Cancel anytime. Set up in 10 minutes.</p>
         </div>
         {/* Main plan — full width on top */}
         <div style={{ maxWidth: 680, margin: "0 auto 20px" }}>
