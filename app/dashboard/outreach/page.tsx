@@ -77,7 +77,8 @@ export default function OutreachPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeState, setScrapeState] = useState("");
   const [scrapeCount, setScrapeCount] = useState(30);
-  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts" | "campaigns" | "scraper">("overview");
+  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts" | "campaigns" | "scraper" | "sent">("overview");
+  const [expandedEmail, setExpandedEmail] = useState<number | null>(null);
   const [contactSearch, setContactSearch] = useState("");
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
@@ -812,6 +813,7 @@ export default function OutreachPage() {
             </span>
           )}
         </button>
+        <button className={`out-tab ${tab === "sent" ? "active" : ""}`} onClick={() => setTab("sent")}>Sent ({recentEmails.length})</button>
       </div>
 
       {loading ? (
@@ -2034,6 +2036,92 @@ export default function OutreachPage() {
           )}
 
           {/* ============= INBOX TAB ============= */}
+          {/* ============= SENT EMAILS TAB ============= */}
+          {tab === "sent" && (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div className="out-label" style={{ marginBottom: 0 }}>Sent Emails</div>
+                <div style={{ fontSize: 11, color: T.muted }}>Last {recentEmails.length} cold emails</div>
+              </div>
+
+              {recentEmails.length === 0 ? (
+                <div className="out-card" style={{ textAlign: "center", color: T.muted, padding: 40 }}>
+                  No emails sent yet.
+                </div>
+              ) : (
+                recentEmails.map((e: Record<string, unknown>, i: number) => {
+                  const isExpanded = expandedEmail === i;
+                  return (
+                    <div
+                      key={i}
+                      className="health-card"
+                      style={{ cursor: "pointer", borderColor: isExpanded ? `${T.orange}30` : T.border }}
+                      onClick={() => setExpandedEmail(isExpanded ? null : i)}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase",
+                              background: (e.status as string) === "sent" ? `${T.green}15` : `${T.red}15`,
+                              color: (e.status as string) === "sent" ? T.green : T.red,
+                            }}>
+                              {e.status as string}
+                            </span>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: `${T.blue}15`, color: T.blue }}>
+                              Step {e.step as number}
+                            </span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>
+                              {(e.first_name as string) || "Unknown"} {(e.last_name as string) || ""}
+                            </span>
+                            {(e.company as string) && (
+                              <span style={{ fontSize: 11, color: T.muted }}>— {e.company as string}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginTop: 4 }}>
+                            {(e.subject as string) || "(no subject)"}
+                          </div>
+                          {!isExpanded && (
+                            <div style={{ fontSize: 12, color: T.muted, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 600 }}>
+                              {((e.body as string) || "").substring(0, 120)}...
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
+                          <div style={{ fontSize: 11, color: T.muted }}>{e.sent_at ? new Date(e.sent_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</div>
+                          <div style={{ fontSize: 10, color: T.muted }}>{e.sent_at ? new Date(e.sent_at as string).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}</div>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div style={{ marginTop: 12, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
+                          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 10 }}>
+                            <div style={{ fontSize: 11, color: T.muted }}>To: <span style={{ color: T.text }}>{e.email as string}</span></div>
+                            <div style={{ fontSize: 11, color: T.muted }}>From: <span style={{ color: T.text }}>{e.from_email as string}</span></div>
+                            {(e.city as string) && <div style={{ fontSize: 11, color: T.muted }}>City: <span style={{ color: T.text }}>{e.city as string}</span></div>}
+                            {(e.niche as string) && <div style={{ fontSize: 11, color: T.muted }}>Niche: <span style={{ color: T.text }}>{e.niche as string}</span></div>}
+                          </div>
+                          <div style={{
+                            whiteSpace: "pre-wrap",
+                            fontSize: 13,
+                            color: T.text,
+                            lineHeight: 1.6,
+                            background: "rgba(255,255,255,0.03)",
+                            borderRadius: 8,
+                            padding: 14,
+                            border: `1px solid ${T.border}`,
+                          }}>
+                            {e.body as string}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </>
+          )}
+
           {tab === "inbox" && (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>

@@ -14,11 +14,12 @@ export async function GET(req: NextRequest) {
     const stats = await getSequenceStats(range);
 
     const recentEmails = await sql`
-      SELECT oe.step, oe.status, oe.sent_at, oe.from_email, oc.email, oc.first_name
+      SELECT oe.step, oe.status, oe.sent_at, oe.from_email, oe.subject, oe.body, oc.email, oc.first_name, oc.last_name, oc.company, oc.city, oc.niche
       FROM outreach_emails oe
       LEFT JOIN outreach_contacts oc ON oc.id = oe.contact_id
+      WHERE oe.email_type = 'cold'
       ORDER BY oe.sent_at DESC
-      LIMIT 20
+      LIMIT 100
     `;
 
     let emailHealth: Awaited<ReturnType<typeof getAllEmailHealth>> = [];
