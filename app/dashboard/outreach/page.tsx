@@ -31,10 +31,16 @@ interface Stats {
 interface RecentEmail {
   email: string;
   first_name: string | null;
+  last_name: string | null;
   from_email: string | null;
   step: number;
   status: string;
   sent_at: string;
+  subject: string | null;
+  body: string | null;
+  company: string | null;
+  city: string | null;
+  niche: string | null;
 }
 
 interface EmailHealthData {
@@ -2049,7 +2055,7 @@ export default function OutreachPage() {
                   No emails sent yet.
                 </div>
               ) : (
-                recentEmails.map((e: Record<string, unknown>, i: number) => {
+                recentEmails.map((e, i) => {
                   const isExpanded = expandedEmail === i;
                   return (
                     <div
@@ -2063,43 +2069,43 @@ export default function OutreachPage() {
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                             <span style={{
                               fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase",
-                              background: (e.status as string) === "sent" ? `${T.green}15` : `${T.red}15`,
-                              color: (e.status as string) === "sent" ? T.green : T.red,
+                              background: e.status === "sent" ? `${T.green}15` : `${T.red}15`,
+                              color: e.status === "sent" ? T.green : T.red,
                             }}>
-                              {e.status as string}
+                              {e.status}
                             </span>
                             <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: `${T.blue}15`, color: T.blue }}>
-                              Step {e.step as number}
+                              Step {e.step}
                             </span>
                             <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>
-                              {(e.first_name as string) || "Unknown"} {(e.last_name as string) || ""}
+                              {e.first_name || "Unknown"} {e.last_name || ""}
                             </span>
-                            {(e.company as string) && (
-                              <span style={{ fontSize: 11, color: T.muted }}>— {e.company as string}</span>
+                            {e.company && (
+                              <span style={{ fontSize: 11, color: T.muted }}>— {e.company}</span>
                             )}
                           </div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginTop: 4 }}>
-                            {(e.subject as string) || "(no subject)"}
+                            {e.subject || "(no subject)"}
                           </div>
                           {!isExpanded && (
                             <div style={{ fontSize: 12, color: T.muted, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 600 }}>
-                              {((e.body as string) || "").substring(0, 120)}...
+                              {(e.body || "").substring(0, 120)}...
                             </div>
                           )}
                         </div>
                         <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
-                          <div style={{ fontSize: 11, color: T.muted }}>{e.sent_at ? new Date(e.sent_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</div>
-                          <div style={{ fontSize: 10, color: T.muted }}>{e.sent_at ? new Date(e.sent_at as string).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}</div>
+                          <div style={{ fontSize: 11, color: T.muted }}>{e.sent_at ? new Date(e.sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}</div>
+                          <div style={{ fontSize: 10, color: T.muted }}>{e.sent_at ? new Date(e.sent_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}</div>
                         </div>
                       </div>
 
                       {isExpanded && (
                         <div style={{ marginTop: 12, borderTop: `1px solid ${T.border}`, paddingTop: 12 }}>
                           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 10 }}>
-                            <div style={{ fontSize: 11, color: T.muted }}>To: <span style={{ color: T.text }}>{e.email as string}</span></div>
-                            <div style={{ fontSize: 11, color: T.muted }}>From: <span style={{ color: T.text }}>{e.from_email as string}</span></div>
-                            {(e.city as string) && <div style={{ fontSize: 11, color: T.muted }}>City: <span style={{ color: T.text }}>{e.city as string}</span></div>}
-                            {(e.niche as string) && <div style={{ fontSize: 11, color: T.muted }}>Niche: <span style={{ color: T.text }}>{e.niche as string}</span></div>}
+                            <div style={{ fontSize: 11, color: T.muted }}>To: <span style={{ color: T.text }}>{e.email}</span></div>
+                            <div style={{ fontSize: 11, color: T.muted }}>From: <span style={{ color: T.text }}>{e.from_email}</span></div>
+                            {e.city && <div style={{ fontSize: 11, color: T.muted }}>City: <span style={{ color: T.text }}>{e.city}</span></div>}
+                            {e.niche && <div style={{ fontSize: 11, color: T.muted }}>Niche: <span style={{ color: T.text }}>{e.niche}</span></div>}
                           </div>
                           <div style={{
                             whiteSpace: "pre-wrap",
@@ -2111,7 +2117,7 @@ export default function OutreachPage() {
                             padding: 14,
                             border: `1px solid ${T.border}`,
                           }}>
-                            {e.body as string}
+                            {e.body}
                           </div>
                         </div>
                       )}
