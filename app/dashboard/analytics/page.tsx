@@ -94,13 +94,26 @@ interface AnalyticsData {
   leadSources: LeadSource[];
 }
 
+interface TrafficData {
+  totalViews: number;
+  uniqueVisitors: number;
+  todayViews: number;
+  yesterdayViews: number;
+  daily: { date: string; views: number; visitors: number }[];
+  topPages: { path: string; views: number; visitors: number }[];
+  topReferrers: { referrer: string; views: number }[];
+}
+
 export default function AnalyticsPage() {
   const { user } = useUser();
-  const [tab, setTab] = useState<"pipeline" | "business">("pipeline");
+  const [tab, setTab] = useState<"pipeline" | "business" | "traffic">("pipeline");
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [bizData, setBizData] = useState<BusinessData | null>(null);
+  const [trafficData, setTrafficData] = useState<TrafficData | null>(null);
   const [loading, setLoading] = useState(true);
   const [bizLoading, setBizLoading] = useState(false);
+  const [trafficLoading, setTrafficLoading] = useState(false);
+  const [trafficRange, setTrafficRange] = useState("30d");
 
   const isAdmin = ADMIN_EMAILS.includes(user?.primaryEmailAddress?.emailAddress?.toLowerCase() || "");
 
@@ -123,6 +136,16 @@ export default function AnalyticsPage() {
       fetch("/api/owner").then(r => r.json()).then(d => { setBizData(d); setBizLoading(false); }).catch(() => setBizLoading(false));
     }
   }, [tab, bizData, isAdmin]);
+
+  useEffect(() => {
+    if (tab === "traffic") {
+      setTrafficLoading(true);
+      fetch(`/api/analytics/traffic?range=${trafficRange}`)
+        .then(r => r.json())
+        .then(d => { setTrafficData(d); setTrafficLoading(false); })
+        .catch(() => setTrafficLoading(false));
+    }
+  }, [tab, trafficRange]);
 
   if (loading) return <div style={{ color: T.muted, padding: 40, textAlign: "center" }}>Loading analytics...</div>;
   if (!data) return <div style={{ color: T.red, padding: 40, textAlign: "center" }}>Failed to load analytics.</div>;
@@ -185,6 +208,7 @@ export default function AnalyticsPage() {
 
       <div className="an-tabs">
         <button className={`an-tab ${tab === "pipeline" ? "an-tab-active" : "an-tab-inactive"}`} onClick={() => setTab("pipeline")}>Pipeline</button>
+        <button className={`an-tab ${tab === "traffic" ? "an-tab-active" : "an-tab-inactive"}`} onClick={() => setTab("traffic")}>Site Traffic</button>
         {isAdmin && <button className={`an-tab ${tab === "business" ? "an-tab-active" : "an-tab-inactive"}`} onClick={() => setTab("business")}>Business</button>}
       </div>
 
@@ -341,6 +365,145 @@ export default function AnalyticsPage() {
         </div>
       </div>
       </>)}
+
+      {tab === "traffic" && (
+        trafficLoading ? (
+          <div style={{ color: T.muted, textAlign: "center", padding: 80 }}>Loading traffic data...</div>
+        ) : trafficData ? (() => {
+          const maxPageViews = Math.max(...(trafficData.topPages || []).map(p => p.views), 1);
+          const maxRefViews = Math.max(...(trafficData.topReferrers || []).map(r => r.views), 1);
+          const maxDailyViews = Math.max(...(trafficData.daily || []).map(d => d.views), 1);
+          const todayChange = trafficData.yesterdayViews > 0
+            ? Math.round(((trafficData.todayViews - trafficData.yesterdayViews) / trafficData.yesterdayViews) * 100)
+            : trafficData.todayViews > 0 ? 100 : 0;
+
+          return (
+            <>
+              {/* Range selector */}
+              <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
+                {[
+                  { key: "24h", label: "24h" },
+                  { key: "7d", label: "7 days" },
+                  { key: "30d", label: "30 days" },
+                  { key: "90d", label: "90 days" },
+                ].map(r => (
+                  <button
+                    key={r.key}
+                    onClick={() => setTrafficRange(r.key)}
+                    style={{
+                      padding: "6px 14px", fontSize: 12, fontWeight: 600, border: `1px solid ${trafficRange === r.key ? T.orange + "40" : T.border}`,
+                      borderRadius: 6, background: trafficRange === r.key ? "rgba(232,106,42,0.15)" : "transparent",
+                      color: trafficRange === r.key ? T.orange : T.muted, cursor: "pointer",
+                    }}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* KPI Cards */}
+              <div className="an-grid an-grid-4">
+                <div className="an-card-sm">
+                  <div className="an-stat-value">{formatNum(trafficData.totalViews)}</div>
+                  <div className="an-stat-label">Total Views</div>
+                </div>
+                <div className="an-card-sm">
+                  <div className="an-stat-value">{formatNum(trafficData.uniqueVisitors)}</div>
+                  <div className="an-stat-label">Unique Visitors</div>
+                </div>
+                <div className="an-card-sm">
+                  <div className="an-stat-value">{trafficData.todayViews}</div>
+                  <div className="an-stat-label">Today</div>
+                </div>
+                <div className="an-card-sm">
+                  <div className="an-stat-value" style={{ color: todayChange >= 0 ? T.green : T.red }}>
+                    {todayChange >= 0 ? "+" : ""}{todayChange}%
+                  </div>
+                  <div className="an-stat-label">vs Yesterday</div>
+                </div>
+              </div>
+
+              {/* Daily chart */}
+              {trafficData.daily.length > 0 && (
+                <>
+                  <div className="an-section" style={{ marginTop: 24 }}>Views Over Time</div>
+                  <div className="an-card" style={{ padding: 20 }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 140 }}>
+                      {trafficData.daily.map((d, i) => (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                          <div style={{ fontSize: 10, color: T.muted }}>{d.views}</div>
+                          <div
+                            style={{
+                              width: "100%", maxWidth: 32, borderRadius: "4px 4px 0 0",
+                              background: `linear-gradient(180deg, ${T.orange}, ${T.orange}80)`,
+                              height: `${Math.max((d.views / maxDailyViews) * 100, 4)}%`,
+                              transition: "height 0.3s ease",
+                            }}
+                            title={`${d.date}: ${d.views} views, ${d.visitors} visitors`}
+                          />
+                          <div style={{ fontSize: 9, color: T.muted, transform: "rotate(-45deg)", whiteSpace: "nowrap" }}>
+                            {new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="an-grid an-grid-2" style={{ marginTop: 20 }}>
+                {/* Top Pages */}
+                <div className="an-card">
+                  <div className="an-section" style={{ marginTop: 0 }}>Top Pages</div>
+                  {trafficData.topPages.length === 0 ? (
+                    <div style={{ color: T.muted, fontSize: 13 }}>No data yet</div>
+                  ) : (
+                    trafficData.topPages.map((p, i) => (
+                      <div key={i} style={{ marginBottom: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{p.path}</span>
+                          <span style={{ fontSize: 12, color: T.muted }}>{p.views} views / {p.visitors} unique</span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 3, background: T.orange, width: `${(p.views / maxPageViews) * 100}%`, transition: "width 0.3s ease" }} />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Top Referrers */}
+                <div className="an-card">
+                  <div className="an-section" style={{ marginTop: 0 }}>Top Referrers</div>
+                  {trafficData.topReferrers.length === 0 ? (
+                    <div style={{ color: T.muted, fontSize: 13 }}>No data yet</div>
+                  ) : (
+                    trafficData.topReferrers.map((r, i) => {
+                      let displayRef = r.referrer;
+                      try {
+                        if (r.referrer.startsWith("http")) displayRef = new URL(r.referrer).hostname;
+                      } catch { /* keep as is */ }
+                      return (
+                        <div key={i} style={{ marginBottom: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{displayRef}</span>
+                            <span style={{ fontSize: 12, color: T.muted }}>{r.views} views</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                            <div style={{ height: "100%", borderRadius: 3, background: T.blue, width: `${(r.views / maxRefViews) * 100}%`, transition: "width 0.3s ease" }} />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </>
+          );
+        })() : (
+          <div style={{ color: T.muted, textAlign: "center", padding: 80 }}>No traffic data yet. Views will appear as visitors hit your site.</div>
+        )
+      )}
 
       {tab === "business" && isAdmin && (
         bizLoading ? (
