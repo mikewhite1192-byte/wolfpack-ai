@@ -298,6 +298,24 @@ function ChatWidget() {
   );
 }
 
+// ── Scroll Reveal ──────────────────────────────────────────────────────────
+function ScrollReveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={className} style={{ opacity: vis ? 1 : 0, transform: vis ? "translateY(0)" : "translateY(40px)", transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s` }}>
+      {children}
+    </div>
+  );
+}
+
 // ── Animated Dashboard ─────────────────────────────────────────────────────
 const ALL_CONVERSATIONS = [
   { name: "Marcus J.", msg: "Yeah Thursday at 2 works for me", time: "Just now", blue: true },
@@ -321,14 +339,17 @@ const ALL_APPOINTMENTS = [
 ];
 
 function AnimatedDashboard() {
-  const [convIndex, setConvIndex] = useState(0);
-  const [apptIndex, setApptIndex] = useState(0);
+  const [convos, setConvos] = useState<{ id: number; name: string; msg: string; time: string; blue: boolean }[]>([]);
+  const [appts, setAppts] = useState<{ id: number; name: string; time: string; status: "Confirmed" | "Pending" }[]>([]);
   const [stats, setStats] = useState({ appts: 0, convos: 0, pipeline: 0, response: 0 });
+  const [statsComplete, setStatsComplete] = useState(false);
   const [pipelineWidths, setPipelineWidths] = useState([0, 0, 0, 0, 0]);
   const [isVisible, setIsVisible] = useState(false);
   const dashRef = useRef<HTMLDivElement>(null);
+  const convPtr = useRef(0);
+  const apptPtr = useRef(0);
+  const idCounter = useRef(0);
 
-  // Intersection observer — start animations when visible
   useEffect(() => {
     const el = dashRef.current;
     if (!el) return;
@@ -339,56 +360,64 @@ function AnimatedDashboard() {
     return () => obs.disconnect();
   }, []);
 
-  // Count up stats
+  // Count up stats — more dramatic
   useEffect(() => {
     if (!isVisible) return;
     const targets = { appts: 6, convos: 12, pipeline: 342, response: 3 };
-    const duration = 1500;
-    const steps = 30;
+    const duration = 2500;
+    const steps = 60;
     let step = 0;
     const timer = setInterval(() => {
       step++;
       const progress = Math.min(step / steps, 1);
-      const ease = 1 - Math.pow(1 - progress, 3); // ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 5);
       setStats({
         appts: Math.round(targets.appts * ease),
         convos: Math.round(targets.convos * ease),
         pipeline: Math.round(targets.pipeline * ease),
         response: Math.round(targets.response * ease),
       });
-      if (step >= steps) clearInterval(timer);
+      if (step >= steps) { clearInterval(timer); setStatsComplete(true); }
     }, duration / steps);
     return () => clearInterval(timer);
   }, [isVisible]);
 
-  // Animate pipeline bars
+  // Pipeline bars
   useEffect(() => {
     if (!isVisible) return;
-    const targets = [85, 55, 45, 25, 35];
-    const timer = setTimeout(() => setPipelineWidths(targets), 300);
+    const timer = setTimeout(() => setPipelineWidths([85, 55, 45, 25, 35]), 300);
     return () => clearTimeout(timer);
   }, [isVisible]);
 
-  // Cycle conversations
+  // Conversations — one at a time, queue-based
   useEffect(() => {
     if (!isVisible) return;
+    // Seed first one immediately
+    const first = ALL_CONVERSATIONS[0];
+    setConvos([{ ...first, id: ++idCounter.current }]);
+    convPtr.current = 1;
     const timer = setInterval(() => {
-      setConvIndex(prev => (prev + 1) % (ALL_CONVERSATIONS.length - 2));
-    }, 3000);
+      const c = ALL_CONVERSATIONS[convPtr.current % ALL_CONVERSATIONS.length];
+      convPtr.current++;
+      setConvos(prev => [{ ...c, id: ++idCounter.current }, ...prev].slice(0, 4));
+    }, 2500);
     return () => clearInterval(timer);
   }, [isVisible]);
 
-  // Cycle appointments
+  // Appointments — one at a time, pop in
   useEffect(() => {
     if (!isVisible) return;
+    const first = ALL_APPOINTMENTS[0];
+    setAppts([{ ...first, id: ++idCounter.current }]);
+    apptPtr.current = 1;
     const timer = setInterval(() => {
-      setApptIndex(prev => (prev + 1) % (ALL_APPOINTMENTS.length - 2));
-    }, 4000);
+      const a = ALL_APPOINTMENTS[apptPtr.current % ALL_APPOINTMENTS.length];
+      apptPtr.current++;
+      setAppts(prev => [...prev, { ...a, id: ++idCounter.current }].slice(-4));
+    }, 3500);
     return () => clearInterval(timer);
   }, [isVisible]);
 
-  const visibleConvos = ALL_CONVERSATIONS.slice(convIndex, convIndex + 3);
-  const visibleAppts = ALL_APPOINTMENTS.slice(apptIndex, apptIndex + 3);
   const pipelineData = [
     { stage: "New Lead", count: 8, color: "#007AFF" },
     { stage: "Qualified", count: 5, color: "#E86A2A" },
@@ -417,7 +446,7 @@ function AnimatedDashboard() {
             <div style={{ width: 50 }} />
           </div>
 
-          <div style={{ display: "flex", minHeight: 340 }}>
+          <div style={{ display: "flex", minHeight: 420 }}>
             {/* Sidebar */}
             <div className="wp-dash-sidebar" style={{ width: 180, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "16px 12px", flexShrink: 0, background: "rgba(0,0,0,0.2)" }}>
               {[
@@ -437,7 +466,7 @@ function AnimatedDashboard() {
                   <span style={{ fontSize: 13 }}>{item.icon}</span>
                   <span>{item.label}</span>
                   {item.badge && (
-                    <span style={{ marginLeft: "auto", background: "#E86A2A", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8 }}>{item.badge}</span>
+                    <span style={{ marginLeft: "auto", background: "#E86A2A", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8, transition: "all 0.3s" }}>{item.badge}</span>
                   )}
                 </div>
               ))}
@@ -445,7 +474,7 @@ function AnimatedDashboard() {
 
             {/* Main content */}
             <div style={{ flex: 1, padding: 20, overflow: "hidden" }}>
-              {/* Stats row */}
+              {/* Stats row — bigger numbers */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
                 {[
                   { label: "Appointments Today", value: stats.appts.toString(), color: "#E86A2A" },
@@ -453,59 +482,72 @@ function AnimatedDashboard() {
                   { label: "Pipeline Value", value: `$${(stats.pipeline / 10).toFixed(1)}k`, color: "#2ecc71" },
                   { label: "Response Time", value: `${stats.response}s`, color: "#f5a623" },
                 ].map((stat, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 }}>{stat.value}</div>
+                  <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "14px 16px", transition: "transform 0.3s" }}>
+                    <div style={{
+                      fontSize: 30, fontWeight: 800, color: stat.color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5,
+                      textShadow: `0 0 20px ${stat.color}40`,
+                      animation: statsComplete ? "statsPulse 0.4s ease" : "none",
+                    }}>{stat.value}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{stat.label}</div>
                   </div>
                 ))}
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                {/* Live conversations — cycling */}
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Live Conversations</div>
-                  {visibleConvos.map((c, i) => (
-                    <div key={`${convIndex}-${i}`} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none", animation: "fadeUp 0.4s ease both", animationDelay: `${i * 0.08}s` }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: `rgba(232,106,42,${0.15 + i * 0.05})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#E86A2A", flexShrink: 0 }}>
-                        {c.name.charAt(0)}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>{c.name}</span>
-                          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{c.time}</span>
+                {/* Live conversations — one at a time, slide from top */}
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 16 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Live Conversations</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                    {convos.map((c, i) => (
+                      <div key={c.id} style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
+                        borderBottom: i < convos.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                        animation: "slideInTop 0.5s ease-out both",
+                      }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(232,106,42,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#E86A2A", flexShrink: 0 }}>
+                          {c.name.charAt(0)}
                         </div>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {c.blue && <span style={{ color: "#007AFF", marginRight: 4, fontSize: 8 }}>●</span>}
-                          {c.msg}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.75)" }}>{c.name}</span>
+                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>{c.time}</span>
+                          </div>
+                          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
+                            {c.blue && <span style={{ color: "#007AFF", marginRight: 5, fontSize: 9 }}>●</span>}
+                            {c.msg}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                {/* Pipeline — animated bars */}
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Pipeline</div>
+                {/* Pipeline — animated bars, taller */}
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 16 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Pipeline</div>
                   {pipelineData.map((s, i) => (
-                    <div key={i} style={{ marginBottom: 8 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{s.stage}</span>
-                        <span style={{ fontSize: 11, color: s.color, fontWeight: 700 }}>{s.count}</span>
+                    <div key={i} style={{ marginBottom: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>{s.stage}</span>
+                        <span style={{ fontSize: 12, color: s.color, fontWeight: 700 }}>{s.count}</span>
                       </div>
-                      <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
-                        <div style={{ height: "100%", borderRadius: 2, background: s.color, width: `${pipelineWidths[i]}%`, opacity: 0.6, transition: "width 1s cubic-bezier(0.22, 1, 0.36, 1)", transitionDelay: `${i * 0.15}s` }} />
+                      <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 3, background: s.color, width: `${pipelineWidths[i]}%`, opacity: 0.7, transition: "width 1.2s cubic-bezier(0.22, 1, 0.36, 1)", transitionDelay: `${i * 0.2}s` }} />
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Appointment ticker — cycling */}
-              <div style={{ marginTop: 12, display: "flex", gap: 8, overflow: "hidden" }}>
-                {visibleAppts.map((a, i) => (
-                  <div key={`${apptIndex}-${i}`} style={{ flex: 1, background: "rgba(46,204,113,0.06)", border: "1px solid rgba(46,204,113,0.12)", borderRadius: 8, padding: "8px 12px", animation: "fadeUp 0.4s ease both", animationDelay: `${i * 0.1}s` }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{a.name}</div>
-                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{a.time} · <span style={{ color: a.status === "Confirmed" ? "#2ecc71" : "#f5a623" }}>{a.status}</span></div>
+              {/* Appointments — pop in one at a time, 2x2 grid */}
+              <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {appts.map(a => (
+                  <div key={a.id} style={{
+                    background: "rgba(46,204,113,0.06)", border: "1px solid rgba(46,204,113,0.15)", borderRadius: 10, padding: "12px 16px",
+                    animation: "popBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>{a.name}</div>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>{a.time} · <span style={{ color: a.status === "Confirmed" ? "#2ecc71" : "#f5a623", fontWeight: 600 }}>{a.status}</span></div>
                   </div>
                 ))}
               </div>
@@ -520,6 +562,13 @@ function AnimatedDashboard() {
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function Home() {
   const [demoOpen, setDemoOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
 
   return (
     <div style={{ background: "#0a0a0a", color: "#e8eaf0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden", position: "relative" }}>
@@ -543,6 +592,10 @@ export default function Home() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInTop { 0% { opacity: 0; transform: translateY(-30px) scale(0.95); } 60% { opacity: 1; transform: translateY(4px) scale(1.01); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes popBounce { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 1; transform: scale(1.08); } 70% { transform: scale(0.96); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes statsPulse { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
+        html { scroll-padding-top: 80px; }
         @keyframes heroIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes heroZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
         @keyframes chatPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,106,42,0.4); } 50% { box-shadow: 0 0 0 12px rgba(232,106,42,0); } }
@@ -552,7 +605,7 @@ export default function Home() {
         .ticker-track { display: flex; gap: 40px; white-space: nowrap; animation: scroll 30s linear infinite; }
         .ticker-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; flex-shrink: 0; color: rgba(232,230,227,0.7); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 18px; }
 
-        .wp-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; max-width: 1100px; margin: 0 auto; }
+        .wp-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; max-width: 1100px; margin: 0 auto; width: 100%; }
         .wp-nav a { color: rgba(232,230,227,0.4); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; letter-spacing: 0.5px; }
         .wp-nav a:hover { color: #e8eaf0; }
 
@@ -579,6 +632,7 @@ export default function Home() {
           .wp-proof-bar { gap: 32px !important; padding: 32px 20px !important; }
           .wp-dash-sidebar { display: none !important; }
           .wp-dash-wrap { transform: none !important; }
+          .wp-compare-grid { grid-template-columns: 1fr !important; }
         }
 
         .wp-price-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 36px; transition: all 0.3s; }
@@ -621,8 +675,16 @@ export default function Home() {
         }
       `}</style>
 
-      {/* Nav */}
-      <nav className="wp-nav">
+      {/* Nav — sticky frosted glass */}
+      <nav className="wp-nav" style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        background: scrolled ? "rgba(10,10,10,0.75)" : "transparent",
+        backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
+        WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
+        borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "1px solid transparent",
+        transition: "all 0.35s ease",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+      }}>
         <Link href="/" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 2, color: "#e8eaf0", textDecoration: "none" }}>
           THE <span style={{ color: "#E86A2A" }}>WOLF</span> PACK
         </Link>
@@ -697,6 +759,7 @@ export default function Home() {
       </div>
 
       {/* Stats Bar */}
+      <ScrollReveal>
       <div className="wp-stats" style={{ display: "flex", justifyContent: "center", maxWidth: 1000, margin: "0 auto", padding: "80px 40px" }}>
         {[
           { num: "3 SEC", label: "Response time" },
@@ -709,6 +772,7 @@ export default function Home() {
           </div>
         ))}
       </div>
+      </ScrollReveal>
 
       {/* Ticker */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", margin: "20px 0" }}>
@@ -716,6 +780,7 @@ export default function Home() {
       </div>
 
       {/* Problem Section */}
+      <ScrollReveal>
       <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 30%, #111 70%, #0e0e0e 100%)", overflow: "hidden" }}>
         {/* Section ambient glow */}
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "70%", height: "100%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.04) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(60px)" }} />
@@ -745,8 +810,10 @@ export default function Home() {
         </div>
       </div>
       </div>
+      </ScrollReveal>
 
       {/* The Difference — emotional hook, comes first */}
+      <ScrollReveal>
       <div style={{ position: "relative", background: "linear-gradient(180deg, #0e0e0e 0%, #0a0a0a 50%, #0a0a0a 100%)", overflow: "hidden" }}>
         {/* Section ambient glow */}
         <div style={{ position: "absolute", top: "20%", right: "0%", width: "50%", height: "60%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(0,122,255,0.03) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
@@ -794,6 +861,59 @@ export default function Home() {
         </div>
       </div>
       </div>
+      </ScrollReveal>
+
+      {/* Before / After Comparison */}
+      <ScrollReveal>
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>The Reality</div>
+            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: 0, letterSpacing: 1, lineHeight: 1.05 }}>
+              TWO BUSINESSES. <span style={{ color: "#E86A2A" }}>SAME LEADS.</span>
+            </h2>
+          </div>
+          <div className="wp-compare-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+            {/* Without */}
+            <div style={{ padding: 36, borderRadius: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(231,76,60,0.12)", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, rgba(231,76,60,0.3), transparent)" }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#e74c3c", textTransform: "uppercase", letterSpacing: 2, marginBottom: 24 }}>Without Wolf Pack</div>
+              {[
+                "Lead texts at 9pm. You see it at 8am.",
+                "Manual follow-up... if you remember.",
+                "Green texts filtered by carriers.",
+                "Competitor books them while you sleep.",
+                "3 appointments this week. Maybe.",
+              ].map((text, i) => (
+                <ScrollReveal key={i} delay={i * 0.08}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                    <span style={{ fontSize: 16 }}>&#10060;</span>
+                    <span style={{ fontSize: 14, color: "rgba(232,230,227,0.45)", lineHeight: 1.5 }}>{text}</span>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+            {/* With */}
+            <div style={{ padding: 36, borderRadius: 16, background: "rgba(46,204,113,0.03)", border: "1px solid rgba(46,204,113,0.15)", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, rgba(46,204,113,0.4), transparent)" }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#2ecc71", textTransform: "uppercase", letterSpacing: 2, marginBottom: 24 }}>With Wolf Pack</div>
+              {[
+                "Lead texts at 9pm. AI responds in 3 seconds.",
+                "Follow-up on day 1, 3, 7, 14. Automatic.",
+                "Blue iMessage. No filtering. They see it.",
+                "Appointment booked before you wake up.",
+                "17 appointments this week. On autopilot.",
+              ].map((text, i) => (
+                <ScrollReveal key={i} delay={i * 0.08}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                    <span style={{ fontSize: 16 }}>&#9989;</span>
+                    <span style={{ fontSize: 14, color: "rgba(232,230,227,0.7)", lineHeight: 1.5, fontWeight: 500 }}>{text}</span>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ScrollReveal>
 
       {/* Proof Bar */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "linear-gradient(180deg, #0c0c0c, #0f0f0f, #0c0c0c)" }}>
@@ -816,6 +936,7 @@ export default function Home() {
       <AnimatedDashboard />
 
       {/* How It Works */}
+      <ScrollReveal>
       <div id="how" style={{ maxWidth: 960, margin: "0 auto", padding: "80px 40px 40px", position: "relative" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>How It Works</div>
@@ -841,8 +962,10 @@ export default function Home() {
           ))}
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Demo CTA */}
+      <ScrollReveal>
       <div style={{ padding: "80px 40px", background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 40%, #0d0b09 60%, #0a0a0a 100%)" }}>
         <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.25)", background: "linear-gradient(180deg, rgba(232,106,42,0.04), rgba(232,106,42,0.01))", boxShadow: "0 0 60px rgba(232,106,42,0.06)" }}>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>SEE IT <span style={{ color: "#E86A2A" }}>WORK ON YOU</span></h2>
@@ -850,8 +973,10 @@ export default function Home() {
           <button onClick={() => setDemoOpen(true)} className="wp-cta">Text Me Now →</button>
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Pricing */}
+      <ScrollReveal>
       <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 20%, #111 50%, #0e0e0e 80%, #0a0a0a 100%)", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translateX(-50%)", width: "60%", height: "50%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.05) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
         {/* Wolf prints silhouette */}
@@ -939,6 +1064,7 @@ export default function Home() {
         </div>
       </div>
       </div>
+      </ScrollReveal>
 
       {/* FAQ */}
       <div id="faq" style={{ maxWidth: 640, margin: "0 auto", padding: "60px 40px", position: "relative" }}>
