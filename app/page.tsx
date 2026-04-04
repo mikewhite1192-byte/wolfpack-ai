@@ -69,7 +69,7 @@ function ScrambleText({ text, delay = 0 }: { text: string; delay?: number }) {
     return () => clearInterval(interval);
   }, [started, text]);
 
-  return <>{display}</>;
+  return <span style={{ display: "inline-block", minWidth: `${text.length * 0.6}em` }}>{display}</span>;
 }
 
 // ── FAQ ─────────────────────────────────────────────────────────────────────
@@ -524,11 +524,10 @@ function AnimatedDashboard() {
                   { label: "Response Time", value: `${stats.response}s`, color: "#f5a623" },
                 ].map((stat, i) => (
                   <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "14px 16px", transition: "transform 0.3s" }}>
-                    <div key={stat.value} style={{
+                    <div style={{
                       fontSize: 30, fontWeight: 800, color: stat.color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5,
                       textShadow: `0 0 20px ${stat.color}40`,
-                      animation: statsComplete ? "statsPulse 0.3s ease" : "none",
-                      transition: "text-shadow 0.3s",
+                      transition: "all 0.3s ease",
                     }}>{stat.value}</div>
                     <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{stat.label}</div>
                   </div>
@@ -607,7 +606,10 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
+    const handler = () => {
+      const isScrolled = window.scrollY > 20;
+      setScrolled(prev => prev === isScrolled ? prev : isScrolled);
+    };
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
