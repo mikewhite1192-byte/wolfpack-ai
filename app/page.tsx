@@ -344,6 +344,8 @@ export default function Home() {
         @media (max-width: 768px) {
           .wp-step-connector { display: none !important; }
           .wp-proof-bar { gap: 32px !important; padding: 32px 20px !important; }
+          .wp-dash-sidebar { display: none !important; }
+          .wp-dash-wrap { transform: none !important; }
         }
 
         .wp-price-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 36px; transition: all 0.3s; }
@@ -562,6 +564,141 @@ export default function Home() {
               <div className="wp-proof-label">{p.label}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Dashboard Preview */}
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px 20px", perspective: 1200 }}>
+        <div className="wp-dash-wrap" style={{ transform: "rotateX(4deg) rotateY(-1deg)", transformOrigin: "center center", position: "relative" }}>
+          {/* Glow behind */}
+          <div style={{ position: "absolute", inset: -40, background: "radial-gradient(ellipse at center, rgba(232,106,42,0.08) 0%, transparent 70%)", zIndex: 0, borderRadius: 40, filter: "blur(40px)" }} />
+
+          {/* Dashboard frame */}
+          <div className="wp-dash" style={{
+            position: "relative", zIndex: 1, background: "rgba(17,17,17,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 0, overflow: "hidden",
+            boxShadow: "0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.06)",
+          }}>
+            {/* Title bar */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500, letterSpacing: 0.5 }}>Wolf Pack AI — Dashboard</div>
+              <div style={{ width: 50 }} />
+            </div>
+
+            <div style={{ display: "flex", minHeight: 340 }}>
+              {/* Sidebar */}
+              <div className="wp-dash-sidebar" style={{ width: 180, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "16px 12px", flexShrink: 0, background: "rgba(0,0,0,0.2)" }}>
+                {[
+                  { icon: "📊", label: "Dashboard", active: true },
+                  { icon: "💬", label: "Conversations", badge: 3 },
+                  { icon: "📋", label: "Pipeline" },
+                  { icon: "📅", label: "Calendar" },
+                  { icon: "👥", label: "Contacts" },
+                  { icon: "📧", label: "Email" },
+                  { icon: "⚙️", label: "Settings" },
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, marginBottom: 2, fontSize: 12, fontWeight: 500,
+                    background: item.active ? "rgba(232,106,42,0.12)" : "transparent",
+                    color: item.active ? "#E86A2A" : "rgba(255,255,255,0.35)",
+                  }}>
+                    <span style={{ fontSize: 13 }}>{item.icon}</span>
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span style={{ marginLeft: "auto", background: "#E86A2A", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8 }}>{item.badge}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Main content */}
+              <div style={{ flex: 1, padding: 20, overflow: "hidden" }}>
+                {/* Stats row */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+                  {[
+                    { label: "Appointments Today", value: "6", color: "#E86A2A" },
+                    { label: "Active Conversations", value: "12", color: "#007AFF" },
+                    { label: "Pipeline Value", value: "$34.2k", color: "#2ecc71" },
+                    { label: "Response Time", value: "3s", color: "#f5a623" },
+                  ].map((stat, i) => (
+                    <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px" }}>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 }}>{stat.value}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {/* Recent conversations */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 14 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Live Conversations</div>
+                    {[
+                      { name: "Marcus J.", msg: "Yeah Thursday at 2 works for me", time: "Just now", blue: true },
+                      { name: "Sarah K.", msg: "What's the pricing for a full rewire?", time: "2m ago", blue: true },
+                      { name: "David R.", msg: "Sounds good, send me the calendar link", time: "5m ago", blue: false },
+                    ].map((c, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, background: `rgba(232,106,42,${0.15 + i * 0.05})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#E86A2A", flexShrink: 0 }}>
+                          {c.name.charAt(0)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>{c.name}</span>
+                            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{c.time}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {c.blue && <span style={{ color: "#007AFF", marginRight: 4, fontSize: 8 }}>●</span>}
+                            {c.msg}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pipeline mini */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 14 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Pipeline</div>
+                    {[
+                      { stage: "New Lead", count: 8, color: "#007AFF", width: "85%" },
+                      { stage: "Qualified", count: 5, color: "#E86A2A", width: "55%" },
+                      { stage: "Appointment Set", count: 4, color: "#f5a623", width: "45%" },
+                      { stage: "Proposal Sent", count: 2, color: "#9b59b6", width: "25%" },
+                      { stage: "Won", count: 3, color: "#2ecc71", width: "35%" },
+                    ].map((s, i) => (
+                      <div key={i} style={{ marginBottom: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{s.stage}</span>
+                          <span style={{ fontSize: 11, color: s.color, fontWeight: 700 }}>{s.count}</span>
+                        </div>
+                        <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 2, background: s.color, width: s.width, opacity: 0.6 }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Appointment ticker at bottom */}
+                <div style={{ marginTop: 12, display: "flex", gap: 8, overflow: "hidden" }}>
+                  {[
+                    { name: "Marcus J.", time: "Thu 2:00 PM", status: "Confirmed" },
+                    { name: "Lisa M.", time: "Fri 10:00 AM", status: "Confirmed" },
+                    { name: "James W.", time: "Fri 3:30 PM", status: "Pending" },
+                  ].map((a, i) => (
+                    <div key={i} style={{ flex: 1, background: "rgba(46,204,113,0.06)", border: "1px solid rgba(46,204,113,0.12)", borderRadius: 8, padding: "8px 12px" }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{a.name}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{a.time} · <span style={{ color: a.status === "Confirmed" ? "#2ecc71" : "#f5a623" }}>{a.status}</span></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
