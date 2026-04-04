@@ -33,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <meta name="apple-mobile-web-app-title" content="WolfPack" />
           <link rel="apple-touch-icon" href="/app-icon-192.png" />
           <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+          <meta name="google-site-verification" content="f0nkldAE4DmLhSjQ2qEKitsVZnXNOyan8U1TA8hdDYc" />
         </head>
         <body>{children}</body>
       </html>
