@@ -91,11 +91,29 @@ export default function GbpScorePage() {
   async function handleCapture() {
     if (!captureEmail.trim()) return;
     setCapturing(true);
+    // Save lead
     await fetch("/api/score/capture", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: captureEmail, name: captureName, url: businessName, score: result?.score, grade: result?.grade, type: "gbp" }),
     });
+    // Send report email
+    await fetch("/api/score/send-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "gbp",
+        email: captureEmail.trim(),
+        name: captureName.trim() || null,
+        reportData: {
+          businessName: result?.businessName,
+          score: result?.score,
+          grade: result?.grade,
+          checks: result?.checks,
+          summary: result?.summary,
+        },
+      }),
+    }).catch(() => {});
     setCapturing(false);
     setCaptured(true);
     setShowCapture(false);
