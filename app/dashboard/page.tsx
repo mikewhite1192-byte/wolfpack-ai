@@ -2,19 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import OnboardingChat from "./components/OnboardingChat";
-
-const T = {
-  orange: "#E86A2A",
-  text: "#e8eaf0",
-  muted: "#b0b4c8",
-  surface: "#111111",
-  border: "rgba(255,255,255,0.07)",
-  green: "#2ecc71",
-  red: "#e74c3c",
-  yellow: "#f5a623",
-  blue: "#007AFF",
-};
 
 interface Stats {
   pipelineValue: number;
@@ -105,7 +94,6 @@ export default function DashboardPage() {
       .then(data => { if (!data.done) setShowOnboarding(true); setOnboardingChecked(true); })
       .catch(() => setOnboardingChecked(true));
 
-    // Generate fresh recommendations, then fetch
     fetch("/api/dashboard/recommendations", { method: "POST" })
       .then(() => fetch("/api/dashboard/recommendations"))
       .then(r => r.json())
@@ -115,11 +103,7 @@ export default function DashboardPage() {
 
   async function dismissRec(id: string) {
     setRecommendations(prev => prev.filter(r => r.id !== id));
-    await fetch("/api/dashboard/recommendations", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
+    await fetch("/api/dashboard/recommendations", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
   }
 
   const maxStageCount = Math.max(...stages.map(s => parseInt(s.count) || 0), 1);
@@ -127,115 +111,69 @@ export default function DashboardPage() {
   return (
     <div>
       {showOnboarding && onboardingChecked && <OnboardingChat onComplete={() => setShowOnboarding(false)} />}
-      <style>{`
-        .dash-label { font-size: 11px; font-weight: 700; color: ${T.orange}; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
-        .dash-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
-        .dash-left { min-width: 0; }
-        .dash-right { min-width: 0; }
-
-        .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .dash-stat { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 16px 14px; }
-        .dash-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.5px; line-height: 1; margin-bottom: 4px; }
-        .dash-stat-label { font-size: 11px; font-weight: 600; color: ${T.muted}; }
-
-        .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .dash-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 18px; }
-
-        .dash-stage-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid ${T.border}; }
-        .dash-stage-row:last-child { border-bottom: none; }
-        .dash-stage-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .dash-stage-name { font-size: 12px; color: ${T.muted}; min-width: 90px; }
-        .dash-stage-count { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: ${T.text}; min-width: 24px; text-align: right; }
-        .dash-stage-bar-wrap { flex: 1; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; }
-        .dash-stage-bar { height: 3px; border-radius: 2px; transition: width 0.5s ease; }
-
-        .dash-activity-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid ${T.border}; align-items: flex-start; }
-        .dash-activity-item:last-child { border-bottom: none; }
-        .dash-activity-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
-        .dash-activity-text { font-size: 12px; color: ${T.muted}; line-height: 1.5; }
-        .dash-activity-time { font-size: 10px; color: rgba(255,255,255,0.2); margin-top: 2px; }
-
-        .dash-rec-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 18px; margin-bottom: 12px; }
-        .dash-rec-item { padding: 12px 0; border-bottom: 1px solid ${T.border}; }
-        .dash-rec-item:last-child { border-bottom: none; }
-        .dash-rec-badge { font-size: 8px; font-weight: 700; padding: 2px 7px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; margin-bottom: 6px; }
-        .dash-rec-title { font-size: 13px; font-weight: 600; color: ${T.text}; margin-bottom: 3px; }
-        .dash-rec-desc { font-size: 11px; color: ${T.muted}; line-height: 1.5; }
-        .dash-rec-action { font-size: 11px; font-weight: 600; color: ${T.orange}; text-decoration: none; margin-top: 6px; display: inline-block; }
-        .dash-rec-action:hover { text-decoration: underline; }
-
-        .dash-empty { text-align: center; padding: 24px 0; color: ${T.muted}; font-size: 12px; }
-        .dash-loading { text-align: center; padding: 60px; color: ${T.muted}; font-size: 14px; }
-
-        @media (max-width: 1000px) {
-          .dash-layout { grid-template-columns: 1fr; }
-          .dash-stats { grid-template-columns: repeat(2, 1fr); }
-          .dash-row { grid-template-columns: 1fr; }
-        }
-      `}</style>
 
       {loading ? (
-        <div className="dash-loading">Loading dashboard...</div>
+        <div className="text-center py-16 text-[#b0b4c8] text-sm">Loading dashboard...</div>
       ) : (
-        <div className="dash-layout">
-          {/* Left — Main content */}
-          <div className="dash-left">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+          {/* Left — Main */}
+          <div className="min-w-0">
             {/* Stats */}
-            <div className="dash-label">Overview</div>
-            <div className="dash-stats">
+            <div className="text-[11px] font-bold text-[#E86A2A] tracking-[1.5px] uppercase mb-3">Overview</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
               {stats && [
-                { label: "Pipeline Value", value: fmtMoney(stats.pipelineValue), color: T.orange },
-                { label: "Closed This Month", value: fmtMoney(stats.closedThisMonth), color: T.green },
-                { label: "Conversion Rate", value: `${stats.conversionRate}%`, color: T.orange },
-                { label: "Avg Deal Size", value: fmtMoney(stats.avgDealSize), color: T.text },
-                { label: "Total Leads", value: fmt(stats.totalLeads), color: T.text },
-                { label: "Active Leads", value: fmt(stats.activeLeads), color: T.orange },
-                { label: "Deals Won", value: fmt(stats.closedCount), color: T.green },
-                { label: "Open Conversations", value: fmt(stats.openConversations || 0), color: T.blue },
+                { label: "Pipeline Value", value: fmtMoney(stats.pipelineValue), color: "#E86A2A" },
+                { label: "Closed This Month", value: fmtMoney(stats.closedThisMonth), color: "#2ecc71" },
+                { label: "Conversion Rate", value: `${stats.conversionRate}%`, color: "#E86A2A" },
+                { label: "Avg Deal Size", value: fmtMoney(stats.avgDealSize), color: "#e8eaf0" },
+                { label: "Total Leads", value: fmt(stats.totalLeads), color: "#e8eaf0" },
+                { label: "Active Leads", value: fmt(stats.activeLeads), color: "#E86A2A" },
+                { label: "Deals Won", value: fmt(stats.closedCount), color: "#2ecc71" },
+                { label: "Open Conversations", value: fmt(stats.openConversations || 0), color: "#007AFF" },
               ].map(s => (
-                <div key={s.label} className="dash-stat">
-                  <div className="dash-stat-val" style={{ color: s.color }}>{s.value}</div>
-                  <div className="dash-stat-label">{s.label}</div>
+                <div key={s.label} className="bg-[#111] border border-white/[0.07] rounded-xl px-3.5 py-4 hover:border-white/[0.12] transition-all duration-200">
+                  <div className="font-display text-[28px] tracking-wide leading-none mb-1" style={{ color: s.color }}>{s.value}</div>
+                  <div className="text-[11px] font-semibold text-[#b0b4c8]">{s.label}</div>
                 </div>
               ))}
             </div>
 
-            <div className="dash-row">
-              {/* Pipeline breakdown */}
-              <div className="dash-card">
-                <div className="dash-label">Pipeline</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* Pipeline */}
+              <div className="bg-[#111] border border-white/[0.07] rounded-xl p-5">
+                <div className="text-[11px] font-bold text-[#E86A2A] tracking-[1.5px] uppercase mb-3">Pipeline</div>
                 {stages.map(s => {
                   const count = parseInt(s.count) || 0;
                   const pct = maxStageCount > 0 ? (count / maxStageCount) * 100 : 0;
                   return (
-                    <div key={s.name} className="dash-stage-row">
-                      <div className="dash-stage-dot" style={{ background: s.color }} />
-                      <div className="dash-stage-name">{s.name}</div>
-                      <div className="dash-stage-bar-wrap">
-                        <div className="dash-stage-bar" style={{ width: `${pct}%`, background: s.color }} />
+                    <div key={s.name} className="flex items-center gap-2.5 py-2 border-b border-white/[0.07] last:border-b-0">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                      <div className="text-xs text-[#b0b4c8] min-w-[90px]">{s.name}</div>
+                      <div className="flex-1 h-[3px] bg-white/5 rounded-full">
+                        <div className="h-[3px] rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: s.color }} />
                       </div>
-                      <div className="dash-stage-count">{count}</div>
+                      <div className="font-display text-base text-[#e8eaf0] min-w-[24px] text-right">{count}</div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Recent activity */}
-              <div className="dash-card">
-                <div className="dash-label">Activity</div>
+              {/* Activity */}
+              <div className="bg-[#111] border border-white/[0.07] rounded-xl p-5">
+                <div className="text-[11px] font-bold text-[#E86A2A] tracking-[1.5px] uppercase mb-3">Activity</div>
                 {activity.length === 0 ? (
-                  <div className="dash-empty">No activity yet.</div>
+                  <div className="text-center py-6 text-[#b0b4c8] text-xs">No activity yet.</div>
                 ) : (
                   activity.slice(0, 8).map((a, i) => (
-                    <div key={i} className="dash-activity-item">
-                      <div className="dash-activity-dot" style={{
-                        background: a.action === "ai_note" ? T.blue :
-                                   a.action === "appointment_booked" ? T.green :
-                                   a.action === "stage_changed" ? T.yellow : T.orange
+                    <div key={i} className="flex gap-2.5 py-2.5 border-b border-white/[0.07] last:border-b-0 items-start">
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{
+                        background: a.action === "ai_note" ? "#007AFF" :
+                                   a.action === "appointment_booked" ? "#2ecc71" :
+                                   a.action === "stage_changed" ? "#f5a623" : "#E86A2A"
                       }} />
                       <div>
-                        <div className="dash-activity-text">{getActivityText(a)}</div>
-                        <div className="dash-activity-time">{timeAgo(a.created_at)}</div>
+                        <div className="text-xs text-[#b0b4c8] leading-relaxed">{getActivityText(a)}</div>
+                        <div className="text-[10px] text-white/20 mt-0.5">{timeAgo(a.created_at)}</div>
                       </div>
                     </div>
                   ))
@@ -244,31 +182,32 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Right — AI Recommendations */}
-          <div className="dash-right">
-            <div className="dash-rec-card">
-              <div className="dash-label">AI Recommendations</div>
+          {/* Right — AI Recs */}
+          <div className="min-w-0">
+            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-5">
+              <div className="text-[11px] font-bold text-[#E86A2A] tracking-[1.5px] uppercase mb-3">AI Recommendations</div>
               {recommendations.length === 0 ? (
-                <div className="dash-empty">All caught up. No actions needed.</div>
+                <div className="text-center py-6 text-[#b0b4c8] text-xs">All caught up. No actions needed.</div>
               ) : (
                 recommendations.map((r) => (
-                  <div key={r.id} className="dash-rec-item">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div
-                        className="dash-rec-badge"
-                        style={{ background: `${typeColors[r.type] || "#888"}18`, color: typeColors[r.type] || "#888", border: `1px solid ${typeColors[r.type] || "#888"}30` }}
-                      >
+                  <div key={r.id} className="py-3 border-b border-white/[0.07] last:border-b-0">
+                    <div className="flex justify-between items-start">
+                      <div className="text-[8px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider inline-block mb-1.5"
+                        style={{ background: `${typeColors[r.type] || "#888"}18`, color: typeColors[r.type] || "#888", border: `1px solid ${typeColors[r.type] || "#888"}30` }}>
                         {typeLabels[r.type] || r.type}
                       </div>
-                      <button
-                        onClick={() => dismissRec(r.id)}
-                        style={{ background: "none", border: "none", color: "rgba(255,255,255,0.15)", cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 }}
-                        title="Dismiss"
-                      >×</button>
+                      <button onClick={() => dismissRec(r.id)} title="Dismiss"
+                        className="bg-transparent border-none text-white/15 cursor-pointer hover:text-white/40 transition-colors p-0.5">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <div className="dash-rec-title">{r.title}</div>
-                    <div className="dash-rec-desc">{r.description}</div>
-                    {r.action_label && r.action_href && <Link href={r.action_href} className="dash-rec-action">{r.action_label} →</Link>}
+                    <div className="text-[13px] font-semibold text-[#e8eaf0] mb-1">{r.title}</div>
+                    <div className="text-[11px] text-[#b0b4c8] leading-relaxed">{r.description}</div>
+                    {r.action_label && r.action_href && (
+                      <Link href={r.action_href} className="text-[11px] font-semibold text-[#E86A2A] no-underline hover:underline mt-1.5 inline-block">
+                        {r.action_label} →
+                      </Link>
+                    )}
                   </div>
                 ))
               )}
