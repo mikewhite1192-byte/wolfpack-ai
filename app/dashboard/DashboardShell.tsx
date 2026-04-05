@@ -131,6 +131,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [dialNumber, setDialNumber] = useState("");
   const [signingOut, setSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [subChecked, setSubChecked] = useState(false);
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   async function handleDemoSignOut() {
     setSigningOut(true);
@@ -141,6 +143,45 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   useEffect(() => {
     if (isLoaded && !isSignedIn) router.push("/sign-in");
   }, [isLoaded, isSignedIn, router]);
+
+  // Check subscription + link Stripe session if coming from checkout
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+
+    async function checkSub() {
+      // If URL has session_id from Stripe checkout, link it to this user
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("session_id");
+      if (sessionId) {
+        await fetch("/api/stripe/link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        }).catch(() => {});
+        // Clean URL
+        window.history.replaceState({}, "", pathname);
+      }
+
+      // Check if user has active subscription
+      const res = await fetch("/api/stripe/link");
+      const data = await res.json();
+
+      const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
+      const isAdminUser = ADMIN_EMAILS.includes(email);
+
+      if (data.active || isAdminUser) {
+        setHasSubscription(true);
+      } else {
+        // No subscription — redirect to pricing
+        router.push("/#pricing");
+        return;
+      }
+
+      setSubChecked(true);
+    }
+
+    checkSub();
+  }, [isLoaded, isSignedIn, user, router, pathname]);
 
   useEffect(() => {
     function handleOpenDialer(e: Event) {
@@ -161,6 +202,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   if (!isLoaded) return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-[#b0b4c8]">Loading...</div>;
   if (!isSignedIn) return <div className="min-h-screen bg-[#0a0a0a]" />;
+  if (!subChecked) return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-[#b0b4c8]">Verifying account...</div>;
 
   const isAdmin = isSignedIn && user?.primaryEmailAddress?.emailAddress && ADMIN_EMAILS.includes(user.primaryEmailAddress.emailAddress.toLowerCase());
 
@@ -210,10 +252,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           {/* Right side */}
           <div className="flex items-center gap-2.5">
-            <button onClick={() => setDialOpen(d => !d)}
-              className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/18 transition-all">
-              <Phone className="w-3 h-3" /> Dial
-            </button>
+            {isAdmin && (
+              <button onClick={() => setDialOpen(d => !d)}
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/18 transition-all">
+                <Phone className="w-3 h-3" /> Dial
+              </button>
+            )}
             <button onClick={handleDemoSignOut} disabled={signingOut}
               className="hidden sm:block text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:text-red-400 transition-colors px-2 py-1.5">
               {signingOut ? "..." : "Sign Out"}
@@ -246,10 +290,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             );
           })}
           <div className="w-full flex gap-2 mt-2 pt-2 border-t border-white/[0.06]">
-            <button onClick={() => { setDialOpen(true); setMenuOpen(false); }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer">
-              <Phone className="w-3 h-3" /> Dial
-            </button>
+            {isAdmin && (
+              <button onClick={() => { setDialOpen(true); setMenuOpen(false); }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer">
+                <Phone className="w-3 h-3" /> Dial
+              </button>
+            )}
             <button onClick={handleDemoSignOut} disabled={signingOut}
               className="text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:text-red-400 px-3 py-2">
               {signingOut ? "..." : "Sign Out"}
@@ -258,7 +304,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
       )}
 
-      {dialOpen && <DialPad onClose={() => { setDialOpen(false); setDialNumber(""); }} initialNumber={dialNumber} />}
+      {dialOpen && isAdmin && <DialPad onClose={() => { setDialOpen(false); setDialNumber(""); }} initialNumber={dialNumber} />}
 
       {/* Content */}
       <main className="max-w-[1400px] mx-auto px-6 pt-[72px] pb-7">{children}</main>
