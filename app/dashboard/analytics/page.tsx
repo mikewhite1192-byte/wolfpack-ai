@@ -2,106 +2,43 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 
-const T = {
-  orange: "#E86A2A",
-  text: "#e8eaf0",
-  muted: "#b0b4c8",
-  surface: "#111111",
-  surfaceAlt: "#111111",
-  border: "rgba(255,255,255,0.07)",
-  green: "#2ecc71",
-  red: "#e74c3c",
-  blue: "#3498db",
-  purple: "#9b59b6",
-  yellow: "#f39c12",
-};
-
 const ADMIN_EMAILS = ["info@thewolfpackco.com"];
 
 interface BusinessData {
-  mrr: number;
-  revenueThisMonth: number;
-  revenueLastMonth: number;
-  revenueGrowth: number;
-  totalSubscribers: number;
-  starterCount: number;
-  proCount: number;
-  agencyCount: number;
-  churnedThisMonth: number;
-  churnRate: number;
-  totalWorkspaces: number;
-  totalContacts: number;
-  totalConversations: number;
-  activeConversations: number;
-  totalAiMessages: number;
-  totalBookings: number;
-  bookingsThisMonth: number;
-  dealsWon: number;
-  dealValueWon: number;
-  recentSignups: number;
-  outreachTotal: number;
-  outreachReplied: number;
-  outreachBounced: number;
-  outreachConverted: number;
-  totalAffiliates: number;
-  affiliateEarned: number;
-  affiliatePaid: number;
-  activeReferrals: number;
+  mrr: number; revenueThisMonth: number; revenueLastMonth: number; revenueGrowth: number;
+  totalSubscribers: number; starterCount: number; proCount: number; agencyCount: number;
+  churnedThisMonth: number; churnRate: number; totalWorkspaces: number; totalContacts: number;
+  totalConversations: number; activeConversations: number; totalAiMessages: number;
+  totalBookings: number; bookingsThisMonth: number; dealsWon: number; dealValueWon: number;
+  recentSignups: number; outreachTotal: number; outreachReplied: number;
+  outreachBounced: number; outreachConverted: number; totalAffiliates: number;
+  affiliateEarned: number; affiliatePaid: number; activeReferrals: number;
 }
 
-function formatMoney(n: number): string {
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
+function formatMoney(n: number): string { if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`; return `$${n.toFixed(0)}`; }
+function formatNum(n: number): string { if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`; if (n >= 1000) return `${(n / 1000).toFixed(1)}k`; return n.toString(); }
+
+interface FunnelStage { name: string; color: string; count: number; totalValue: number; conversionRate: number | null; }
+interface StageBreakdown { name: string; color: string; isWon: boolean; isLost: boolean; count: number; totalValue: number; }
+interface LeadSource { source: string; count: number; wonCount: number; totalValue: number; }
+interface AnalyticsData { funnel: FunnelStage[]; stageBreakdown: StageBreakdown[]; wonThisMonth: { count: number; totalValue: number }; lostThisMonth: { count: number; totalValue: number }; avgDealSize: number; avgTimeInStage: Record<string, number>; leadSources: LeadSource[]; }
+interface TrafficData { totalViews: number; uniqueVisitors: number; todayViews: number; yesterdayViews: number; daily: { date: string; views: number; visitors: number }[]; topPages: { path: string; views: number; visitors: number }[]; topReferrers: { referrer: string; views: number }[]; }
+
+function StatCard({ value, label, color }: { value: React.ReactNode; label: string; color?: string }) {
+  return (
+    <div className="bg-[#111] border border-white/[0.07] rounded-xl px-4 py-4 text-center hover:border-white/[0.12] transition-colors">
+      <div className="font-display text-[28px] tracking-wide leading-none mb-1" style={{ color: color || "#e8eaf0" }}>{value}</div>
+      <div className="text-[11px] font-semibold text-[#b0b4c8] uppercase tracking-wider">{label}</div>
+    </div>
+  );
 }
 
-function formatNum(n: number): string {
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return n.toString();
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <div className="text-[11px] font-bold text-[#E86A2A] tracking-[1.5px] uppercase mb-3 mt-6">{children}</div>;
 }
 
-interface FunnelStage {
-  name: string;
-  color: string;
-  count: number;
-  totalValue: number;
-  conversionRate: number | null;
-}
-
-interface StageBreakdown {
-  name: string;
-  color: string;
-  isWon: boolean;
-  isLost: boolean;
-  count: number;
-  totalValue: number;
-}
-
-interface LeadSource {
-  source: string;
-  count: number;
-  wonCount: number;
-  totalValue: number;
-}
-
-interface AnalyticsData {
-  funnel: FunnelStage[];
-  stageBreakdown: StageBreakdown[];
-  wonThisMonth: { count: number; totalValue: number };
-  lostThisMonth: { count: number; totalValue: number };
-  avgDealSize: number;
-  avgTimeInStage: Record<string, number>;
-  leadSources: LeadSource[];
-}
-
-interface TrafficData {
-  totalViews: number;
-  uniqueVisitors: number;
-  todayViews: number;
-  yesterdayViews: number;
-  daily: { date: string; views: number; visitors: number }[];
-  topPages: { path: string; views: number; visitors: number }[];
-  topReferrers: { referrer: string; views: number }[];
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`bg-[#111] border border-white/[0.07] rounded-xl p-5 ${className}`}>{children}</div>;
 }
 
 export default function AnalyticsPage() {
@@ -117,464 +54,267 @@ export default function AnalyticsPage() {
 
   const isAdmin = ADMIN_EMAILS.includes(user?.primaryEmailAddress?.emailAddress?.toLowerCase() || "");
 
-  const fetchData = useCallback(async () => {
-    try {
-      const res = await fetch("/api/analytics/pipeline");
-      const json = await res.json();
-      setData(json);
-    } catch (e) {
-      console.error("[analytics] fetch error:", e);
-    }
-    setLoading(false);
-  }, []);
-
+  const fetchData = useCallback(async () => { try { const res = await fetch("/api/analytics/pipeline"); setData(await res.json()); } catch {} setLoading(false); }, []);
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { if (tab === "business" && !bizData && isAdmin) { setBizLoading(true); fetch("/api/owner").then(r => r.json()).then(d => { setBizData(d); setBizLoading(false); }).catch(() => setBizLoading(false)); } }, [tab, bizData, isAdmin]);
+  useEffect(() => { if (tab === "traffic") { setTrafficLoading(true); fetch(`/api/analytics/traffic?range=${trafficRange}`).then(r => r.json()).then(d => { setTrafficData(d); setTrafficLoading(false); }).catch(() => setTrafficLoading(false)); } }, [tab, trafficRange]);
 
-  useEffect(() => {
-    if (tab === "business" && !bizData && isAdmin) {
-      setBizLoading(true);
-      fetch("/api/owner").then(r => r.json()).then(d => { setBizData(d); setBizLoading(false); }).catch(() => setBizLoading(false));
-    }
-  }, [tab, bizData, isAdmin]);
+  if (loading) return <div className="text-[#b0b4c8] py-10 text-center">Loading analytics...</div>;
+  if (!data) return <div className="text-red-400 py-10 text-center">Failed to load analytics.</div>;
 
-  useEffect(() => {
-    if (tab === "traffic") {
-      setTrafficLoading(true);
-      fetch(`/api/analytics/traffic?range=${trafficRange}`)
-        .then(r => r.json())
-        .then(d => { setTrafficData(d); setTrafficLoading(false); })
-        .catch(() => setTrafficLoading(false));
-    }
-  }, [tab, trafficRange]);
-
-  if (loading) return <div style={{ color: T.muted, padding: 40, textAlign: "center" }}>Loading analytics...</div>;
-  if (!data) return <div style={{ color: T.red, padding: 40, textAlign: "center" }}>Failed to load analytics.</div>;
-
-  const totalDeals = data.stageBreakdown.reduce((sum, s) => sum + s.count, 0);
-  const totalValue = data.stageBreakdown.reduce((sum, s) => sum + s.totalValue, 0);
+  const totalDeals = data.stageBreakdown.reduce((s, st) => s + st.count, 0);
+  const totalValue = data.stageBreakdown.reduce((s, st) => s + st.totalValue, 0);
   const maxFunnelCount = Math.max(...data.funnel.map(f => f.count), 1);
 
   return (
     <div>
-      <style>{`
-        .an-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: ${T.text}; letter-spacing: 1px; margin-bottom: 24px; }
-        .an-tabs { display: flex; gap: 4px; background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 4px; margin-bottom: 24px; width: fit-content; }
-        .an-tab { padding: 8px 18px; border-radius: 7px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
-        .an-tab-active { background: ${T.orange}; color: #fff; }
-        .an-tab-inactive { background: transparent; color: ${T.muted}; }
-        .ow-grid { display: grid; gap: 10px; margin-bottom: 20px; }
-        .ow-grid-4 { grid-template-columns: repeat(4, 1fr); }
-        .ow-grid-3 { grid-template-columns: repeat(3, 1fr); }
-        .ow-grid-2 { grid-template-columns: repeat(2, 1fr); }
-        .ow-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 18px; }
-        .ow-stat { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 16px 14px; }
-        .ow-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 0.5px; line-height: 1; margin-bottom: 4px; }
-        .ow-stat-label { font-size: 11px; font-weight: 600; color: ${T.muted}; text-transform: uppercase; letter-spacing: 0.5px; }
-        .ow-section { font-size: 11px; font-weight: 700; color: ${T.orange}; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; margin-top: 24px; }
-        .ow-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 8px; }
-        .ow-bar-fill { height: 100%; border-radius: 4px; }
-        .ow-sub-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid ${T.border}; }
-        .ow-sub-row:last-child { border-bottom: none; }
-        .ow-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        @media (max-width: 900px) { .ow-grid-4 { grid-template-columns: repeat(2, 1fr); } .ow-grid-3 { grid-template-columns: 1fr; } }
-        .an-grid { display: grid; gap: 16px; margin-bottom: 16px; }
-        .an-grid-4 { grid-template-columns: repeat(4, 1fr); }
-        .an-grid-2 { grid-template-columns: 1fr 1fr; }
-        .an-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 12px; padding: 20px; }
-        .an-card-sm { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 12px; padding: 16px; text-align: center; }
-        .an-section { font-size: 11px; font-weight: 700; color: ${T.orange}; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; }
-        .an-stat-value { font-size: 28px; font-weight: 800; color: ${T.text}; font-family: 'Inter', sans-serif; }
-        .an-stat-label { font-size: 11px; color: ${T.muted}; margin-top: 4px; font-weight: 600; }
-        .an-funnel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-        .an-funnel-label { width: 120px; font-size: 13px; color: ${T.text}; font-weight: 500; flex-shrink: 0; }
-        .an-funnel-bar-wrap { flex: 1; height: 32px; background: rgba(255,255,255,0.03); border-radius: 6px; overflow: hidden; position: relative; }
-        .an-funnel-bar { height: 100%; border-radius: 6px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; transition: width 0.5s ease; min-width: 40px; }
-        .an-funnel-count { font-size: 12px; font-weight: 700; color: #fff; }
-        .an-funnel-arrow { font-size: 11px; color: ${T.muted}; text-align: center; padding: 2px 0; }
-        .an-funnel-conv { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
-        .an-table { width: 100%; border-collapse: collapse; }
-        .an-table th { text-align: left; font-size: 11px; color: ${T.muted}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid ${T.border}; }
-        .an-table td { padding: 10px 12px; font-size: 13px; color: ${T.text}; border-bottom: 1px solid ${T.border}; }
-        .an-table tr:last-child td { border-bottom: none; }
-        .an-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; flex-shrink: 0; }
-        .an-source-bar { height: 6px; border-radius: 3px; background: ${T.orange}; transition: width 0.5s ease; }
-        @media (max-width: 900px) {
-          .an-grid-4 { grid-template-columns: repeat(2, 1fr); }
-          .an-grid-2 { grid-template-columns: 1fr; }
-        }
-      `}</style>
+      <div className="font-display text-[28px] text-[#e8eaf0] tracking-wide mb-6">ANALYTICS</div>
 
-      <div className="an-title">ANALYTICS</div>
-
-      <div className="an-tabs">
-        <button className={`an-tab ${tab === "pipeline" ? "an-tab-active" : "an-tab-inactive"}`} onClick={() => setTab("pipeline")}>Pipeline</button>
-        <button className={`an-tab ${tab === "traffic" ? "an-tab-active" : "an-tab-inactive"}`} onClick={() => setTab("traffic")}>Site Traffic</button>
-        {isAdmin && <button className={`an-tab ${tab === "business" ? "an-tab-active" : "an-tab-inactive"}`} onClick={() => setTab("business")}>Business</button>}
-      </div>
-
-      {tab === "pipeline" && (<>
-      {/* KPI Cards */}
-      <div className="an-grid an-grid-4">
-        <div className="an-card-sm">
-          <div className="an-stat-value">{totalDeals}</div>
-          <div className="an-stat-label">Total Deals</div>
-        </div>
-        <div className="an-card-sm">
-          <div className="an-stat-value" style={{ color: T.green }}>${totalValue.toLocaleString()}</div>
-          <div className="an-stat-label">Total Pipeline Value</div>
-        </div>
-        <div className="an-card-sm">
-          <div className="an-stat-value" style={{ color: T.orange }}>${Math.round(data.avgDealSize).toLocaleString()}</div>
-          <div className="an-stat-label">Avg Deal Size</div>
-        </div>
-        <div className="an-card-sm">
-          <div className="an-stat-value" style={{ color: T.green }}>
-            {data.wonThisMonth.count}
-            <span style={{ fontSize: 14, color: T.muted, fontWeight: 400 }}> / </span>
-            <span style={{ fontSize: 20, color: T.red }}>{data.lostThisMonth.count}</span>
-          </div>
-          <div className="an-stat-label">Won / Lost This Month</div>
-        </div>
-      </div>
-
-      {/* Won/Lost detail */}
-      <div className="an-grid an-grid-2" style={{ marginBottom: 16 }}>
-        <div className="an-card" style={{ borderLeft: `3px solid ${T.green}` }}>
-          <div className="an-section">Won This Month</div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <div className="an-stat-value" style={{ color: T.green }}>{data.wonThisMonth.count} deals</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>${data.wonThisMonth.totalValue.toLocaleString()}</div>
-          </div>
-        </div>
-        <div className="an-card" style={{ borderLeft: `3px solid ${T.red}` }}>
-          <div className="an-section">Lost This Month</div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <div className="an-stat-value" style={{ color: T.red }}>{data.lostThisMonth.count} deals</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: T.red }}>${data.lostThisMonth.totalValue.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Pipeline Funnel */}
-      <div className="an-card" style={{ marginBottom: 16 }}>
-        <div className="an-section">Pipeline Funnel</div>
-        {data.funnel.map((stage, i) => (
-          <div key={stage.name}>
-            <div className="an-funnel-row">
-              <div className="an-funnel-label">{stage.name}</div>
-              <div className="an-funnel-bar-wrap">
-                <div
-                  className="an-funnel-bar"
-                  style={{
-                    width: `${Math.max((stage.count / maxFunnelCount) * 100, 8)}%`,
-                    background: stage.color,
-                  }}
-                >
-                  <span className="an-funnel-count">{stage.count}</span>
-                </div>
-              </div>
-              <div style={{ width: 80, textAlign: "right", fontSize: 12, color: T.muted }}>
-                ${stage.totalValue.toLocaleString()}
-              </div>
-            </div>
-            {stage.conversionRate !== null && i < data.funnel.length - 1 && (
-              <div className="an-funnel-arrow">
-                <span className="an-funnel-conv" style={{
-                  background: stage.conversionRate >= 50 ? `${T.green}20` : stage.conversionRate >= 25 ? `${T.yellow}20` : `${T.red}20`,
-                  color: stage.conversionRate >= 50 ? T.green : stage.conversionRate >= 25 ? T.yellow : T.red,
-                }}>
-                  {stage.conversionRate}% conversion
-                </span>
-              </div>
-            )}
-          </div>
+      {/* Tabs */}
+      <div className="flex gap-1 bg-[#111] border border-white/[0.07] rounded-xl p-1 mb-6 w-fit">
+        {[
+          { id: "pipeline" as const, label: "Pipeline" },
+          { id: "traffic" as const, label: "Site Traffic" },
+          ...(isAdmin ? [{ id: "business" as const, label: "Business" }] : []),
+        ].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all ${
+              tab === t.id ? "bg-[#E86A2A] text-white" : "bg-transparent text-[#b0b4c8] hover:text-[#e8eaf0]"
+            }`}>{t.label}</button>
         ))}
-        {data.funnel.length === 0 && (
-          <div style={{ color: T.muted, fontSize: 13, textAlign: "center", padding: 20 }}>No active pipeline stages with deals yet.</div>
-        )}
       </div>
 
-      <div className="an-grid an-grid-2">
-        {/* Stage Breakdown Table */}
-        <div className="an-card">
-          <div className="an-section">Stage Breakdown</div>
-          <table className="an-table">
-            <thead>
-              <tr>
-                <th>Stage</th>
-                <th style={{ textAlign: "right" }}>Deals</th>
-                <th style={{ textAlign: "right" }}>Value</th>
-                <th style={{ textAlign: "right" }}>Avg Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.stageBreakdown.map(stage => (
-                <tr key={stage.name}>
-                  <td>
-                    <span className="an-dot" style={{ background: stage.color }} />
-                    {stage.name}
-                  </td>
-                  <td style={{ textAlign: "right" }}>{stage.count}</td>
-                  <td style={{ textAlign: "right" }}>${stage.totalValue.toLocaleString()}</td>
-                  <td style={{ textAlign: "right", color: T.muted }}>
-                    {data.avgTimeInStage[stage.name] !== undefined
-                      ? `${data.avgTimeInStage[stage.name]}d`
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* ── Pipeline Tab ── */}
+      {tab === "pipeline" && (<>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
+          <StatCard value={totalDeals} label="Total Deals" />
+          <StatCard value={`$${totalValue.toLocaleString()}`} label="Total Pipeline Value" color="#2ecc71" />
+          <StatCard value={`$${Math.round(data.avgDealSize).toLocaleString()}`} label="Avg Deal Size" color="#E86A2A" />
+          <StatCard value={<>{data.wonThisMonth.count}<span className="text-sm text-[#b0b4c8] font-normal"> / </span><span className="text-xl text-red-400">{data.lostThisMonth.count}</span></>} label="Won / Lost This Month" color="#2ecc71" />
         </div>
 
-        {/* Lead Source Breakdown */}
-        <div className="an-card">
-          <div className="an-section">Lead Sources</div>
-          {data.leadSources.length === 0 ? (
-            <div style={{ color: T.muted, fontSize: 13, textAlign: "center", padding: 20 }}>No lead source data yet.</div>
-          ) : (
-            <table className="an-table">
-              <thead>
-                <tr>
-                  <th>Source</th>
-                  <th style={{ textAlign: "right" }}>Leads</th>
-                  <th style={{ textAlign: "right" }}>Won</th>
-                  <th style={{ textAlign: "right" }}>Value</th>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <Card className="border-l-[3px] border-l-emerald-400">
+            <SectionLabel>Won This Month</SectionLabel>
+            <div className="flex justify-between items-baseline">
+              <div className="text-[28px] font-extrabold text-emerald-400">{data.wonThisMonth.count} deals</div>
+              <div className="text-lg font-bold text-emerald-400">${data.wonThisMonth.totalValue.toLocaleString()}</div>
+            </div>
+          </Card>
+          <Card className="border-l-[3px] border-l-red-400">
+            <SectionLabel>Lost This Month</SectionLabel>
+            <div className="flex justify-between items-baseline">
+              <div className="text-[28px] font-extrabold text-red-400">{data.lostThisMonth.count} deals</div>
+              <div className="text-lg font-bold text-red-400">${data.lostThisMonth.totalValue.toLocaleString()}</div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Pipeline Funnel */}
+        <Card className="mb-4">
+          <SectionLabel>Pipeline Funnel</SectionLabel>
+          {data.funnel.length === 0 ? (
+            <div className="text-[#b0b4c8] text-sm text-center py-5">No active pipeline stages with deals yet.</div>
+          ) : data.funnel.map((stage, i) => (
+            <div key={stage.name}>
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-[120px] text-sm text-[#e8eaf0] font-medium flex-shrink-0">{stage.name}</div>
+                <div className="flex-1 h-8 bg-white/[0.03] rounded-md overflow-hidden relative">
+                  <div className="h-full rounded-md flex items-center justify-end pr-2.5 transition-all duration-500 min-w-[40px]" style={{ width: `${Math.max((stage.count / maxFunnelCount) * 100, 8)}%`, background: stage.color }}>
+                    <span className="text-xs font-bold text-white">{stage.count}</span>
+                  </div>
+                </div>
+                <div className="w-20 text-right text-xs text-[#b0b4c8]">${stage.totalValue.toLocaleString()}</div>
+              </div>
+              {stage.conversionRate !== null && i < data.funnel.length - 1 && (
+                <div className="text-center text-[11px] py-0.5 mb-1">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold" style={{
+                    background: stage.conversionRate >= 50 ? "rgba(46,204,113,0.12)" : stage.conversionRate >= 25 ? "rgba(243,156,18,0.12)" : "rgba(231,76,60,0.12)",
+                    color: stage.conversionRate >= 50 ? "#2ecc71" : stage.conversionRate >= 25 ? "#f39c12" : "#e74c3c",
+                  }}>{stage.conversionRate}% conversion</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Stage Breakdown */}
+          <Card>
+            <SectionLabel>Stage Breakdown</SectionLabel>
+            <table className="w-full border-collapse">
+              <thead><tr>{["Stage", "Deals", "Value", "Avg Time"].map((h, i) => <th key={h} className={`text-left text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider py-2 px-3 border-b border-white/[0.07] ${i > 0 ? "text-right" : ""}`}>{h}</th>)}</tr></thead>
+              <tbody>{data.stageBreakdown.map(s => (
+                <tr key={s.name} className="border-b border-white/[0.07] last:border-b-0">
+                  <td className="py-2.5 px-3 text-sm text-[#e8eaf0]"><span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ background: s.color }} />{s.name}</td>
+                  <td className="py-2.5 px-3 text-sm text-[#e8eaf0] text-right">{s.count}</td>
+                  <td className="py-2.5 px-3 text-sm text-[#e8eaf0] text-right">${s.totalValue.toLocaleString()}</td>
+                  <td className="py-2.5 px-3 text-sm text-[#b0b4c8] text-right">{data.avgTimeInStage[s.name] !== undefined ? `${data.avgTimeInStage[s.name]}d` : "—"}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.leadSources.map(src => {
+              ))}</tbody>
+            </table>
+          </Card>
+
+          {/* Lead Sources */}
+          <Card>
+            <SectionLabel>Lead Sources</SectionLabel>
+            {data.leadSources.length === 0 ? <div className="text-[#b0b4c8] text-sm text-center py-5">No lead source data yet.</div> : (
+              <table className="w-full border-collapse">
+                <thead><tr>{["Source", "Leads", "Won", "Value"].map((h, i) => <th key={h} className={`text-left text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider py-2 px-3 border-b border-white/[0.07] ${i > 0 ? "text-right" : ""}`}>{h}</th>)}</tr></thead>
+                <tbody>{data.leadSources.map(src => {
                   const maxCount = Math.max(...data.leadSources.map(s => s.count), 1);
                   return (
-                    <tr key={src.source}>
-                      <td>
-                        <div>{src.source}</div>
-                        <div style={{ marginTop: 4 }}>
-                          <div className="an-source-bar" style={{ width: `${(src.count / maxCount) * 100}%` }} />
-                        </div>
-                      </td>
-                      <td style={{ textAlign: "right" }}>{src.count}</td>
-                      <td style={{ textAlign: "right", color: T.green }}>{src.wonCount}</td>
-                      <td style={{ textAlign: "right" }}>${src.totalValue.toLocaleString()}</td>
+                    <tr key={src.source} className="border-b border-white/[0.07] last:border-b-0">
+                      <td className="py-2.5 px-3"><div className="text-sm text-[#e8eaf0]">{src.source}</div><div className="h-1.5 rounded-full bg-[#E86A2A] mt-1" style={{ width: `${(src.count / maxCount) * 100}%` }} /></td>
+                      <td className="py-2.5 px-3 text-sm text-[#e8eaf0] text-right">{src.count}</td>
+                      <td className="py-2.5 px-3 text-sm text-emerald-400 text-right">{src.wonCount}</td>
+                      <td className="py-2.5 px-3 text-sm text-[#e8eaf0] text-right">${src.totalValue.toLocaleString()}</td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          )}
+                })}</tbody>
+              </table>
+            )}
+          </Card>
         </div>
-      </div>
       </>)}
 
+      {/* ── Traffic Tab ── */}
       {tab === "traffic" && (
-        trafficLoading ? (
-          <div style={{ color: T.muted, textAlign: "center", padding: 80 }}>Loading traffic data...</div>
-        ) : trafficData ? (() => {
+        trafficLoading ? <div className="text-[#b0b4c8] text-center py-20">Loading traffic data...</div> :
+        trafficData ? (() => {
           const maxPageViews = Math.max(...(trafficData.topPages || []).map(p => p.views), 1);
           const maxRefViews = Math.max(...(trafficData.topReferrers || []).map(r => r.views), 1);
           const maxDailyViews = Math.max(...(trafficData.daily || []).map(d => d.views), 1);
-          const todayChange = trafficData.yesterdayViews > 0
-            ? Math.round(((trafficData.todayViews - trafficData.yesterdayViews) / trafficData.yesterdayViews) * 100)
-            : trafficData.todayViews > 0 ? 100 : 0;
-
-          return (
-            <>
-              {/* Range selector */}
-              <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
-                {[
-                  { key: "24h", label: "24h" },
-                  { key: "7d", label: "7 days" },
-                  { key: "30d", label: "30 days" },
-                  { key: "90d", label: "90 days" },
-                ].map(r => (
-                  <button
-                    key={r.key}
-                    onClick={() => setTrafficRange(r.key)}
-                    style={{
-                      padding: "6px 14px", fontSize: 12, fontWeight: 600, border: `1px solid ${trafficRange === r.key ? T.orange + "40" : T.border}`,
-                      borderRadius: 6, background: trafficRange === r.key ? "rgba(232,106,42,0.15)" : "transparent",
-                      color: trafficRange === r.key ? T.orange : T.muted, cursor: "pointer",
-                    }}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* KPI Cards */}
-              <div className="an-grid an-grid-4">
-                <div className="an-card-sm">
-                  <div className="an-stat-value">{formatNum(trafficData.totalViews)}</div>
-                  <div className="an-stat-label">Total Views</div>
-                </div>
-                <div className="an-card-sm">
-                  <div className="an-stat-value">{formatNum(trafficData.uniqueVisitors)}</div>
-                  <div className="an-stat-label">Unique Visitors</div>
-                </div>
-                <div className="an-card-sm">
-                  <div className="an-stat-value">{trafficData.todayViews}</div>
-                  <div className="an-stat-label">Today</div>
-                </div>
-                <div className="an-card-sm">
-                  <div className="an-stat-value" style={{ color: todayChange >= 0 ? T.green : T.red }}>
-                    {todayChange >= 0 ? "+" : ""}{todayChange}%
-                  </div>
-                  <div className="an-stat-label">vs Yesterday</div>
-                </div>
-              </div>
-
-              {/* Daily chart */}
-              {trafficData.daily.length > 0 && (
-                <>
-                  <div className="an-section" style={{ marginTop: 24 }}>Views Over Time</div>
-                  <div className="an-card" style={{ padding: 20 }}>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 140 }}>
-                      {trafficData.daily.map((d, i) => (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                          <div style={{ fontSize: 10, color: T.muted }}>{d.views}</div>
-                          <div
-                            style={{
-                              width: "100%", maxWidth: 32, borderRadius: "4px 4px 0 0",
-                              background: `linear-gradient(180deg, ${T.orange}, ${T.orange}80)`,
-                              height: `${Math.max((d.views / maxDailyViews) * 100, 4)}%`,
-                              transition: "height 0.3s ease",
-                            }}
-                            title={`${d.date}: ${d.views} views, ${d.visitors} visitors`}
-                          />
-                          <div style={{ fontSize: 9, color: T.muted, transform: "rotate(-45deg)", whiteSpace: "nowrap" }}>
-                            {new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="an-grid an-grid-2" style={{ marginTop: 20 }}>
-                {/* Top Pages */}
-                <div className="an-card">
-                  <div className="an-section" style={{ marginTop: 0 }}>Top Pages</div>
-                  {trafficData.topPages.length === 0 ? (
-                    <div style={{ color: T.muted, fontSize: 13 }}>No data yet</div>
-                  ) : (
-                    trafficData.topPages.map((p, i) => (
-                      <div key={i} style={{ marginBottom: 12 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                          <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{p.path}</span>
-                          <span style={{ fontSize: 12, color: T.muted }}>{p.views} views / {p.visitors} unique</span>
-                        </div>
-                        <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: 3, background: T.orange, width: `${(p.views / maxPageViews) * 100}%`, transition: "width 0.3s ease" }} />
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Top Referrers */}
-                <div className="an-card">
-                  <div className="an-section" style={{ marginTop: 0 }}>Top Referrers</div>
-                  {trafficData.topReferrers.length === 0 ? (
-                    <div style={{ color: T.muted, fontSize: 13 }}>No data yet</div>
-                  ) : (
-                    trafficData.topReferrers.map((r, i) => {
-                      let displayRef = r.referrer;
-                      try {
-                        if (r.referrer.startsWith("http")) displayRef = new URL(r.referrer).hostname;
-                      } catch { /* keep as is */ }
-                      return (
-                        <div key={i} style={{ marginBottom: 12 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{displayRef}</span>
-                            <span style={{ fontSize: 12, color: T.muted }}>{r.views} views</span>
-                          </div>
-                          <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                            <div style={{ height: "100%", borderRadius: 3, background: T.blue, width: `${(r.views / maxRefViews) * 100}%`, transition: "width 0.3s ease" }} />
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </>
-          );
-        })() : (
-          <div style={{ color: T.muted, textAlign: "center", padding: 80 }}>No traffic data yet. Views will appear as visitors hit your site.</div>
-        )
-      )}
-
-      {tab === "business" && isAdmin && (
-        bizLoading ? (
-          <div style={{ color: T.muted, textAlign: "center", padding: 80 }}>Loading business data...</div>
-        ) : bizData ? (
-          <>
-            <div className="ow-section">Revenue</div>
-            <div className="ow-grid ow-grid-4">
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.green }}>{formatMoney(bizData.mrr)}</div><div className="ow-stat-label">Monthly Recurring Revenue</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.text }}>{formatMoney(bizData.revenueThisMonth)}</div><div className="ow-stat-label">Revenue This Month</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.muted }}>{formatMoney(bizData.revenueLastMonth)}</div><div className="ow-stat-label">Revenue Last Month</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: bizData.revenueGrowth >= 0 ? T.green : T.red }}>{bizData.revenueGrowth >= 0 ? "+" : ""}{bizData.revenueGrowth.toFixed(1)}%</div><div className="ow-stat-label">MoM Growth</div></div>
-            </div>
-
-            <div className="ow-section">Subscribers</div>
-            <div className="ow-grid ow-grid-4">
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.orange }}>{bizData.totalSubscribers}</div><div className="ow-stat-label">Total Active</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.green }}>{bizData.recentSignups}</div><div className="ow-stat-label">New (30 Days)</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.red }}>{bizData.churnedThisMonth}</div><div className="ow-stat-label">Churned</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: bizData.churnRate > 5 ? T.red : bizData.churnRate > 3 ? T.yellow : T.green }}>{bizData.churnRate.toFixed(1)}%</div><div className="ow-stat-label">Churn Rate</div></div>
-            </div>
-
-            <div className="ow-grid ow-grid-2">
-              <div className="ow-card">
-                <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 12 }}>Plan Breakdown</div>
-                <div className="ow-sub-row"><div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="ow-badge" style={{ background: "rgba(52,152,219,0.15)", color: "#3498db" }}>Starter</span><span style={{ fontSize: 13, color: T.text }}>{bizData.starterCount}</span></div><span style={{ fontSize: 13, color: T.muted }}>{bizData.totalSubscribers > 0 ? Math.round((bizData.starterCount / bizData.totalSubscribers) * 100) : 0}%</span></div>
-                <div className="ow-sub-row"><div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="ow-badge" style={{ background: "rgba(232,106,42,0.15)", color: T.orange }}>Pro</span><span style={{ fontSize: 13, color: T.text }}>{bizData.proCount}</span></div><span style={{ fontSize: 13, color: T.muted }}>{bizData.totalSubscribers > 0 ? Math.round((bizData.proCount / bizData.totalSubscribers) * 100) : 0}%</span></div>
-                <div className="ow-sub-row"><div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="ow-badge" style={{ background: "rgba(155,89,182,0.15)", color: T.purple }}>Agency</span><span style={{ fontSize: 13, color: T.text }}>{bizData.agencyCount}</span></div><span style={{ fontSize: 13, color: T.muted }}>{bizData.totalSubscribers > 0 ? Math.round((bizData.agencyCount / bizData.totalSubscribers) * 100) : 0}%</span></div>
-                <div className="ow-bar" style={{ marginTop: 14 }}><div style={{ display: "flex", height: "100%" }}>{bizData.starterCount > 0 && <div className="ow-bar-fill" style={{ width: `${(bizData.starterCount / Math.max(bizData.totalSubscribers, 1)) * 100}%`, background: "#3498db" }} />}{bizData.proCount > 0 && <div className="ow-bar-fill" style={{ width: `${(bizData.proCount / Math.max(bizData.totalSubscribers, 1)) * 100}%`, background: T.orange }} />}{bizData.agencyCount > 0 && <div className="ow-bar-fill" style={{ width: `${(bizData.agencyCount / Math.max(bizData.totalSubscribers, 1)) * 100}%`, background: T.purple }} />}</div></div>
-              </div>
-              <div className="ow-card">
-                <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 12 }}>Pipeline</div>
-                <div className="ow-sub-row"><span style={{ fontSize: 13, color: T.muted }}>Deals Won</span><span style={{ fontSize: 15, fontWeight: 700, color: T.green }}>{bizData.dealsWon}</span></div>
-                <div className="ow-sub-row"><span style={{ fontSize: 13, color: T.muted }}>Deal Value Won</span><span style={{ fontSize: 15, fontWeight: 700, color: T.green }}>{formatMoney(bizData.dealValueWon)}</span></div>
-              </div>
-            </div>
-
-            <div className="ow-section">Platform Usage</div>
-            <div className="ow-grid ow-grid-4">
-              {[
-                { label: "Workspaces", value: bizData.totalWorkspaces, color: T.text },
-                { label: "Total Contacts", value: formatNum(bizData.totalContacts), color: T.text },
-                { label: "Conversations", value: formatNum(bizData.totalConversations), color: T.text },
-                { label: "Active Convos (7d)", value: bizData.activeConversations, color: T.orange },
-                { label: "AI Messages Sent", value: formatNum(bizData.totalAiMessages), color: T.blue },
-                { label: "Bookings (Total)", value: bizData.totalBookings, color: T.green },
-                { label: "Bookings (Month)", value: bizData.bookingsThisMonth, color: T.green },
-              ].map(s => (
-                <div key={s.label} className="ow-stat"><div className="ow-stat-val" style={{ color: s.color as string }}>{s.value}</div><div className="ow-stat-label">{s.label}</div></div>
+          const todayChange = trafficData.yesterdayViews > 0 ? Math.round(((trafficData.todayViews - trafficData.yesterdayViews) / trafficData.yesterdayViews) * 100) : trafficData.todayViews > 0 ? 100 : 0;
+          return (<>
+            <div className="flex gap-1 mb-5">
+              {[{ key: "24h", label: "24h" }, { key: "7d", label: "7 days" }, { key: "30d", label: "30 days" }, { key: "90d", label: "90 days" }].map(r => (
+                <button key={r.key} onClick={() => setTrafficRange(r.key)}
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-md cursor-pointer border transition-all ${trafficRange === r.key ? "border-[#E86A2A]/40 bg-[#E86A2A]/15 text-[#E86A2A]" : "border-white/[0.07] bg-transparent text-[#b0b4c8] hover:border-white/[0.15]"}`}>{r.label}</button>
               ))}
             </div>
-
-            <div className="ow-section">Cold Outreach</div>
-            <div className="ow-grid ow-grid-4">
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.text }}>{formatNum(bizData.outreachTotal)}</div><div className="ow-stat-label">Total Contacts</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.green }}>{bizData.outreachReplied}</div><div className="ow-stat-label">Replied</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.red }}>{bizData.outreachBounced}</div><div className="ow-stat-label">Bounced</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.green }}>{bizData.outreachConverted}</div><div className="ow-stat-label">Converted</div></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
+              <StatCard value={formatNum(trafficData.totalViews)} label="Total Views" />
+              <StatCard value={formatNum(trafficData.uniqueVisitors)} label="Unique Visitors" />
+              <StatCard value={trafficData.todayViews} label="Today" />
+              <StatCard value={`${todayChange >= 0 ? "+" : ""}${todayChange}%`} label="vs Yesterday" color={todayChange >= 0 ? "#2ecc71" : "#e74c3c"} />
             </div>
-
-            <div className="ow-section">Affiliates</div>
-            <div className="ow-grid ow-grid-4">
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.text }}>{bizData.totalAffiliates}</div><div className="ow-stat-label">Active Affiliates</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.text }}>{bizData.activeReferrals}</div><div className="ow-stat-label">Active Referrals</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.green }}>{formatMoney(bizData.affiliateEarned)}</div><div className="ow-stat-label">Total Earned</div></div>
-              <div className="ow-stat"><div className="ow-stat-val" style={{ color: T.orange }}>{formatMoney(bizData.affiliatePaid)}</div><div className="ow-stat-label">Total Paid Out</div></div>
+            {trafficData.daily.length > 0 && (<>
+              <SectionLabel>Views Over Time</SectionLabel>
+              <Card className="mb-5">
+                <div className="flex items-end gap-0.5 h-[140px]">
+                  {trafficData.daily.map((d, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <div className="text-[10px] text-[#b0b4c8]">{d.views}</div>
+                      <div className="w-full max-w-[32px] rounded-t" style={{ background: "linear-gradient(180deg, #E86A2A, rgba(232,106,42,0.5))", height: `${Math.max((d.views / maxDailyViews) * 100, 4)}%`, transition: "height 0.3s ease" }} title={`${d.date}: ${d.views} views`} />
+                      <div className="text-[9px] text-[#b0b4c8] -rotate-45 whitespace-nowrap">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </>)}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <SectionLabel>Top Pages</SectionLabel>
+                {trafficData.topPages.length === 0 ? <div className="text-[#b0b4c8] text-sm">No data yet</div> : trafficData.topPages.map((p, i) => (
+                  <div key={i} className="mb-3">
+                    <div className="flex justify-between mb-1"><span className="text-sm text-[#e8eaf0] font-medium">{p.path}</span><span className="text-xs text-[#b0b4c8]">{p.views} views / {p.visitors} unique</span></div>
+                    <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden"><div className="h-full rounded-full bg-[#E86A2A] transition-all duration-300" style={{ width: `${(p.views / maxPageViews) * 100}%` }} /></div>
+                  </div>
+                ))}
+              </Card>
+              <Card>
+                <SectionLabel>Top Referrers</SectionLabel>
+                {trafficData.topReferrers.length === 0 ? <div className="text-[#b0b4c8] text-sm">No data yet</div> : trafficData.topReferrers.map((r, i) => {
+                  let displayRef = r.referrer; try { if (r.referrer.startsWith("http")) displayRef = new URL(r.referrer).hostname; } catch {}
+                  return (
+                    <div key={i} className="mb-3">
+                      <div className="flex justify-between mb-1"><span className="text-sm text-[#e8eaf0] font-medium">{displayRef}</span><span className="text-xs text-[#b0b4c8]">{r.views} views</span></div>
+                      <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden"><div className="h-full rounded-full bg-blue-400 transition-all duration-300" style={{ width: `${(r.views / maxRefViews) * 100}%` }} /></div>
+                    </div>
+                  );
+                })}
+              </Card>
             </div>
-          </>
-        ) : (
-          <div style={{ color: T.red, textAlign: "center", padding: 80 }}>Failed to load business data.</div>
-        )
+          </>);
+        })() : <div className="text-[#b0b4c8] text-center py-20">No traffic data yet.</div>
+      )}
+
+      {/* ── Business Tab (Admin) ── */}
+      {tab === "business" && isAdmin && (
+        bizLoading ? <div className="text-[#b0b4c8] text-center py-20">Loading business data...</div> :
+        bizData ? (<>
+          <SectionLabel>Revenue</SectionLabel>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
+            <StatCard value={formatMoney(bizData.mrr)} label="MRR" color="#2ecc71" />
+            <StatCard value={formatMoney(bizData.revenueThisMonth)} label="Revenue This Month" />
+            <StatCard value={formatMoney(bizData.revenueLastMonth)} label="Revenue Last Month" color="#b0b4c8" />
+            <StatCard value={`${bizData.revenueGrowth >= 0 ? "+" : ""}${bizData.revenueGrowth.toFixed(1)}%`} label="MoM Growth" color={bizData.revenueGrowth >= 0 ? "#2ecc71" : "#e74c3c"} />
+          </div>
+
+          <SectionLabel>Subscribers</SectionLabel>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
+            <StatCard value={bizData.totalSubscribers} label="Total Active" color="#E86A2A" />
+            <StatCard value={bizData.recentSignups} label="New (30 Days)" color="#2ecc71" />
+            <StatCard value={bizData.churnedThisMonth} label="Churned" color="#e74c3c" />
+            <StatCard value={`${bizData.churnRate.toFixed(1)}%`} label="Churn Rate" color={bizData.churnRate > 5 ? "#e74c3c" : bizData.churnRate > 3 ? "#f39c12" : "#2ecc71"} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+            <Card>
+              <div className="text-sm font-bold text-[#e8eaf0] mb-3">Plan Breakdown</div>
+              {[
+                { label: "Starter", count: bizData.starterCount, color: "#3498db" },
+                { label: "Pro", count: bizData.proCount, color: "#E86A2A" },
+                { label: "Agency", count: bizData.agencyCount, color: "#9b59b6" },
+              ].map(p => (
+                <div key={p.label} className="flex justify-between items-center py-2.5 border-b border-white/[0.07] last:border-b-0">
+                  <div className="flex items-center gap-2.5"><span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase" style={{ background: `${p.color}20`, color: p.color }}>{p.label}</span><span className="text-sm text-[#e8eaf0]">{p.count}</span></div>
+                  <span className="text-sm text-[#b0b4c8]">{bizData.totalSubscribers > 0 ? Math.round((p.count / bizData.totalSubscribers) * 100) : 0}%</span>
+                </div>
+              ))}
+              <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden mt-3.5 flex">
+                {bizData.starterCount > 0 && <div className="h-full bg-blue-400" style={{ width: `${(bizData.starterCount / Math.max(bizData.totalSubscribers, 1)) * 100}%` }} />}
+                {bizData.proCount > 0 && <div className="h-full bg-[#E86A2A]" style={{ width: `${(bizData.proCount / Math.max(bizData.totalSubscribers, 1)) * 100}%` }} />}
+                {bizData.agencyCount > 0 && <div className="h-full bg-purple-500" style={{ width: `${(bizData.agencyCount / Math.max(bizData.totalSubscribers, 1)) * 100}%` }} />}
+              </div>
+            </Card>
+            <Card>
+              <div className="text-sm font-bold text-[#e8eaf0] mb-3">Pipeline</div>
+              <div className="flex justify-between py-2.5 border-b border-white/[0.07]"><span className="text-sm text-[#b0b4c8]">Deals Won</span><span className="text-[15px] font-bold text-emerald-400">{bizData.dealsWon}</span></div>
+              <div className="flex justify-between py-2.5"><span className="text-sm text-[#b0b4c8]">Deal Value Won</span><span className="text-[15px] font-bold text-emerald-400">{formatMoney(bizData.dealValueWon)}</span></div>
+            </Card>
+          </div>
+
+          <SectionLabel>Platform Usage</SectionLabel>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
+            {[
+              { label: "Workspaces", value: bizData.totalWorkspaces },
+              { label: "Total Contacts", value: formatNum(bizData.totalContacts) },
+              { label: "Conversations", value: formatNum(bizData.totalConversations) },
+              { label: "Active Convos (7d)", value: bizData.activeConversations, color: "#E86A2A" },
+              { label: "AI Messages Sent", value: formatNum(bizData.totalAiMessages), color: "#3498db" },
+              { label: "Bookings (Total)", value: bizData.totalBookings, color: "#2ecc71" },
+              { label: "Bookings (Month)", value: bizData.bookingsThisMonth, color: "#2ecc71" },
+            ].map(s => <StatCard key={s.label} value={s.value} label={s.label} color={s.color} />)}
+          </div>
+
+          <SectionLabel>Cold Outreach</SectionLabel>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-5">
+            <StatCard value={formatNum(bizData.outreachTotal)} label="Total Contacts" />
+            <StatCard value={bizData.outreachReplied} label="Replied" color="#2ecc71" />
+            <StatCard value={bizData.outreachBounced} label="Bounced" color="#e74c3c" />
+            <StatCard value={bizData.outreachConverted} label="Converted" color="#2ecc71" />
+          </div>
+
+          <SectionLabel>Affiliates</SectionLabel>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+            <StatCard value={bizData.totalAffiliates} label="Active Affiliates" />
+            <StatCard value={bizData.activeReferrals} label="Active Referrals" />
+            <StatCard value={formatMoney(bizData.affiliateEarned)} label="Total Earned" color="#2ecc71" />
+            <StatCard value={formatMoney(bizData.affiliatePaid)} label="Total Paid Out" color="#E86A2A" />
+          </div>
+        </>) : <div className="text-red-400 text-center py-20">Failed to load business data.</div>
       )}
     </div>
   );
