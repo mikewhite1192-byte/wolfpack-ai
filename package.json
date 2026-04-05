@@ -21,6 +21,7 @@
     "@vercel/postgres": "^0.10.0",
     "drizzle-orm": "^0.45.1",
     "imapflow": "^1.2.18",
+    "lucide-react": "^1.7.0",
     "mailparser": "^3.9.6",
     "next": "16.2.1",
     "nodemailer": "^8.0.4",
@@ -32,12 +33,16 @@
     "twilio": "^5.13.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.27",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2",
     "typescript": "^5"
   }
 }

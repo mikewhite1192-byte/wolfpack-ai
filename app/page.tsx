@@ -3,320 +3,25 @@
 import React from "react";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { Calendar, Bot, MessageSquare, Clock, Circle, RefreshCw, ChevronDown, X, MessageCircle, Send, BarChart3, Users, Mail, Settings, Kanban } from "lucide-react";
 
-// ── Ticker ──────────────────────────────────────────────────────────────────
+// ── Data ──────────────────────────────────────────────────────────────────────
+
 const TICKER_ITEMS = [
-  { icon: "📅", text: "Appointment booked — Michael R., Dallas TX" },
-  { icon: "🤖", text: "New lead texted back in 3 seconds" },
-  { icon: "💬", text: "Objection handled automatically" },
-  { icon: "📅", text: "Sarah M. booked for Thursday 2pm" },
-  { icon: "⏰", text: "2:47am — appointment booked while agent slept" },
-  { icon: "🔵", text: "Blue text delivered — no carrier filtering" },
-  { icon: "📅", text: "3 appointments booked before 9am" },
-  { icon: "🤖", text: "Lead qualified in 4 messages. Appointment set." },
-  { icon: "💬", text: "Price objection handled. Lead booked next day." },
-  { icon: "⏰", text: "Sunday 6am. AI booked appointment instantly." },
-  { icon: "🔵", text: "iMessage delivered. Lead responded in 30 seconds." },
-  { icon: "📅", text: "Maria G. booked — AI nurtured for 11 days" },
+  { icon: Calendar, text: "Appointment booked — Michael R., Dallas TX" },
+  { icon: Bot, text: "New lead texted back in 3 seconds" },
+  { icon: MessageSquare, text: "Objection handled automatically" },
+  { icon: Calendar, text: "Sarah M. booked for Thursday 2pm" },
+  { icon: Clock, text: "2:47am — appointment booked while agent slept" },
+  { icon: Circle, text: "Blue text delivered — no carrier filtering" },
+  { icon: Calendar, text: "3 appointments booked before 9am" },
+  { icon: Bot, text: "Lead qualified in 4 messages. Appointment set." },
+  { icon: MessageSquare, text: "Price objection handled. Lead booked next day." },
+  { icon: Clock, text: "Sunday 6am. AI booked appointment instantly." },
+  { icon: Circle, text: "iMessage delivered. Lead responded in 30 seconds." },
+  { icon: Calendar, text: "Maria G. booked — AI nurtured for 11 days" },
 ];
 
-function Ticker() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  return (
-    <div style={{ overflow: "hidden", position: "relative", padding: "20px 0" }}>
-      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 80, background: "linear-gradient(to right, #0a0a0a, transparent)", zIndex: 2 }} />
-      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 80, background: "linear-gradient(to left, #0a0a0a, transparent)", zIndex: 2 }} />
-      <div ref={ref} className="ticker-track">
-        {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-          <div key={i} className="ticker-item">
-            <span>{item.icon}</span>
-            <span>{item.text}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Scramble Text ───────────────────────────────────────────────────────────
-const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
-
-function ScrambleText({ text, delay = 0 }: { text: string; delay?: number }) {
-  const [display, setDisplay] = useState(text.replace(/[A-Za-z0-9]/g, " "));
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setStarted(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!started) return;
-    let iteration = 0;
-    const max = text.length * 3;
-    const interval = setInterval(() => {
-      setDisplay(
-        text.split("").map((char, i) => {
-          if (char === " " || char === "." || char === "'") return char;
-          if (i < iteration / 3) return text[i];
-          return CHARS[Math.floor(Math.random() * CHARS.length)];
-        }).join("")
-      );
-      iteration++;
-      if (iteration > max) clearInterval(interval);
-    }, 30);
-    return () => clearInterval(interval);
-  }, [started, text]);
-
-  return <span style={{ display: "inline-block", minWidth: `${text.length * 0.6}em` }}>{display}</span>;
-}
-
-// ── FAQ ─────────────────────────────────────────────────────────────────────
-function FaqItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div onClick={() => setOpen(!open)} style={{ cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "24px 0" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 16, fontWeight: 500, color: "#e8eaf0" }}>{q}</div>
-        <span style={{ color: "#E86A2A", fontSize: 20, fontWeight: 300, flexShrink: 0, transition: "transform 0.3s", transform: open ? "rotate(45deg)" : "rotate(0)" }}>+</span>
-      </div>
-      <div style={{ maxHeight: open ? 200 : 0, overflow: "hidden", transition: "max-height 0.4s ease" }}>
-        <div style={{ fontSize: 14, color: "rgba(232,230,227,0.5)", lineHeight: 1.7, paddingTop: 12 }}>{a}</div>
-      </div>
-    </div>
-  );
-}
-
-// ── Demo Modal ──────────────────────────────────────────────────────────────
-function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
-
-  if (!open) return null;
-
-  async function handleSubmit() {
-    if (!name.trim() || !phone.trim()) return;
-    setSending(true);
-    setError("");
-    const res = await fetch("/api/try", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone }),
-    });
-    const data = await res.json();
-    if (data.error) {
-      setError(data.error);
-      setSending(false);
-    } else {
-      setSent(true);
-      setSending(false);
-    }
-  }
-
-  return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(4px)" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 36, maxWidth: 420, width: "100%", position: "relative" }}>
-        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 20, background: "none", border: "none", color: "rgba(232,230,227,0.3)", fontSize: 20, cursor: "pointer" }}>×</button>
-
-        {!sent ? (
-          <>
-            <div style={{ textAlign: "center", marginBottom: 24 }}>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 1, color: "#e8eaf0", marginBottom: 8 }}>
-                SEE IT <span style={{ color: "#E86A2A" }}>WORK ON YOU</span>
-              </div>
-              <p style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.6, margin: 0 }}>
-                Enter your number. Maya will text you in 3 seconds.
-              </p>
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(232,230,227,0.4)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Your Name</div>
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="John Smith"
-                style={{ width: "100%", padding: "12px 16px", background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, fontSize: 14, color: "#e8eaf0", outline: "none", boxSizing: "border-box" }}
-              />
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(232,230,227,0.4)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Phone Number</div>
-              <input
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                type="tel"
-                placeholder="(555) 000-0000"
-                style={{ width: "100%", padding: "12px 16px", background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, fontSize: 14, color: "#e8eaf0", outline: "none", boxSizing: "border-box" }}
-              />
-            </div>
-
-            {error && <div style={{ color: "#e74c3c", fontSize: 13, marginBottom: 12, textAlign: "center" }}>{error}</div>}
-
-            <button
-              onClick={handleSubmit}
-              disabled={sending || !name.trim() || !phone.trim()}
-              style={{ width: "100%", padding: 14, background: "#E86A2A", color: "#fff", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", opacity: sending ? 0.5 : 1 }}
-            >
-              {sending ? "Sending..." : "Text Me Now →"}
-            </button>
-
-            <div style={{ fontSize: 11, color: "rgba(232,230,227,0.2)", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
-              By clicking, you agree to receive a text message. Standard rates apply.
-            </div>
-          </>
-        ) : (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>📱</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: "#e8eaf0", marginBottom: 8 }}>CHECK YOUR PHONE</div>
-            <p style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.6, margin: "0 0 20px" }}>
-              Maya just texted you. Reply naturally and see the AI appointment setter in action.
-            </p>
-            <button onClick={onClose} style={{ padding: "10px 28px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "rgba(232,230,227,0.6)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Close
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Chat Widget ─────────────────────────────────────────────────────────────
-function ChatWidget() {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  async function send() {
-    if (!input.trim() || sending) return;
-    const text = input.trim();
-    setInput("");
-    const updated = [...messages, { role: "user", content: text }];
-    setMessages(updated);
-    setSending(true);
-
-    const res = await fetch("/api/chat-widget", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, history: messages }),
-    });
-    const data = await res.json();
-    setMessages([...updated, { role: "assistant", content: data.reply }]);
-    setSending(false);
-  }
-
-  return (
-    <>
-      {/* Floating button */}
-      <button
-        onClick={() => setOpen(!open)}
-        style={{
-          position: "fixed", bottom: 24, right: 24, width: 56, height: 56,
-          borderRadius: "50%", background: "#E86A2A", border: "2px solid rgba(255,255,255,0.1)", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 24px rgba(232,106,42,0.35)", zIndex: 9998,
-          color: "#fff", transition: "all 0.3s ease",
-          transform: open ? "rotate(45deg) scale(0.95)" : "none",
-          animation: open ? "none" : "chatPulse 2.5s ease-in-out infinite",
-        }}
-      >
-        {open ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        )}
-      </button>
-
-      {/* Chat window */}
-      {open && (
-        <div style={{
-          position: "fixed", bottom: 90, right: 24, width: 360, maxWidth: "calc(100vw - 48px)",
-          height: 460, maxHeight: "calc(100vh - 120px)",
-          background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16,
-          display: "flex", flexDirection: "column", overflow: "hidden", zIndex: 9998,
-          boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
-        }}>
-          {/* Header */}
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(232,106,42,0.2)", color: "#E86A2A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>M</div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#e8eaf0" }}>Maya</div>
-              <div style={{ fontSize: 11, color: "rgba(232,230,227,0.4)" }}>Wolf Pack AI Assistant</div>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-            {messages.length === 0 && (
-              <div style={{ background: "rgba(232,106,42,0.08)", borderRadius: "14px 14px 14px 4px", padding: "10px 14px", fontSize: 13, color: "#e8eaf0", lineHeight: 1.5, maxWidth: "85%" }}>
-                Hey! I'm Maya. Got questions about Wolf Pack AI? Ask me anything.
-              </div>
-            )}
-            {messages.map((m, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{
-                  maxWidth: "85%", padding: "10px 14px", fontSize: 13, lineHeight: 1.5, borderRadius: 14,
-                  background: m.role === "user" ? "#E86A2A" : "rgba(255,255,255,0.06)",
-                  color: m.role === "user" ? "#fff" : "#e8eaf0",
-                }}>
-                  {m.content}
-                </div>
-              </div>
-            ))}
-            {sending && (
-              <div style={{ fontSize: 12, color: "rgba(232,230,227,0.3)", padding: "4px 8px" }}>Maya is typing...</div>
-            )}
-            <div ref={endRef} />
-          </div>
-
-          {/* Input */}
-          <div style={{ padding: "12px 14px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 8 }}>
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && send()}
-              placeholder="Ask Maya anything..."
-              style={{ flex: 1, padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, fontSize: 13, color: "#e8eaf0", outline: "none" }}
-            />
-            <button onClick={send} disabled={sending || !input.trim()} style={{ padding: "10px 16px", background: "#E86A2A", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: sending ? 0.5 : 1 }}>
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-// ── Scroll Reveal ──────────────────────────────────────────────────────────
-function ScrollReveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className={className} style={{ opacity: vis ? 1 : 0, transform: vis ? "translateY(0)" : "translateY(40px)", transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s` }}>
-      {children}
-    </div>
-  );
-}
-
-// ── Animated Dashboard ─────────────────────────────────────────────────────
 const ALL_CONVERSATIONS = [
   { name: "Marcus J.", msg: "Yeah Thursday at 2 works for me", time: "Just now", blue: true },
   { name: "Sarah K.", msg: "What's the pricing for a full rewire?", time: "1m ago", blue: true },
@@ -338,11 +43,266 @@ const ALL_APPOINTMENTS = [
   { name: "Kelly H.", time: "Tue 11:00 AM", status: "Pending" as const },
 ];
 
+const FAQS = [
+  { q: "How does the AI set appointments?", a: "The moment a lead comes in, the AI texts them within seconds. It qualifies them with natural questions, handles any objections, and books directly on your calendar with a Google Meet link. You just show up." },
+  { q: "Will leads know they're talking to AI?", a: "No. It texts like a real person on your team. No dashes, no bullet points, no robotic grammar. It mirrors the lead's energy and tone. Most leads have no idea." },
+  { q: "What's the difference between blue and green texts?", a: "Green texts (SMS) require A2P registration and get filtered by carriers — your leads might never see them. Blue texts (iMessage) go through Apple's network directly. No registration. No filtering. Higher response rates." },
+  { q: "Can I take over a conversation from the AI?", a: "Yes. Every conversation has an AI toggle. Turn it off and you're in control. Turn it back on and the AI picks up where you left off." },
+  { q: "How fast does the AI respond?", a: "3 seconds. The moment a lead comes in, the AI is texting them. That speed alone puts you ahead of 90% of your competition." },
+  { q: "Do I need any technical skills?", a: "No. When you sign up, the AI walks you through setup with a few questions about your business. You can be live in minutes." },
+  { q: "What happens if a lead goes cold?", a: "The AI follows up automatically on day 1, 3, 7, and 14 with a different approach each time. No lead gets forgotten." },
+];
+
+// ── Utility Components ────────────────────────────────────────────────────────
+
+const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
+
+function ScrambleText({ text, delay = 0 }: { text: string; delay?: number }) {
+  const [display, setDisplay] = useState(text.replace(/[A-Za-z0-9]/g, " "));
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!started) return;
+    let iteration = 0;
+    const max = text.length * 3;
+    const interval = setInterval(() => {
+      setDisplay(text.split("").map((char, i) => {
+        if (char === " " || char === "." || char === "'") return char;
+        if (i < iteration / 3) return text[i];
+        return CHARS[Math.floor(Math.random() * CHARS.length)];
+      }).join(""));
+      iteration++;
+      if (iteration > max) clearInterval(interval);
+    }, 30);
+    return () => clearInterval(interval);
+  }, [started, text]);
+
+  return <span className="inline-block" style={{ minWidth: `${text.length * 0.6}em` }}>{display}</span>;
+}
+
+function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} style={{ opacity: vis ? 1 : 0, transform: vis ? "translateY(0)" : "translateY(40px)", transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s` }}>
+      {children}
+    </div>
+  );
+}
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-white/[0.06]">
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="w-full flex justify-between items-center py-6 bg-transparent border-none cursor-pointer text-left group"
+      >
+        <span className="text-base font-medium text-[#e8eaf0] pr-4">{q}</span>
+        <ChevronDown className={`w-5 h-5 text-[#E86A2A] flex-shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <div className={`overflow-hidden transition-all duration-400 ${open ? "max-h-[200px] pb-4" : "max-h-0"}`}>
+        <p className="text-sm text-white/50 leading-relaxed m-0">{a}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Smoke Effect ──────────────────────────────────────────────────────────────
+
+function HeroSmoke() {
+  const particles = Array.from({ length: 12 }, (_, i) => ({
+    id: i,
+    size: 20 + Math.random() * 40,
+    left: 50 + Math.random() * 40,
+    top: 30 + Math.random() * 30,
+    duration: 2.5 + Math.random() * 2,
+    delay: Math.random() * 3,
+  }));
+
+  return (
+    <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden">
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className="smoke-particle"
+          style={{
+            width: p.size,
+            height: p.size,
+            left: `${p.left}%`,
+            top: `${p.top}%`,
+            "--duration": `${p.duration}s`,
+            "--delay": `${p.delay}s`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Demo Modal ────────────────────────────────────────────────────────────────
+
+function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  async function handleSubmit() {
+    if (!name.trim() || !phone.trim()) return;
+    setSending(true);
+    setError("");
+    const res = await fetch("/api/try", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, phone }) });
+    const data = await res.json();
+    if (data.error) { setError(data.error); setSending(false); } else { setSent(true); setSending(false); }
+  }
+
+  return (
+    <div onClick={onClose} className="fixed inset-0 bg-black/75 z-[9999] flex items-center justify-center p-5 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div onClick={e => e.stopPropagation()} className="bg-[#0a0a0a] border border-white/[0.08] rounded-2xl p-9 max-w-[420px] w-full relative">
+        <button onClick={onClose} className="absolute top-4 right-5 bg-transparent border-none text-white/30 text-xl cursor-pointer hover:text-white/60 transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+
+        {!sent ? (
+          <>
+            <div className="text-center mb-6">
+              <div className="font-display text-[28px] tracking-wide text-[#e8eaf0] mb-2">
+                SEE IT <span className="text-[#E86A2A]">WORK ON YOU</span>
+              </div>
+              <p className="text-sm text-white/40 leading-relaxed">Enter your number. Maya will text you in 3 seconds.</p>
+            </div>
+            <div className="mb-3.5">
+              <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Your Name</div>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="John Smith"
+                className="w-full px-4 py-3 bg-[#111] border border-white/[0.08] rounded-xl text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
+            </div>
+            <div className="mb-5">
+              <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Phone Number</div>
+              <input value={phone} onChange={e => setPhone(e.target.value)} type="tel" placeholder="(555) 000-0000"
+                className="w-full px-4 py-3 bg-[#111] border border-white/[0.08] rounded-xl text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
+            </div>
+            {error && <div className="text-red-400 text-sm mb-3 text-center">{error}</div>}
+            <button onClick={handleSubmit} disabled={sending || !name.trim() || !phone.trim()}
+              className={`w-full py-3.5 rounded-xl text-[15px] font-bold border-none cursor-pointer transition-all duration-200 ${
+                sending || !name.trim() || !phone.trim() ? "bg-white/5 text-white/30 cursor-not-allowed" : "bg-[#E86A2A] text-white hover:bg-[#ff7b3a]"
+              }`}>
+              {sending ? "Sending..." : "Text Me Now →"}
+            </button>
+            <div className="text-[11px] text-white/20 text-center mt-3 leading-relaxed">By clicking, you agree to receive a text message. Standard rates apply.</div>
+          </>
+        ) : (
+          <div className="text-center py-5">
+            <MessageCircle className="w-10 h-10 text-[#E86A2A] mx-auto mb-4" />
+            <div className="font-display text-2xl text-[#e8eaf0] mb-2">CHECK YOUR PHONE</div>
+            <p className="text-sm text-white/40 leading-relaxed mb-5">Maya just texted you. Reply naturally and see the AI appointment setter in action.</p>
+            <button onClick={onClose} className="px-7 py-2.5 bg-white/[0.06] border border-white/[0.08] rounded-xl text-white/60 text-sm font-semibold cursor-pointer hover:bg-white/10 transition-all">Close</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Chat Widget ───────────────────────────────────────────────────────────────
+
+function ChatWidget() {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  async function send() {
+    if (!input.trim() || sending) return;
+    const text = input.trim();
+    setInput("");
+    const updated = [...messages, { role: "user", content: text }];
+    setMessages(updated);
+    setSending(true);
+    const res = await fetch("/api/chat-widget", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, history: messages }) });
+    const data = await res.json();
+    setMessages([...updated, { role: "assistant", content: data.reply }]);
+    setSending(false);
+  }
+
+  return (
+    <>
+      <button onClick={() => setOpen(!open)}
+        className={`fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#E86A2A] border-2 border-white/10 flex items-center justify-center shadow-[0_4px_24px_rgba(232,106,42,0.35)] z-[9998] text-white transition-all duration-300 cursor-pointer ${open ? "rotate-45 scale-95" : "animate-cta-pulse"}`}>
+        {open ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+      </button>
+
+      {open && (
+        <div className="fixed bottom-[90px] right-6 w-[360px] max-w-[calc(100vw-48px)] h-[460px] max-h-[calc(100vh-120px)] bg-[#0a0a0a] border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden z-[9998] shadow-[0_8px_40px_rgba(0,0,0,0.5)]">
+          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#E86A2A]/20 text-[#E86A2A] flex items-center justify-center text-sm font-bold">M</div>
+            <div>
+              <div className="text-sm font-bold text-[#e8eaf0]">Maya</div>
+              <div className="text-[11px] text-white/40">Wolf Pack AI Assistant</div>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+            {messages.length === 0 && (
+              <div className="bg-[#E86A2A]/[0.08] rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm text-[#e8eaf0] leading-relaxed max-w-[85%]">
+                Hey! I&apos;m Maya. Got questions about Wolf Pack AI? Ask me anything.
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[85%] px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl ${
+                  m.role === "user" ? "bg-[#E86A2A] text-white" : "bg-white/[0.06] text-[#e8eaf0]"
+                }`}>{m.content}</div>
+              </div>
+            ))}
+            {sending && <div className="text-xs text-white/30 px-2 py-1">Maya is typing...</div>}
+            <div ref={endRef} />
+          </div>
+          <div className="px-3.5 py-3 border-t border-white/[0.06] flex gap-2">
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder="Ask Maya anything..."
+              className="flex-1 px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
+            <button onClick={send} disabled={sending || !input.trim()}
+              className={`px-4 py-2.5 bg-[#E86A2A] text-white border-none rounded-xl text-sm font-bold cursor-pointer transition-all ${sending ? "opacity-50" : "hover:bg-[#ff7b3a]"}`}>
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── Animated Dashboard ────────────────────────────────────────────────────────
+
 function AnimatedDashboard() {
   const [convos, setConvos] = useState<{ id: number; name: string; msg: string; time: string; blue: boolean }[]>([]);
   const [appts, setAppts] = useState<{ id: number; name: string; time: string; status: "Confirmed" | "Pending" }[]>([]);
   const [stats, setStats] = useState({ appts: 0, convos: 0, pipeline: 0, response: 0 });
-  const [statsComplete, setStatsComplete] = useState(false);
   const [pipelineWidths, setPipelineWidths] = useState([0, 0, 0, 0, 0]);
   const [pipelineCounts, setPipelineCounts] = useState([0, 0, 0, 0, 0]);
   const [isVisible, setIsVisible] = useState(false);
@@ -354,14 +314,11 @@ function AnimatedDashboard() {
   useEffect(() => {
     const el = dashRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setIsVisible(true); obs.disconnect(); }
-    }, { threshold: 0.2 });
+    const obs = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setIsVisible(true); obs.disconnect(); } }, { threshold: 0.2 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
-  // Count up stats — dramatic initial, then keep ticking
   useEffect(() => {
     if (!isVisible) return;
     const targets = { appts: 6, convos: 12, pipeline: 342, response: 3 };
@@ -372,17 +329,9 @@ function AnimatedDashboard() {
       step++;
       const progress = Math.min(step / steps, 1);
       const ease = 1 - Math.pow(1 - progress, 5);
-      setStats({
-        appts: Math.round(targets.appts * ease),
-        convos: Math.round(targets.convos * ease),
-        pipeline: Math.round(targets.pipeline * ease),
-        response: Math.round(targets.response * ease),
-      });
+      setStats({ appts: Math.round(targets.appts * ease), convos: Math.round(targets.convos * ease), pipeline: Math.round(targets.pipeline * ease), response: Math.round(targets.response * ease) });
       if (step >= steps) {
         clearInterval(countUp);
-        setStatsComplete(true);
-
-        // After initial count, keep incrementing
         const liveTimer = setInterval(() => {
           setStats(prev => {
             const r = Math.random();
@@ -391,51 +340,30 @@ function AnimatedDashboard() {
             return { ...prev, pipeline: prev.pipeline + Math.floor(Math.random() * 30 + 10) };
           });
         }, 3000);
-        // Store cleanup ref — won't leak since component lives for page lifetime
         return () => clearInterval(liveTimer);
       }
     }, duration / steps);
     return () => clearInterval(countUp);
   }, [isVisible]);
 
-  // Pipeline bars + counts — animate in, then keep growing
   useEffect(() => {
     if (!isVisible) return;
-    const targetWidths = [85, 55, 45, 25, 35];
-    const targetCounts = [8, 5, 4, 2, 3];
-    const timer = setTimeout(() => {
-      setPipelineWidths(targetWidths);
-      setPipelineCounts(targetCounts);
-    }, 300);
-
-    // After initial fill, keep the pipeline moving
-    const liveTimer = setTimeout(() => {
+    const tw = [85, 55, 45, 25, 35];
+    const tc = [8, 5, 4, 2, 3];
+    const t = setTimeout(() => { setPipelineWidths(tw); setPipelineCounts(tc); }, 300);
+    const lt = setTimeout(() => {
       const ticker = setInterval(() => {
-        setPipelineCounts(prev => {
-          const idx = Math.floor(Math.random() * 5);
-          const next = [...prev];
-          next[idx] = next[idx] + 1;
-          return next;
-        });
-        setPipelineWidths(prev => {
-          const idx = Math.floor(Math.random() * 5);
-          const next = [...prev];
-          next[idx] = Math.min(next[idx] + Math.floor(Math.random() * 5 + 2), 98);
-          return next;
-        });
+        setPipelineCounts(prev => { const idx = Math.floor(Math.random() * 5); const next = [...prev]; next[idx]++; return next; });
+        setPipelineWidths(prev => { const idx = Math.floor(Math.random() * 5); const next = [...prev]; next[idx] = Math.min(next[idx] + Math.floor(Math.random() * 5 + 2), 98); return next; });
       }, 4000);
       return () => clearInterval(ticker);
     }, 3000);
-
-    return () => { clearTimeout(timer); clearTimeout(liveTimer); };
+    return () => { clearTimeout(t); clearTimeout(lt); };
   }, [isVisible]);
 
-  // Conversations — one at a time, queue-based
   useEffect(() => {
     if (!isVisible) return;
-    // Seed first one immediately
-    const first = ALL_CONVERSATIONS[0];
-    setConvos([{ ...first, id: ++idCounter.current }]);
+    setConvos([{ ...ALL_CONVERSATIONS[0], id: ++idCounter.current }]);
     convPtr.current = 1;
     const timer = setInterval(() => {
       const c = ALL_CONVERSATIONS[convPtr.current % ALL_CONVERSATIONS.length];
@@ -445,11 +373,9 @@ function AnimatedDashboard() {
     return () => clearInterval(timer);
   }, [isVisible]);
 
-  // Appointments — one at a time, pop in
   useEffect(() => {
     if (!isVisible) return;
-    const first = ALL_APPOINTMENTS[0];
-    setAppts([{ ...first, id: ++idCounter.current }]);
+    setAppts([{ ...ALL_APPOINTMENTS[0], id: ++idCounter.current }]);
     apptPtr.current = 1;
     const timer = setInterval(() => {
       const a = ALL_APPOINTMENTS[apptPtr.current % ALL_APPOINTMENTS.length];
@@ -467,128 +393,107 @@ function AnimatedDashboard() {
     { stage: "Won", color: "#2ecc71" },
   ];
 
+  const sidebarItems = [
+    { icon: BarChart3, label: "Dashboard", active: true },
+    { icon: MessageSquare, label: "Conversations", badge: stats.convos || undefined },
+    { icon: Kanban, label: "Pipeline" },
+    { icon: Calendar, label: "Calendar" },
+    { icon: Users, label: "Contacts" },
+    { icon: Mail, label: "Email" },
+    { icon: Settings, label: "Settings" },
+  ];
+
   return (
-    <div ref={dashRef} style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px 20px", perspective: 1200, position: "relative" }}>
-      <div className="wp-dash-wrap" style={{ transform: "rotateX(4deg) rotateY(-1deg)", transformOrigin: "center center", position: "relative" }}>
-        <div style={{ position: "absolute", inset: -40, background: "radial-gradient(ellipse at center, rgba(232,106,42,0.08) 0%, transparent 70%)", zIndex: 0, borderRadius: 40, filter: "blur(40px)" }} />
-        <div className="wp-dash" style={{
-          position: "relative", zIndex: 1, background: "rgba(17,17,17,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 0, overflow: "hidden",
-          boxShadow: "0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.06)",
-        }}>
+    <div ref={dashRef} className="max-w-[1000px] mx-auto px-10 pt-16 pb-5 relative" style={{ perspective: 1200 }}>
+      <div style={{ transform: "rotateX(4deg) rotateY(-1deg)", transformOrigin: "center center" }} className="relative">
+        <div className="absolute -inset-10 rounded-[40px] blur-[40px] pointer-events-none" style={{ background: "radial-gradient(ellipse at center, rgba(232,106,42,0.08) 0%, transparent 70%)" }} />
+        <div className="relative z-[1] bg-[#111]/85 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05),inset_0_1px_0_rgba(255,255,255,0.06)]">
           {/* Title bar */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
-            <div style={{ display: "flex", gap: 6 }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
             </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500, letterSpacing: 0.5 }}>Wolf Pack AI — Dashboard</div>
-            <div style={{ width: 50 }} />
+            <div className="text-[11px] text-white/25 font-medium tracking-wider">Wolf Pack AI — Dashboard</div>
+            <div className="w-[50px]" />
           </div>
 
-          <div className="wp-dash-main" style={{ display: "flex", minHeight: 420 }}>
+          <div className="flex min-h-[420px]">
             {/* Sidebar */}
-            <div className="wp-dash-sidebar" style={{ width: 180, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "16px 12px", flexShrink: 0, background: "rgba(0,0,0,0.2)" }}>
-              {[
-                { icon: "📊", label: "Dashboard", active: true },
-                { icon: "💬", label: "Conversations", badge: stats.convos || undefined },
-                { icon: "📋", label: "Pipeline" },
-                { icon: "📅", label: "Calendar" },
-                { icon: "👥", label: "Contacts" },
-                { icon: "📧", label: "Email" },
-                { icon: "⚙️", label: "Settings" },
-              ].map((item, i) => (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, marginBottom: 2, fontSize: 12, fontWeight: 500,
-                  background: item.active ? "rgba(232,106,42,0.12)" : "transparent",
-                  color: item.active ? "#E86A2A" : "rgba(255,255,255,0.35)",
-                }}>
-                  <span style={{ fontSize: 13 }}>{item.icon}</span>
-                  <span>{item.label}</span>
-                  {item.badge && (
-                    <span style={{ marginLeft: "auto", background: "#E86A2A", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8, transition: "all 0.3s" }}>{item.badge}</span>
-                  )}
-                </div>
-              ))}
+            <div className="w-[180px] border-r border-white/[0.06] p-3 flex-shrink-0 bg-black/20 hidden md:block">
+              {sidebarItems.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className={`flex items-center gap-2 px-2.5 py-2 rounded-lg mb-0.5 text-xs font-medium ${item.active ? "bg-[#E86A2A]/12 text-[#E86A2A]" : "text-white/35"}`}>
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{item.label}</span>
+                    {item.badge && <span className="ml-auto bg-[#E86A2A] text-white text-[9px] font-bold px-1.5 rounded-md transition-all">{item.badge}</span>}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Main content */}
-            <div style={{ flex: 1, padding: 20, overflow: "hidden" }}>
-              {/* Stats row — bigger numbers */}
-              <div className="wp-dash-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+            {/* Main */}
+            <div className="flex-1 p-5 overflow-hidden">
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
                 {[
                   { label: "Appointments Today", value: stats.appts.toString(), color: "#E86A2A" },
                   { label: "Active Conversations", value: stats.convos.toString(), color: "#007AFF" },
                   { label: "Pipeline Value", value: `$${(stats.pipeline / 10).toFixed(1)}k`, color: "#2ecc71" },
                   { label: "Response Time", value: `${stats.response}s`, color: "#f5a623" },
                 ].map((stat, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "14px 16px", transition: "transform 0.3s" }}>
-                    <div style={{
-                      fontSize: 30, fontWeight: 800, color: stat.color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5,
-                      textShadow: `0 0 20px ${stat.color}40`,
-                      transition: "all 0.3s ease",
-                    }}>{stat.value}</div>
-                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{stat.label}</div>
+                  <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3.5 transition-transform duration-300">
+                    <div className="text-[30px] font-display tracking-wider" style={{ color: stat.color, textShadow: `0 0 20px ${stat.color}40` }}>{stat.value}</div>
+                    <div className="text-[10px] text-white/30 font-semibold uppercase tracking-wider">{stat.label}</div>
                   </div>
                 ))}
               </div>
 
-              <div className="wp-dash-content" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                {/* Live conversations — one at a time, slide from top */}
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 16 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Live Conversations</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                    {convos.map((c, i) => (
-                      <div key={c.id} style={{
-                        display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
-                        borderBottom: i < convos.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                        animation: "slideInTop 0.5s ease-out both",
-                      }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(232,106,42,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#E86A2A", flexShrink: 0 }}>
-                          {c.name.charAt(0)}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Live conversations */}
+                <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
+                  <div className="text-[10px] font-bold text-[#E86A2A] uppercase tracking-widest mb-3.5">Live Conversations</div>
+                  {convos.map((c, i) => (
+                    <div key={c.id} className={`flex items-center gap-3 py-2.5 animate-fade-up ${i < convos.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
+                      <div className="w-9 h-9 rounded-xl bg-[#E86A2A]/15 flex items-center justify-center text-sm font-bold text-[#E86A2A] flex-shrink-0">{c.name.charAt(0)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[13px] font-semibold text-white/75">{c.name}</span>
+                          <span className="text-[10px] text-white/20">{c.time}</span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.75)" }}>{c.name}</span>
-                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>{c.time}</span>
-                          </div>
-                          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
-                            {c.blue && <span style={{ color: "#007AFF", marginRight: 5, fontSize: 9 }}>●</span>}
-                            {c.msg}
-                          </div>
+                        <div className="text-xs text-white/35 overflow-hidden text-ellipsis whitespace-nowrap mt-0.5">
+                          {c.blue && <span className="text-[#007AFF] mr-1.5 text-[9px]">●</span>}{c.msg}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Pipeline — animated bars, taller */}
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 16 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#E86A2A", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Pipeline</div>
+                {/* Pipeline */}
+                <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
+                  <div className="text-[10px] font-bold text-[#E86A2A] uppercase tracking-widest mb-3.5">Pipeline</div>
                   {pipelineStages.map((s, i) => (
-                    <div key={i} style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>{s.stage}</span>
-                        <span style={{ fontSize: 12, color: s.color, fontWeight: 700, transition: "all 0.3s" }}>{pipelineCounts[i]}</span>
+                    <div key={i} className="mb-2.5">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-xs text-white/45 font-medium">{s.stage}</span>
+                        <span className="text-xs font-bold transition-all duration-300" style={{ color: s.color }}>{pipelineCounts[i]}</span>
                       </div>
-                      <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
-                        <div style={{ height: "100%", borderRadius: 3, background: s.color, width: `${pipelineWidths[i]}%`, opacity: 0.7, transition: "width 1.2s cubic-bezier(0.22, 1, 0.36, 1)", transitionDelay: `${i * 0.2}s` }} />
+                      <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                        <div className="h-full rounded-full opacity-70" style={{ background: s.color, width: `${pipelineWidths[i]}%`, transition: `width 1.2s cubic-bezier(0.22, 1, 0.36, 1)`, transitionDelay: `${i * 0.2}s` }} />
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Appointments — pop in one at a time, 2x2 grid */}
-              <div className="wp-dash-appts" style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {/* Appointments */}
+              <div className="mt-3.5 grid grid-cols-1 md:grid-cols-2 gap-2">
                 {appts.map(a => (
-                  <div key={a.id} style={{
-                    background: "rgba(46,204,113,0.06)", border: "1px solid rgba(46,204,113,0.15)", borderRadius: 10, padding: "12px 16px",
-                    animation: "popBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both",
-                  }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>{a.name}</div>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>{a.time} · <span style={{ color: a.status === "Confirmed" ? "#2ecc71" : "#f5a623", fontWeight: 600 }}>{a.status}</span></div>
+                  <div key={a.id} className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl px-4 py-3 animate-fade-up">
+                    <div className="text-[13px] font-semibold text-white/65">{a.name}</div>
+                    <div className="text-[11px] text-white/30 mt-0.5">{a.time} · <span className={`font-semibold ${a.status === "Confirmed" ? "text-emerald-400" : "text-amber-400"}`}>{a.status}</span></div>
                   </div>
                 ))}
               </div>
@@ -600,589 +505,416 @@ function AnimatedDashboard() {
   );
 }
 
-// ── Page ────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function Home() {
   const [demoOpen, setDemoOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handler = () => {
-      const isScrolled = window.scrollY > 20;
-      setScrolled(prev => prev === isScrolled ? prev : isScrolled);
-    };
+    const handler = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
   return (
-    <div style={{ background: "#0a0a0a", color: "#e8eaf0", minHeight: "100vh", fontFamily: "Inter, system-ui, -apple-system, sans-serif", overflowX: "hidden", position: "relative" }}>
-      {/* Grain texture overlay */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px" }} />
+    <div className="bg-[#0a0a0a] text-[#e8eaf0] min-h-screen font-sans overflow-x-hidden relative">
+      {/* Grain texture */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.035]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")", backgroundSize: "256px" }} />
 
-      {/* Ambient gradient orbs — fixed, layered behind content */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        {/* Top-left warm glow */}
-        <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "50%", height: "50%", borderRadius: "50%", background: "radial-gradient(circle, rgba(232,106,42,0.06) 0%, transparent 70%)", filter: "blur(80px)" }} />
-        {/* Center-right blue glow */}
-        <div style={{ position: "absolute", top: "30%", right: "-5%", width: "40%", height: "40%", borderRadius: "50%", background: "radial-gradient(circle, rgba(0,122,255,0.04) 0%, transparent 70%)", filter: "blur(80px)" }} />
-        {/* Bottom-center warm glow */}
-        <div style={{ position: "absolute", bottom: "5%", left: "30%", width: "45%", height: "35%", borderRadius: "50%", background: "radial-gradient(circle, rgba(232,106,42,0.04) 0%, transparent 70%)", filter: "blur(100px)" }} />
+      {/* Ambient glows */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-[10%] -left-[10%] w-1/2 h-1/2 rounded-full blur-[80px]" style={{ background: "radial-gradient(circle, rgba(232,106,42,0.06) 0%, transparent 70%)" }} />
+        <div className="absolute top-[30%] -right-[5%] w-[40%] h-[40%] rounded-full blur-[80px]" style={{ background: "radial-gradient(circle, rgba(0,122,255,0.04) 0%, transparent 70%)" }} />
+        <div className="absolute bottom-[5%] left-[30%] w-[45%] h-[35%] rounded-full blur-[100px]" style={{ background: "radial-gradient(circle, rgba(232,106,42,0.04) 0%, transparent 70%)" }} />
       </div>
 
-      {/* Dot grid pattern — very subtle */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.025, backgroundImage: "radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+      {/* Dot grid */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.025]" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-      <div style={{ position: "relative", zIndex: 1 }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideInTop { 0% { opacity: 0; transform: translateY(-30px) scale(0.95); } 60% { opacity: 1; transform: translateY(4px) scale(1.01); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        @keyframes popBounce { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 1; transform: scale(1.08); } 70% { transform: scale(0.96); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes statsPulse { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
-        html { scroll-padding-top: 80px; }
-        @keyframes heroIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes heroZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
-        @keyframes chatPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,106,42,0.4); } 50% { box-shadow: 0 0 0 12px rgba(232,106,42,0); } }
-        @keyframes ctaPulse { 0%, 100% { box-shadow: 0 4px 20px rgba(232,106,42,0.3); } 50% { box-shadow: 0 4px 32px rgba(232,106,42,0.5); } }
-        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+      <div className="relative z-[1]">
 
-        .ticker-track { display: flex; gap: 40px; white-space: nowrap; animation: scroll 30s linear infinite; }
-        .ticker-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; flex-shrink: 0; color: rgba(232,230,227,0.7); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 18px; }
-
-        .wp-nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; max-width: 1100px; margin: 0 auto; width: 100%; }
-        .wp-nav a { color: rgba(232,230,227,0.4); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.2s; letter-spacing: 0.5px; }
-        .wp-nav a:hover { color: #e8eaf0; }
-
-        .wp-cta { display: inline-flex; align-items: center; gap: 8px; padding: 16px 36px; background: #E86A2A; color: #fff; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 700; transition: all 0.3s; border: none; cursor: pointer; animation: ctaPulse 3s ease-in-out infinite; letter-spacing: 0.3px; }
-        .wp-cta:hover { background: #ff7b3a; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(232,106,42,0.35); animation: none; }
-        .wp-ghost { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(232,230,227,0.5); border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.3s; cursor: pointer; }
-        .wp-ghost:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
-
-        .wp-outcome { padding: 36px; border-radius: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); transition: all 0.4s ease; position: relative; overflow: hidden; }
-        .wp-outcome::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(232,106,42,0.3), transparent); opacity: 0; transition: opacity 0.4s; }
-        .wp-outcome:hover { border-color: rgba(232,106,42,0.2); background: rgba(232,106,42,0.03); transform: translateY(-2px); }
-        .wp-outcome:hover::before { opacity: 1; }
-        .wp-outcome-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 20px; background: rgba(232,106,42,0.08); border: 1px solid rgba(232,106,42,0.15); }
-        .wp-step { flex: 1; min-width: 260; padding: 36px; border-radius: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); position: relative; transition: all 0.4s ease; }
-        .wp-step:hover { border-color: rgba(232,106,42,0.15); background: rgba(232,106,42,0.02); }
-        .wp-step-num { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: #E86A2A; line-height: 1; margin-bottom: 16px; opacity: 0.9; }
-        .wp-step-connector { display: flex; align-items: center; color: rgba(232,106,42,0.3); font-size: 24px; padding: 0 4px; }
-        .wp-proof-bar { max-width: 900px; margin: 0 auto; padding: 48px 40px; display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
-        .wp-proof-item { text-align: center; }
-        .wp-proof-num { font-family: 'Bebas Neue', sans-serif; font-size: 44px; color: #E86A2A; line-height: 1; }
-        .wp-proof-label { font-size: 12px; color: rgba(232,230,227,0.35); margin-top: 6px; letter-spacing: 0.5px; }
-        @media (max-width: 768px) {
-          .wp-step-connector { display: none !important; }
-          .wp-proof-bar { gap: 32px !important; padding: 32px 20px !important; }
-          .wp-dash-sidebar { display: none !important; }
-          .wp-dash-wrap { transform: none !important; }
-          .wp-dash-stats { grid-template-columns: repeat(2, 1fr) !important; }
-          .wp-dash-content { grid-template-columns: 1fr !important; }
-          .wp-dash-appts { grid-template-columns: 1fr !important; }
-          .wp-dash-main { padding: 14px !important; min-height: auto !important; }
-          .wp-compare-grid { grid-template-columns: 1fr !important; }
-        }
-
-        .wp-price-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 36px; transition: all 0.3s; }
-        .wp-price-card:hover { border-color: rgba(232,106,42,0.2); }
-        .wp-price-card.featured { border-color: #E86A2A; background: rgba(232,106,42,0.03); }
-
-        .wp-problem-stat { text-align: center; flex: 1; min-width: 180px; }
-        .wp-problem-num { font-family: 'Bebas Neue', sans-serif; font-size: 56px; color: #E86A2A; line-height: 1; }
-        .wp-problem-label { font-size: 13px; color: rgba(232,230,227,0.4); line-height: 1.5; margin-top: 8px; }
-
-        @media (max-width: 768px) {
-          .wp-hero-grid { flex-direction: column !important; text-align: center !important; }
-          .wp-hero-grid h1 { font-size: 48px !important; }
-          .wp-outcomes-grid { grid-template-columns: 1fr !important; }
-          .wp-price-grid { flex-direction: column !important; }
-          .wp-nav-links { display: none !important; }
-          .wp-mobile-menu { display: flex !important; }
-          .wp-stats { flex-direction: column !important; gap: 32px !important; padding: 50px 20px !important; }
-          .wp-stats > div { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 24px !important; }
-          .wp-stats > div:last-child { border-bottom: none; padding-bottom: 0 !important; }
-          .wp-problem-stats { flex-direction: column !important; gap: 32px !important; }
-          .wp-section-title { font-size: 36px !important; }
-          .wp-nav { padding: 16px 20px !important; }
-          .wp-hero-section { height: auto !important; min-height: 100vh !important; padding: 0 !important; }
-          .wp-hero-section > div:last-child { padding: 100px 24px 60px !important; }
-          .wp-hero-title { font-size: 48px !important; }
-          .wp-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
-          .wp-how-steps { flex-direction: column !important; }
-          .wp-price-card { max-width: 100% !important; }
-          .wp-price-card > div { flex-direction: column !important; }
-          .wp-price-card .wp-price-features { grid-template-columns: 1fr !important; }
-          .wp-price-bottom { grid-template-columns: 1fr !important; }
-          .wp-footer-links { flex-wrap: wrap !important; gap: 16px !important; }
-        }
-        @media (max-width: 480px) {
-          .wp-hero-title { font-size: 38px !important; }
-          .wp-problem-num { font-size: 44px !important; }
-          .wp-section-heading { font-size: 32px !important; }
-          .wp-stats > div > div:first-child { font-size: 52px !important; }
-        }
-      `}</style>
-
-      {/* Nav — sticky frosted glass */}
-      <nav className="wp-nav" style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        background: scrolled ? "rgba(10,10,10,0.75)" : "transparent",
-        backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
-        WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
-        borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "1px solid transparent",
-        transition: "all 0.35s ease",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
-        <Link href="/" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 2, color: "#e8eaf0", textDecoration: "none" }}>
-          THE <span style={{ color: "#E86A2A" }}>WOLF</span> PACK
+      {/* ── Nav ── */}
+      <nav className={`fixed top-4 left-4 right-4 z-50 flex justify-between items-center px-8 h-14 rounded-2xl transition-all duration-300 ${
+        scrolled ? "bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/[0.06]" : "bg-transparent border border-transparent"
+      }`}>
+        <Link href="/" className="font-display text-xl tracking-[2px] text-[#e8eaf0] no-underline">
+          THE <span className="text-[#E86A2A]">WOLF</span> PACK
         </Link>
-        <div className="wp-nav-links" style={{ display: "flex", gap: 28, alignItems: "center" }}>
-          <a href="#how">How It Works</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#faq">FAQ</a>
-          <a href="#" onClick={e => { e.preventDefault(); setDemoOpen(true); }} style={{ color: "#E86A2A" }}>Live Demo</a>
-          <Link href="/sign-in" style={{ color: "rgba(232,230,227,0.4)" }}>Sign In</Link>
-          <Link href="/sign-up" className="wp-cta" style={{ padding: "8px 20px", fontSize: 12 }}>Get Started</Link>
+        <div className="hidden md:flex gap-7 items-center">
+          <a href="#how" className="text-sm text-white/40 no-underline hover:text-white transition-colors font-medium tracking-wider">How It Works</a>
+          <a href="#pricing" className="text-sm text-white/40 no-underline hover:text-white transition-colors font-medium tracking-wider">Pricing</a>
+          <a href="#faq" className="text-sm text-white/40 no-underline hover:text-white transition-colors font-medium tracking-wider">FAQ</a>
+          <a href="#" onClick={e => { e.preventDefault(); setDemoOpen(true); }} className="text-sm text-[#E86A2A] no-underline hover:text-[#ff7b3a] transition-colors font-medium">Live Demo</a>
+          <Link href="/sign-in" className="text-sm text-white/40 no-underline hover:text-white transition-colors">Sign In</Link>
+          <Link href="/sign-up" className="px-5 py-2 bg-[#E86A2A] text-white text-xs font-bold rounded-lg no-underline hover:bg-[#ff7b3a] hover:-translate-y-0.5 transition-all duration-200 shadow-[0_4px_20px_rgba(232,106,42,0.3)]">
+            Get Started
+          </Link>
         </div>
-        <div className="wp-mobile-menu" style={{ display: "none", gap: 12, alignItems: "center" }}>
-          <Link href="/sign-in" style={{ color: "rgba(232,230,227,0.5)", textDecoration: "none", fontSize: 13, fontWeight: 500 }}>Sign In</Link>
-          <Link href="/sign-up" className="wp-cta" style={{ padding: "8px 16px", fontSize: 12 }}>Get Started</Link>
+        <div className="flex md:hidden gap-3 items-center">
+          <Link href="/sign-in" className="text-sm text-white/50 no-underline">Sign In</Link>
+          <Link href="/sign-up" className="px-4 py-2 bg-[#E86A2A] text-white text-xs font-bold rounded-lg no-underline">Get Started</Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <div className="wp-hero-section" style={{ position: "relative", height: "92vh", minHeight: 600, maxHeight: 900, display: "flex", alignItems: "center", overflow: "hidden" }}>
-        {/* Wolf image — pushed right, high contrast */}
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 0,
-          backgroundImage: "url(/images/hero-wolf.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "70% 35%",
-          opacity: 0.7,
-          filter: "contrast(1.3) brightness(0.9)",
-          animation: "heroIn 2s ease both",
-        }} />
-        {/* Left-to-right gradient — dark left (text area) fading to transparent right (wolf) */}
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 1,
-          background: "linear-gradient(to right, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.85) 25%, rgba(10,10,10,0.5) 55%, rgba(10,10,10,0.2) 80%, rgba(10,10,10,0.15) 100%)",
-        }} />
-        {/* Bottom fade to black */}
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 1,
-          background: "linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(10,10,10,0.7) 85%, rgba(10,10,10,1) 100%)",
-        }} />
-        {/* Top subtle vignette */}
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 1,
-          background: "radial-gradient(ellipse at 70% 40%, transparent 30%, rgba(10,10,10,0.4) 100%)",
-        }} />
+      {/* ── Hero ── */}
+      <div className="relative h-[92vh] min-h-[600px] max-h-[900px] flex items-center overflow-hidden">
+        {/* Wolf image */}
+        <div className="absolute inset-0 z-0 opacity-70" style={{ backgroundImage: "url(/images/hero-wolf.png)", backgroundSize: "cover", backgroundPosition: "70% 35%", filter: "contrast(1.3) brightness(0.9)", animation: "fade-up 2s ease both" }} />
+        {/* Orange smoke particles */}
+        <HeroSmoke />
+        {/* Gradients */}
+        <div className="absolute inset-0 z-[3]" style={{ background: "linear-gradient(to right, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.85) 25%, rgba(10,10,10,0.5) 55%, rgba(10,10,10,0.2) 80%, rgba(10,10,10,0.15) 100%)" }} />
+        <div className="absolute inset-0 z-[3]" style={{ background: "linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(10,10,10,0.7) 85%, #0a0a0a 100%)" }} />
+        <div className="absolute inset-0 z-[3]" style={{ background: "radial-gradient(ellipse at 70% 40%, transparent 30%, rgba(10,10,10,0.4) 100%)" }} />
 
-        <div style={{ position: "relative", zIndex: 2, maxWidth: 1200, width: "100%", margin: "0 auto", padding: "0 60px" }}>
-          <div style={{ maxWidth: 580 }}>
-            <div style={{ animation: "heroIn 0.6s ease 0.2s both" }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 14px", background: "rgba(232,106,42,0.15)", border: "1px solid rgba(232,106,42,0.3)", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#E86A2A", letterSpacing: 1, textTransform: "uppercase", marginBottom: 28, backdropFilter: "blur(8px)" }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E86A2A", display: "inline-block" }} />
+        <div className="relative z-[4] max-w-[1200px] w-full mx-auto px-6 md:px-16">
+          <div className="max-w-[580px]">
+            <div className="animate-fade-up">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#E86A2A]/15 border border-[#E86A2A]/30 rounded-full text-[11px] font-semibold text-[#E86A2A] tracking-widest uppercase mb-7 backdrop-blur-sm">
+                <span className="w-2 h-2 rounded-full bg-[#E86A2A] inline-block animate-live-pulse" />
                 AI Appointment Setter
               </div>
             </div>
-            <h1 className="wp-hero-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 80, lineHeight: 0.92, margin: "0 0 28px", letterSpacing: 1, animation: "heroIn 0.8s ease 0.4s both", textShadow: "0 4px 60px rgba(0,0,0,0.8)" }}>
+            <h1 className="font-display text-[clamp(38px,8vw,80px)] leading-[0.92] mb-7 tracking-wide animate-fade-up animate-fade-up-d1" style={{ textShadow: "0 4px 60px rgba(0,0,0,0.8)" }}>
               <ScrambleText text="STOP CHASING LEADS." delay={600} />
               <br />
-              <span style={{ color: "#E86A2A" }}><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
+              <span className="text-[#E86A2A]"><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
             </h1>
-            <p style={{ fontSize: 17, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, maxWidth: 500, margin: "0 0 20px", animation: "heroIn 0.8s ease 2s both", textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
+            <p className="text-[17px] text-white/85 leading-relaxed max-w-[500px] mb-5 animate-fade-up animate-fade-up-d3" style={{ textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
               Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
             </p>
-            <p style={{ fontSize: 16, color: "#e8eaf0", maxWidth: 500, margin: "0 0 40px", animation: "heroIn 0.8s ease 2.3s both", lineHeight: 1.7, fontWeight: 600 }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,122,255,0.15)", border: "1px solid rgba(0,122,255,0.3)", borderRadius: 20, padding: "4px 14px", fontSize: 14, fontWeight: 700, color: "#007AFF", marginRight: 6, verticalAlign: "middle", backdropFilter: "blur(8px)" }}>🔵 iMessage</span>
-              texts. No A2P registration. No carrier filtering. <span style={{ color: "rgba(255,255,255,0.9)" }}>Your leads actually hear from you first.</span>
+            <p className="text-base text-[#e8eaf0] max-w-[500px] mb-10 leading-relaxed font-semibold animate-fade-up animate-fade-up-d4">
+              <span className="inline-flex items-center gap-1.5 bg-[#007AFF]/15 border border-[#007AFF]/30 rounded-full px-3.5 py-1 text-sm font-bold text-[#007AFF] mr-1.5 align-middle backdrop-blur-sm">
+                <Circle className="w-2.5 h-2.5 fill-[#007AFF] text-[#007AFF]" /> iMessage
+              </span>
+              texts. No A2P registration. No carrier filtering. <span className="text-white/90">Your leads actually hear from you first.</span>
             </p>
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", animation: "heroIn 0.8s ease 2.6s both" }}>
-              <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
-              <Link href="/book-demo" className="wp-ghost" style={{ backdropFilter: "blur(8px)", borderColor: "rgba(255,255,255,0.3)", color: "#fff" }}>Book a Demo</Link>
+            <div className="flex gap-3.5 flex-wrap animate-fade-up animate-fade-up-d5">
+              <button onClick={() => setDemoOpen(true)} className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(232,106,42,0.35)] transition-all duration-300 animate-cta-pulse">
+                See It Work On You →
+              </button>
+              <Link href="/book-demo" className="inline-flex items-center gap-2 px-7 py-4 bg-transparent border border-white/30 text-white rounded-xl text-sm font-medium no-underline backdrop-blur-sm hover:border-white/50 transition-all duration-300 cursor-pointer">
+                Book a Demo
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats Bar */}
+      {/* ── Stats Bar ── */}
       <ScrollReveal>
-      <div className="wp-stats" style={{ display: "flex", justifyContent: "center", maxWidth: 1000, margin: "0 auto", padding: "80px 40px" }}>
-        {[
-          { num: "3 SEC", label: "Response time" },
-          { num: "24/7", label: "Never misses a lead" },
-          { num: "10X", label: "More appointments booked" },
-        ].map((s, i) => (
-          <div key={i} style={{ flex: 1, textAlign: "center", padding: "0 20px", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 72, color: "#E86A2A", letterSpacing: 2, lineHeight: 1 }}>{s.num}</div>
-            <div style={{ fontSize: 13, color: "rgba(232,230,227,0.35)", marginTop: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 500 }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-      </ScrollReveal>
-
-      {/* Ticker */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", margin: "20px 0" }}>
-        <Ticker />
-      </div>
-
-      {/* Problem Section */}
-      <ScrollReveal>
-      <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 30%, #111 70%, #0e0e0e 100%)", overflow: "hidden" }}>
-        {/* Section ambient glow */}
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "70%", height: "100%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.04) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(60px)" }} />
-        {/* Howling wolf silhouette */}
-        <img src="/Howling_wolf.png" alt="" style={{ position: "absolute", top: "50%", right: "-5%", transform: "translateY(-50%)", width: 500, height: "auto", opacity: 0.025, pointerEvents: "none", userSelect: "none" }} />
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "80px 40px 60px", textAlign: "center", position: "relative" }}>
-        <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1 }}>
-          EVERY MINUTE YOU WAIT{" "}
-          <span style={{ color: "#E86A2A" }}>YOUR LEAD IS TEXTING SOMEONE ELSE</span>
-        </h2>
-        <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 48px" }}>
-          The first person to respond wins. Always. Are you first?
-        </p>
-        <div className="wp-problem-stats" style={{ display: "flex", gap: 48, justifyContent: "center", flexWrap: "wrap" }}>
-          <div className="wp-problem-stat">
-            <div className="wp-problem-num">78%</div>
-            <div className="wp-problem-label">Buy from the<br />first responder</div>
-          </div>
-          <div className="wp-problem-stat">
-            <div className="wp-problem-num">5 MIN</div>
-            <div className="wp-problem-label">Response time drops<br />conversion 80%</div>
-          </div>
-          <div className="wp-problem-stat">
-            <div className="wp-problem-num">48%</div>
-            <div className="wp-problem-label">Never follow<br />up at all</div>
-          </div>
-        </div>
-      </div>
-      </div>
-      </ScrollReveal>
-
-      {/* The Difference — emotional hook, comes first */}
-      <ScrollReveal>
-      <div style={{ position: "relative", background: "linear-gradient(180deg, #0e0e0e 0%, #0a0a0a 50%, #0a0a0a 100%)", overflow: "hidden" }}>
-        {/* Section ambient glow */}
-        <div style={{ position: "absolute", top: "20%", right: "0%", width: "50%", height: "60%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(0,122,255,0.03) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
-        {/* Wolf head silhouette */}
-        <img src="/Wolf_Head.png" alt="" style={{ position: "absolute", top: "50%", left: "-3%", transform: "translateY(-50%)", width: 380, height: "auto", opacity: 0.03, pointerEvents: "none", userSelect: "none" }} />
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px", position: "relative" }}>
-        <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>The Difference</div>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 14px", letterSpacing: 1, lineHeight: 1.05 }}>
-            THIS ISN&#39;T SOFTWARE. <span style={{ color: "#E86A2A" }}>IT&#39;S A CLOSER.</span>
-          </h2>
-          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", maxWidth: 520, margin: "0 auto", lineHeight: 1.6 }}>
-            You didn&#39;t start your business to sit in a CRM. Wolf Pack handles the grind so you handle the deals.
-          </p>
-        </div>
-        <div className="wp-outcomes-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="flex flex-col md:flex-row justify-center max-w-[1000px] mx-auto py-20 px-10">
           {[
-            {
-              icon: "📅",
-              title: "Your phone buzzes with booked appointments",
-              desc: "Not notifications to follow up. Not reminders you missed something. Actual confirmed appointments, already on your calendar, with qualified leads ready to talk.",
-            },
-            {
-              icon: "🌙",
-              title: "2am lead? Handled before you wake up",
-              desc: "Sunday night. Holiday weekend. Middle of a closing. Doesn't matter. The AI responds in 3 seconds, every single time. Your competitors respond Monday morning. You already booked it.",
-            },
-            {
-              icon: "🔵",
-              title: "Blue bubble. Not spam folder.",
-              desc: "Your competitors send green SMS texts that get filtered by carriers. You send real iMessages through Apple's network. No registration. No filtering. The message actually lands.",
-            },
-            {
-              icon: "🔁",
-              title: "The lead you forgot about? We didn't.",
-              desc: "Day 1, 3, 7, 14 — different angle every time. The AI came back on a lead 11 days later and booked them. That's revenue you would've lost.",
-            },
-          ].map((o, i) => (
-            <div key={i} className="wp-outcome">
-              <div className="wp-outcome-icon">{o.icon}</div>
-              <div style={{ fontSize: 19, fontWeight: 700, color: "#e8eaf0", marginBottom: 10, lineHeight: 1.3 }}>{o.title}</div>
-              <div style={{ fontSize: 14, color: "rgba(232,230,227,0.45)", lineHeight: 1.75 }}>{o.desc}</div>
+            { num: "3 SEC", label: "Response time" },
+            { num: "24/7", label: "Never misses a lead" },
+            { num: "10X", label: "More appointments booked" },
+          ].map((s, i) => (
+            <div key={i} className={`flex-1 text-center py-5 md:py-0 md:px-5 ${i < 2 ? "border-b md:border-b-0 md:border-r border-white/[0.06]" : ""}`}>
+              <div className="font-display text-[clamp(52px,8vw,72px)] text-[#E86A2A] tracking-wider leading-none">{s.num}</div>
+              <div className="text-[13px] text-white/35 mt-2.5 tracking-widest uppercase font-medium">{s.label}</div>
             </div>
           ))}
         </div>
-      </div>
-      </div>
       </ScrollReveal>
 
-      {/* Before / After Comparison */}
+      {/* ── Ticker ── */}
+      <div className="border-y border-white/[0.04] my-5 relative overflow-hidden py-5">
+        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
+        <div className="flex gap-3 animate-ticker" style={{ width: "max-content" }}>
+          {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => {
+            const Icon = item.icon;
+            return (
+              <div key={i} className="flex items-center gap-2.5 px-4 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-white/70 font-medium whitespace-nowrap flex-shrink-0">
+                <Icon className="w-3.5 h-3.5 text-[#E86A2A]" />
+                <span>{item.text}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Problem Section ── */}
       <ScrollReveal>
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "80px 40px 60px" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>The Reality</div>
-            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: 0, letterSpacing: 1, lineHeight: 1.05 }}>
-              TWO BUSINESSES. <span style={{ color: "#E86A2A" }}>SAME LEADS.</span>
+        <div className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 30%, #111 70%, #0e0e0e 100%)" }}>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-full rounded-full pointer-events-none blur-[60px]" style={{ background: "radial-gradient(ellipse, rgba(232,106,42,0.04) 0%, transparent 60%)" }} />
+          <div className="max-w-[900px] mx-auto px-10 py-20 text-center relative">
+            <h2 className="font-display text-[clamp(36px,5vw,48px)] mb-3 tracking-wide leading-none">
+              EVERY MINUTE YOU WAIT <span className="text-[#E86A2A]">YOUR LEAD IS TEXTING SOMEONE ELSE</span>
             </h2>
-          </div>
-          <div className="wp-compare-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-            {/* Without */}
-            <div style={{ padding: 36, borderRadius: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(231,76,60,0.12)", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, rgba(231,76,60,0.3), transparent)" }} />
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#e74c3c", textTransform: "uppercase", letterSpacing: 2, marginBottom: 24 }}>Without Wolf Pack</div>
+            <p className="text-[15px] text-white/40 mb-12">The first person to respond wins. Always. Are you first?</p>
+            <div className="flex flex-col md:flex-row gap-12 md:gap-12 justify-center">
               {[
-                "Lead texts at 9pm. You see it at 8am.",
-                "Manual follow-up... if you remember.",
-                "Green texts filtered by carriers.",
-                "Competitor books them while you sleep.",
-                "3 appointments this week. Maybe.",
-              ].map((text, i) => (
-                <ScrollReveal key={i} delay={i * 0.08}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                    <span style={{ fontSize: 16 }}>&#10060;</span>
-                    <span style={{ fontSize: 14, color: "rgba(232,230,227,0.45)", lineHeight: 1.5 }}>{text}</span>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-            {/* With */}
-            <div style={{ padding: 36, borderRadius: 16, background: "rgba(46,204,113,0.03)", border: "1px solid rgba(46,204,113,0.15)", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, rgba(46,204,113,0.4), transparent)" }} />
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#2ecc71", textTransform: "uppercase", letterSpacing: 2, marginBottom: 24 }}>With Wolf Pack</div>
-              {[
-                "Lead texts at 9pm. AI responds in 3 seconds.",
-                "Follow-up on day 1, 3, 7, 14. Automatic.",
-                "Blue iMessage. No filtering. They see it.",
-                "Appointment booked before you wake up.",
-                "17 appointments this week. On autopilot.",
-              ].map((text, i) => (
-                <ScrollReveal key={i} delay={i * 0.08}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                    <span style={{ fontSize: 16 }}>&#9989;</span>
-                    <span style={{ fontSize: 14, color: "rgba(232,230,227,0.7)", lineHeight: 1.5, fontWeight: 500 }}>{text}</span>
-                  </div>
-                </ScrollReveal>
+                { num: "78%", label: "Buy from the\nfirst responder" },
+                { num: "5 MIN", label: "Response time drops\nconversion 80%" },
+                { num: "48%", label: "Never follow\nup at all" },
+              ].map((s, i) => (
+                <div key={i} className="flex-1 text-center">
+                  <div className="font-display text-[clamp(44px,6vw,56px)] text-[#E86A2A] leading-none">{s.num}</div>
+                  <div className="text-sm text-white/40 mt-2 leading-relaxed whitespace-pre-line">{s.label}</div>
+                </div>
               ))}
             </div>
           </div>
         </div>
       </ScrollReveal>
 
-      {/* Proof Bar */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "linear-gradient(180deg, #0c0c0c, #0f0f0f, #0c0c0c)" }}>
-        <div className="wp-proof-bar">
+      {/* ── The Difference ── */}
+      <ScrollReveal>
+        <div className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0e0e0e 0%, #0a0a0a 50%, #0a0a0a 100%)" }}>
+          <div className="max-w-[1000px] mx-auto px-10 py-20 relative">
+            <div className="text-center mb-14">
+              <div className="text-[11px] font-bold text-[#E86A2A] tracking-[3px] uppercase mb-4">The Difference</div>
+              <h2 className="font-display text-[clamp(36px,5vw,52px)] mb-3.5 tracking-wide leading-tight">
+                THIS ISN&#39;T SOFTWARE. <span className="text-[#E86A2A]">IT&#39;S A CLOSER.</span>
+              </h2>
+              <p className="text-[15px] text-white/35 max-w-[520px] mx-auto leading-relaxed">
+                You didn&#39;t start your business to sit in a CRM. Wolf Pack handles the grind so you handle the deals.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { icon: Calendar, title: "Your phone buzzes with booked appointments", desc: "Not notifications to follow up. Not reminders you missed something. Actual confirmed appointments, already on your calendar, with qualified leads ready to talk." },
+                { icon: Clock, title: "2am lead? Handled before you wake up", desc: "Sunday night. Holiday weekend. Middle of a closing. Doesn't matter. The AI responds in 3 seconds, every single time." },
+                { icon: Circle, title: "Blue bubble. Not spam folder.", desc: "Your competitors send green SMS texts that get filtered by carriers. You send real iMessages through Apple's network. No registration. No filtering. The message actually lands." },
+                { icon: RefreshCw, title: "The lead you forgot about? We didn't.", desc: "Day 1, 3, 7, 14 — different angle every time. The AI came back on a lead 11 days later and booked them. That's revenue you would've lost." },
+              ].map((o, i) => {
+                const Icon = o.icon;
+                return (
+                  <div key={i} className="group p-9 rounded-2xl bg-white/[0.02] border border-white/[0.05] transition-all duration-400 relative overflow-hidden hover:border-[#E86A2A]/20 hover:bg-[#E86A2A]/[0.03] hover:-translate-y-0.5 cursor-default">
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E86A2A]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl mb-5 bg-[#E86A2A]/[0.08] border border-[#E86A2A]/15">
+                      <Icon className="w-5 h-5 text-[#E86A2A]" />
+                    </div>
+                    <div className="text-[19px] font-bold text-[#e8eaf0] mb-2.5 leading-snug">{o.title}</div>
+                    <div className="text-sm text-white/45 leading-relaxed">{o.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </ScrollReveal>
+
+      {/* ── Before / After ── */}
+      <ScrollReveal>
+        <div className="max-w-[1000px] mx-auto px-10 py-20">
+          <div className="text-center mb-12">
+            <div className="text-[11px] font-bold text-[#E86A2A] tracking-[3px] uppercase mb-4">The Reality</div>
+            <h2 className="font-display text-[clamp(36px,5vw,48px)] tracking-wide leading-tight">
+              TWO BUSINESSES. <span className="text-[#E86A2A]">SAME LEADS.</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-9 rounded-2xl bg-white/[0.02] border border-red-500/12 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+              <div className="text-xs font-bold text-red-400 uppercase tracking-[2px] mb-6">Without Wolf Pack</div>
+              {["Lead texts at 9pm. You see it at 8am.", "Manual follow-up... if you remember.", "Green texts filtered by carriers.", "Competitor books them while you sleep.", "3 appointments this week. Maybe."].map((text, i) => (
+                <div key={i} className={`flex items-center gap-3 py-3.5 ${i < 4 ? "border-b border-white/[0.04]" : ""}`}>
+                  <X className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  <span className="text-sm text-white/45 leading-relaxed">{text}</span>
+                </div>
+              ))}
+            </div>
+            <div className="p-9 rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/15 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+              <div className="text-xs font-bold text-emerald-400 uppercase tracking-[2px] mb-6">With Wolf Pack</div>
+              {["Lead texts at 9pm. AI responds in 3 seconds.", "Follow-up on day 1, 3, 7, 14. Automatic.", "Blue iMessage. No filtering. They see it.", "Appointment booked before you wake up.", "17 appointments this week. On autopilot."].map((text, i) => (
+                <div key={i} className={`flex items-center gap-3 py-3.5 ${i < 4 ? "border-b border-white/[0.04]" : ""}`}>
+                  <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <span className="text-sm text-white/70 leading-relaxed font-medium">{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ScrollReveal>
+
+      {/* ── Proof Bar ── */}
+      <div className="border-y border-white/[0.06]" style={{ background: "linear-gradient(180deg, #0c0c0c, #0f0f0f, #0c0c0c)" }}>
+        <div className="max-w-[900px] mx-auto py-12 px-10 flex flex-wrap justify-center gap-12">
           {[
             { num: "47", label: "Appointments booked in 30 days" },
             { num: "3 SEC", label: "Average response time" },
             { num: "11 DAYS", label: "Longest nurture to booking" },
             { num: "$0", label: "Extra staff needed" },
           ].map((p, i) => (
-            <div key={i} className="wp-proof-item">
-              <div className="wp-proof-num">{p.num}</div>
-              <div className="wp-proof-label">{p.label}</div>
+            <div key={i} className="text-center">
+              <div className="font-display text-[44px] text-[#E86A2A] leading-none">{p.num}</div>
+              <div className="text-xs text-white/35 mt-1.5 tracking-wider">{p.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Dashboard Preview — Animated */}
+      {/* ── Dashboard ── */}
       <AnimatedDashboard />
 
-      {/* How It Works */}
+      {/* ── How It Works ── */}
       <ScrollReveal>
-      <div id="how" style={{ maxWidth: 960, margin: "0 auto", padding: "80px 40px 40px", position: "relative" }}>
-        <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>How It Works</div>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 52, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1.05 }}>
-            THREE STEPS. <span style={{ color: "#E86A2A" }}>ONE FULL CALENDAR.</span>
-          </h2>
-          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", maxWidth: 440, margin: "0 auto" }}>You don&#39;t learn software. You just get appointments.</p>
+        <div id="how" className="max-w-[960px] mx-auto px-10 pt-20 pb-10 relative">
+          <div className="text-center mb-14">
+            <div className="text-[11px] font-bold text-[#E86A2A] tracking-[3px] uppercase mb-4">How It Works</div>
+            <h2 className="font-display text-[clamp(36px,5vw,52px)] mb-3 tracking-wide leading-tight">
+              THREE STEPS. <span className="text-[#E86A2A]">ONE FULL CALENDAR.</span>
+            </h2>
+            <p className="text-[15px] text-white/35 max-w-[440px] mx-auto">You don&#39;t learn software. You just get appointments.</p>
+          </div>
+          <div className="flex flex-col md:flex-row gap-3 items-stretch">
+            {[
+              { num: "01", title: "Lead comes in", desc: "Ads, website, referral, Google — doesn't matter where. The AI picks it up before you even see the notification." },
+              { num: "02", title: "AI books the appointment", desc: "Texts back in 3 seconds via iMessage. Qualifies. Handles objections. Sends the calendar invite. Done." },
+              { num: "03", title: "You show up and close", desc: "Calendar invite with Google Meet link. The lead is warmed up, qualified, and expecting your call." },
+            ].map((s, i) => (
+              <React.Fragment key={i}>
+                <div className="flex-1 p-9 rounded-2xl bg-white/[0.02] border border-white/[0.05] transition-all duration-400 hover:border-[#E86A2A]/15 hover:bg-[#E86A2A]/[0.02]">
+                  <div className="font-display text-5xl text-[#E86A2A] leading-none mb-4 opacity-90">{s.num}</div>
+                  <div className="text-[17px] font-bold text-[#e8eaf0] mb-2.5">{s.title}</div>
+                  <div className="text-sm text-white/40 leading-relaxed">{s.desc}</div>
+                </div>
+                {i < 2 && <div className="hidden md:flex items-center text-[#E86A2A]/30 text-2xl px-1">→</div>}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
-        <div className="wp-how-steps" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "stretch" }}>
-          {[
-            { num: "01", title: "Lead comes in", desc: "Ads, website, referral, Google — doesn't matter where. The AI picks it up before you even see the notification." },
-            { num: "02", title: "AI books the appointment", desc: "Texts back in 3 seconds via iMessage. Qualifies. Handles objections. Sends the calendar invite. Done." },
-            { num: "03", title: "You show up and close", desc: "Calendar invite with Google Meet link. The lead is warmed up, qualified, and expecting your call." },
-          ].map((s, i) => (
-            <React.Fragment key={i}>
-              <div className="wp-step">
-                <div className="wp-step-num">{s.num}</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: "#e8eaf0", marginBottom: 10 }}>{s.title}</div>
-                <div style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", lineHeight: 1.7 }}>{s.desc}</div>
-              </div>
-              {i < 2 && <div className="wp-step-connector">&#8594;</div>}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
       </ScrollReveal>
 
-      {/* Demo CTA */}
+      {/* ── Demo CTA ── */}
       <ScrollReveal>
-      <div style={{ padding: "80px 40px", background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 40%, #0d0b09 60%, #0a0a0a 100%)" }}>
-        <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", padding: "60px 40px", borderRadius: 20, border: "1px solid rgba(232,106,42,0.25)", background: "linear-gradient(180deg, rgba(232,106,42,0.04), rgba(232,106,42,0.01))", boxShadow: "0 0 60px rgba(232,106,42,0.06)" }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, margin: "0 0 12px" }}>SEE IT <span style={{ color: "#E86A2A" }}>WORK ON YOU</span></h2>
-          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>Enter your number. Wolf Pack AI texts you back in 3 seconds, qualifies you, and books an appointment on your calendar. Experience exactly what your leads will.</p>
-          <button onClick={() => setDemoOpen(true)} className="wp-cta">Text Me Now →</button>
+        <div className="py-20 px-10" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 40%, #0d0b09 60%, #0a0a0a 100%)" }}>
+          <div className="max-w-[640px] mx-auto text-center p-14 rounded-2xl border border-[#E86A2A]/25 shadow-[0_0_60px_rgba(232,106,42,0.06)]" style={{ background: "linear-gradient(180deg, rgba(232,106,42,0.04), rgba(232,106,42,0.01))" }}>
+            <h2 className="font-display text-4xl mb-3">SEE IT <span className="text-[#E86A2A]">WORK ON YOU</span></h2>
+            <p className="text-[15px] text-white/40 mb-7 leading-relaxed">Enter your number. Wolf Pack AI texts you back in 3 seconds, qualifies you, and books an appointment on your calendar.</p>
+            <button onClick={() => setDemoOpen(true)} className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 transition-all duration-300 animate-cta-pulse">
+              Text Me Now →
+            </button>
+          </div>
         </div>
-      </div>
       </ScrollReveal>
 
-      {/* Pricing */}
+      {/* ── Pricing ── */}
       <ScrollReveal>
-      <div style={{ position: "relative", background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 20%, #111 50%, #0e0e0e 80%, #0a0a0a 100%)", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translateX(-50%)", width: "60%", height: "50%", borderRadius: "50%", background: "radial-gradient(ellipse, rgba(232,106,42,0.05) 0%, transparent 60%)", pointerEvents: "none", filter: "blur(80px)" }} />
-        {/* Wolf prints silhouette */}
-        <img src="/Wolf_Prints.png" alt="" style={{ position: "absolute", bottom: "5%", right: "2%", width: 200, height: "auto", opacity: 0.025, pointerEvents: "none", userSelect: "none", transform: "rotate(-15deg)" }} />
-      <div id="pricing" style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 40px", position: "relative" }}>
-        <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#E86A2A", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16 }}>Pricing</div>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 48, margin: "0 0 12px", letterSpacing: 1, lineHeight: 1.05 }}>
-            ONE MISSED APPOINTMENT COSTS MORE THAN THIS.
-          </h2>
-          <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", maxWidth: 480, margin: "0 auto" }}>No contracts. Cancel anytime. Set up in 10 minutes.</p>
-        </div>
-        {/* Main plan — full width on top */}
-        <div style={{ maxWidth: 680, margin: "0 auto 20px" }}>
-          <div className="wp-price-card featured" style={{ position: "relative" }}>
-            <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#E86A2A", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5 }}>ALL-IN-ONE</div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 24 }}>
-              <div style={{ flex: 1, minWidth: 240 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>WOLF PACK AI</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 56, color: "#e8eaf0", lineHeight: 1 }}>$97<span style={{ fontSize: 15, color: "rgba(232,230,227,0.3)", fontFamily: "Inter, sans-serif" }}>/mo</span></div>
-                <p style={{ fontSize: 14, color: "rgba(232,230,227,0.4)", margin: "12px 0 20px" }}>Everything you need. Blue texts, AI agent, CRM. One price.</p>
-                <button
-                  onClick={async () => {
-                    const res = await fetch("/api/stripe/checkout", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ plan: "pro" }),
-                    });
-                    const data = await res.json();
-                    if (data.url) window.location.href = data.url;
-                  }}
-                  className="wp-cta"
-                  style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex", fontFamily: "inherit", fontSize: "inherit" }}
-                >
-                  Get Started
-                </button>
-              </div>
-              <div style={{ flex: 1, minWidth: 240 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-                  {["AI Appointment Setter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Self-Learning AI", "CSV Import", "Analytics"].map((f, j) => (
-                    <div key={j} style={{ fontSize: 13, color: "rgba(232,230,227,0.5)", padding: "5px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#2ecc71", fontWeight: 700, fontSize: 11 }}>✓</span>{f}
-                    </div>
-                  ))}
+        <div className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 20%, #111 50%, #0e0e0e 80%, #0a0a0a 100%)" }}>
+          <div id="pricing" className="max-w-[1000px] mx-auto px-10 py-16 relative">
+            <div className="text-center mb-14">
+              <div className="text-[11px] font-bold text-[#E86A2A] tracking-[3px] uppercase mb-4">Pricing</div>
+              <h2 className="font-display text-[clamp(32px,5vw,48px)] mb-3 tracking-wide leading-tight">ONE MISSED APPOINTMENT COSTS MORE THAN THIS.</h2>
+              <p className="text-[15px] text-white/35 max-w-[480px] mx-auto">No contracts. Cancel anytime. Set up in 10 minutes.</p>
+            </div>
+
+            {/* Main plan */}
+            <div className="max-w-[680px] mx-auto mb-5">
+              <div className="relative bg-[#E86A2A]/[0.03] border-2 border-[#E86A2A] rounded-2xl p-9 hover:border-[#ff7b3a] transition-all duration-300">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#E86A2A] text-white text-[10px] font-bold px-3.5 py-1 rounded-full tracking-wider">ALL-IN-ONE</div>
+                <div className="flex flex-col md:flex-row justify-between gap-6">
+                  <div className="flex-1 min-w-[240px]">
+                    <div className="text-xs font-bold text-white/30 uppercase tracking-[1.5px] mb-2">WOLF PACK AI</div>
+                    <div className="font-display text-[56px] text-[#e8eaf0] leading-none">$97<span className="text-[15px] text-white/30 font-sans">/mo</span></div>
+                    <p className="text-sm text-white/40 mt-3 mb-5">Everything you need. Blue texts, AI agent, CRM. One price.</p>
+                    <button onClick={async () => { const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan: "pro" }) }); const data = await res.json(); if (data.url) window.location.href = data.url; }}
+                      className="w-full py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer hover:bg-[#ff7b3a] transition-all duration-200 shadow-[0_4px_20px_rgba(232,106,42,0.3)]">
+                      Get Started
+                    </button>
+                  </div>
+                  <div className="flex-1 min-w-[240px] grid grid-cols-2 gap-x-4 gap-y-0.5 content-start">
+                    {["AI Appointment Setter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Self-Learning AI", "CSV Import", "Analytics"].map(f => (
+                      <div key={f} className="text-[13px] text-white/50 py-1.5 flex items-center gap-2">
+                        <span className="text-emerald-400 text-[11px] font-bold">✓</span>{f}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Bottom cards */}
+            <div className="flex flex-col gap-5 max-w-[680px] mx-auto">
+              <div className="relative bg-white/[0.02] border border-white/[0.06] rounded-2xl p-9 hover:border-[#E86A2A]/20 transition-all duration-300">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#E86A2A]/20 text-[#E86A2A] text-[10px] font-bold px-3.5 py-1 rounded-full tracking-wider border border-[#E86A2A]/30">ADD-ON</div>
+                <div className="text-xs font-bold text-white/30 uppercase tracking-[1.5px] mb-2">GBP MANAGEMENT</div>
+                <div className="font-display text-[42px] text-[#e8eaf0]">$49<span className="text-[15px] text-white/30 font-sans">/mo</span></div>
+                <p className="text-sm text-white/35 mt-2 mb-5">Your Google Business Profile on autopilot. More visibility, more calls.</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-0.5 mb-5">
+                  {["Weekly Auto Posts", "AI Review Replies", "Negative Review Alerts", "Monthly Performance Report", "Search + Maps Tracking", "Call + Direction Tracking", "Top Search Terms", "Photo Management", "Business Info Updates", "Service Area Management", "Review Request Sequence", "Competitor-Level Presence"].map(f => (
+                    <div key={f} className="text-xs text-white/50 py-1 flex items-center gap-2">
+                      <span className="text-emerald-400 text-[10px] font-bold">✓</span>{f}
+                    </div>
+                  ))}
+                </div>
+                <Link href="/book-demo" className="w-full flex justify-center py-3.5 bg-transparent border border-white/15 text-white/50 rounded-xl text-sm font-medium no-underline hover:border-white/30 hover:text-white transition-all duration-300 cursor-pointer">Add to Plan</Link>
+              </div>
+
+              <div className="relative bg-white/[0.02] border border-white/[0.06] rounded-2xl p-9 hover:border-[#E86A2A]/20 transition-all duration-300">
+                <div className="text-xs font-bold text-white/30 uppercase tracking-[1.5px] mb-2">AGENCY</div>
+                <div className="font-display text-[42px] text-[#e8eaf0]">Custom</div>
+                <p className="text-sm text-white/35 mt-2 mb-5">For agencies managing multiple clients.</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-0.5 mb-5">
+                  {["Everything in Wolf Pack AI", "GBP Management Included", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"].map(f => (
+                    <div key={f} className="text-xs text-white/50 py-1 flex items-center gap-2">
+                      <span className="text-emerald-400 text-[10px] font-bold">✓</span>{f}
+                    </div>
+                  ))}
+                </div>
+                <Link href="/book-demo" className="w-full flex justify-center py-3.5 bg-transparent border border-white/15 text-white/50 rounded-xl text-sm font-medium no-underline hover:border-white/30 hover:text-white transition-all duration-300 cursor-pointer">Contact Us</Link>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Bottom row — GBP + Agency side by side */}
-        <div className="wp-price-bottom" style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 680, margin: "0 auto" }}>
-          <div className="wp-price-card" style={{ position: "relative" }}>
-            <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "rgba(232,106,42,0.2)", color: "#E86A2A", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 20, letterSpacing: 0.5, border: "1px solid rgba(232,106,42,0.3)" }}>ADD-ON</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>GBP MANAGEMENT</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: "#e8eaf0" }}>$49<span style={{ fontSize: 15, color: "rgba(232,230,227,0.3)", fontFamily: "Inter, sans-serif" }}>/mo</span></div>
-            <p style={{ fontSize: 13, color: "rgba(232,230,227,0.35)", margin: "8px 0 20px" }}>Your Google Business Profile on autopilot. More visibility, more calls.</p>
-            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px" }}>
-              {["Weekly Auto Posts", "AI Review Replies", "Negative Review Alerts", "Monthly Performance Report", "Search + Maps Tracking", "Call + Direction Tracking", "Top Search Terms", "Photo Management", "Business Info Updates", "Service Area Management", "Review Request Sequence", "Competitor-Level Presence"].map((f, j) => (
-                <li key={j} style={{ fontSize: 12, color: "rgba(232,230,227,0.5)", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#2ecc71", fontWeight: 700, fontSize: 10 }}>✓</span>{f}
-                </li>
-              ))}
-            </ul>
-            <Link href="/book-demo" className="wp-ghost" style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
-              Add to Plan
-            </Link>
-          </div>
-
-          <div className="wp-price-card" style={{ position: "relative" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(232,230,227,0.3)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>AGENCY</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: "#e8eaf0" }}>Custom</div>
-            <p style={{ fontSize: 13, color: "rgba(232,230,227,0.35)", margin: "8px 0 20px" }}>For agencies managing multiple clients.</p>
-            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px" }}>
-              {["Everything in Wolf Pack AI", "GBP Management Included", "Multiple Numbers", "White Label Branding", "Custom Domain", "Team Management", "API Access", "Dedicated Support", "Facebook Lead Integration", "Volume Discounts"].map((f, j) => (
-                <li key={j} style={{ fontSize: 12, color: "rgba(232,230,227,0.5)", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#2ecc71", fontWeight: 700, fontSize: 10 }}>✓</span>{f}
-                </li>
-              ))}
-            </ul>
-            <Link href="/book-demo" className="wp-ghost" style={{ width: "100%", justifyContent: "center", boxSizing: "border-box", display: "flex" }}>
-              Contact Us
-            </Link>
-          </div>
-        </div>
-      </div>
-      </div>
       </ScrollReveal>
 
-      {/* FAQ */}
-      <div id="faq" style={{ maxWidth: 640, margin: "0 auto", padding: "60px 40px", position: "relative" }}>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: 0, letterSpacing: 1 }}>Questions? We Got You.</h2>
+      {/* ── FAQ ── */}
+      <div id="faq" className="max-w-[640px] mx-auto px-10 py-16">
+        <div className="text-center mb-10">
+          <h2 className="font-display text-[44px] tracking-wide">Questions? We Got You.</h2>
         </div>
-        <FaqItem q="How does the AI set appointments?" a="The moment a lead comes in, the AI texts them within seconds. It qualifies them with natural questions, handles any objections, and books directly on your calendar with a Google Meet link. You just show up." />
-        <FaqItem q="Will leads know they're talking to AI?" a="No. It texts like a real person on your team. No dashes, no bullet points, no robotic grammar. It mirrors the lead's energy and tone. Most leads have no idea." />
-        <FaqItem q="What's the difference between blue and green texts?" a="Green texts (SMS) require A2P registration and get filtered by carriers — your leads might never see them. Blue texts (iMessage) go through Apple's network directly. No registration. No filtering. Higher response rates. Our Pro plan includes blue texts." />
-        <FaqItem q="Can I take over a conversation from the AI?" a="Yes. Every conversation has an AI toggle. Turn it off and you're in control. Turn it back on and the AI picks up where you left off." />
-        <FaqItem q="How fast does the AI respond?" a="3 seconds. The moment a lead comes in, the AI is texting them. That speed alone puts you ahead of 90% of your competition." />
-        <FaqItem q="Do I need any technical skills?" a="No. When you sign up, the AI walks you through setup with a few questions about your business. You can be live in minutes." />
-        <FaqItem q="What happens if a lead goes cold?" a="The AI follows up automatically on day 1, 3, 7, and 14 with a different approach each time. No lead gets forgotten. The AI came back on a lead 11 days later and booked them." />
+        {FAQS.map((faq, i) => <FaqItem key={i} q={faq.q} a={faq.a} />)}
       </div>
 
-      {/* Final CTA */}
-      <div style={{ padding: "60px 40px 80px", textAlign: "center", background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 50%, #0f0c0a 100%)", position: "relative", overflow: "hidden" }}>
-        {/* Wolf pack silhouette */}
-        <img src="/Wolf_Pack.png" alt="" style={{ position: "absolute", bottom: "-10%", left: "50%", transform: "translateX(-50%)", width: 700, height: "auto", opacity: 0.02, pointerEvents: "none", userSelect: "none" }} />
-        <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, margin: "0 0 16px", letterSpacing: 1, lineHeight: 1.1 }}>
-          STOP LOSING APPOINTMENTS TO<br />
-          <span style={{ color: "#E86A2A" }}>WHOEVER RESPONDED FASTER</span>
+      {/* ── Final CTA ── */}
+      <div className="py-16 px-10 text-center relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 50%, #0f0c0a 100%)" }}>
+        <h2 className="font-display text-[44px] mb-4 tracking-wide leading-tight relative z-[1]">
+          STOP LOSING APPOINTMENTS TO<br /><span className="text-[#E86A2A]">WHOEVER RESPONDED FASTER</span>
         </h2>
-        <p style={{ fontSize: 15, color: "rgba(232,230,227,0.35)", margin: "0 0 32px" }}>Your competitors are texting your leads right now.</p>
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-          <button onClick={() => setDemoOpen(true)} className="wp-cta">See It Work On You →</button>
-          <Link href="/book-demo" className="wp-ghost">Book a Demo</Link>
+        <p className="text-[15px] text-white/35 mb-8 relative z-[1]">Your competitors are texting your leads right now.</p>
+        <div className="flex gap-3.5 justify-center flex-wrap relative z-[1]">
+          <button onClick={() => setDemoOpen(true)} className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 transition-all duration-300 animate-cta-pulse">
+            See It Work On You →
+          </button>
+          <Link href="/book-demo" className="inline-flex items-center gap-2 px-7 py-4 bg-transparent border border-white/15 text-white/50 rounded-xl text-sm font-medium no-underline hover:border-white/30 hover:text-white transition-all duration-300 cursor-pointer">
+            Book a Demo
+          </Link>
         </div>
       </div>
 
-      {/* Demo Modal */}
       <DemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
-
-      {/* Chat Widget */}
       <ChatWidget />
 
-      {/* Footer */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "80px 40px 40px" }}>
-        {/* Closing CTA line */}
-        <div style={{ textAlign: "center", marginBottom: 60 }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, letterSpacing: 1, color: "rgba(232,230,227,0.6)", marginBottom: 16 }}>
-            YOUR COMPETITION ISN&apos;T WAITING.
-          </div>
-          <button onClick={() => setDemoOpen(true)} className="wp-cta" style={{ fontSize: 16, padding: "16px 40px" }}>See It Work On You →</button>
+      {/* ── Footer ── */}
+      <footer className="border-t border-white/[0.04] px-10 pt-20 pb-10">
+        <div className="text-center mb-16">
+          <div className="font-display text-[42px] tracking-wide text-white/60 mb-4">YOUR COMPETITION ISN&apos;T WAITING.</div>
+          <button onClick={() => setDemoOpen(true)} className="px-10 py-4 bg-[#E86A2A] text-white rounded-xl text-base font-bold border-none cursor-pointer hover:bg-[#ff7b3a] transition-all duration-200 shadow-[0_4px_20px_rgba(232,106,42,0.3)]">
+            See It Work On You →
+          </button>
         </div>
-
-        {/* Big logo */}
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(32px, 10vw, 140px)", letterSpacing: "clamp(2px, 0.5vw, 6px)", textAlign: "center", lineHeight: 0.9, marginBottom: 32, color: "rgba(255,255,255,0.04)", userSelect: "none" }}>
-          THE <span style={{ color: "rgba(232,106,42,0.08)" }}>WOLF</span> PACK
+        <div className="font-display text-center leading-none mb-8 text-white/[0.04] select-none" style={{ fontSize: "clamp(32px, 10vw, 140px)", letterSpacing: "clamp(2px, 0.5vw, 6px)" }}>
+          THE <span className="text-[#E86A2A]/[0.08]">WOLF</span> PACK
         </div>
-
-        {/* Nav links */}
-        <div className="wp-footer-links" style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 24 }}>
-          {[
-            { label: "How It Works", href: "#how" },
-            { label: "Pricing", href: "#pricing" },
-            { label: "Book a Demo", href: "/book-demo" },
-            { label: "FAQ", href: "#faq" },
-          ].map(link => (
-            <Link key={link.label} href={link.href} style={{ color: "rgba(232,230,227,0.3)", textDecoration: "none", fontSize: 13, fontWeight: 500, transition: "color 0.2s" }}>{link.label}</Link>
+        <div className="flex flex-wrap justify-center gap-8 mb-6">
+          {[{ label: "How It Works", href: "#how" }, { label: "Pricing", href: "#pricing" }, { label: "Book a Demo", href: "/book-demo" }, { label: "FAQ", href: "#faq" }].map(link => (
+            <Link key={link.label} href={link.href} className="text-white/30 no-underline text-sm font-medium hover:text-white/60 transition-colors">{link.label}</Link>
           ))}
         </div>
-
-        {/* Legal */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 24, alignItems: "center" }}>
-          <Link href="/privacy" style={{ color: "rgba(232,230,227,0.2)", textDecoration: "none", fontSize: 11 }}>Privacy</Link>
-          <Link href="/terms" style={{ color: "rgba(232,230,227,0.2)", textDecoration: "none", fontSize: 11 }}>Terms</Link>
-          <span style={{ fontSize: 11, color: "rgba(232,230,227,0.12)" }}>© {new Date().getFullYear()} The Wolf Pack AI</span>
+        <div className="flex justify-center gap-6 items-center">
+          <Link href="/privacy" className="text-white/20 no-underline text-[11px] hover:text-white/40 transition-colors">Privacy</Link>
+          <Link href="/terms" className="text-white/20 no-underline text-[11px] hover:text-white/40 transition-colors">Terms</Link>
+          <span className="text-[11px] text-white/[0.12]">© {new Date().getFullYear()} The Wolf Pack AI</span>
         </div>
-      </div>
+      </footer>
+
       </div>
     </div>
   );
