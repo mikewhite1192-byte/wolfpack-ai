@@ -1,46 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Copy, X, Video } from "lucide-react";
 
-const T = {
-  orange: "#E86A2A",
-  text: "#e8eaf0",
-  muted: "#b0b4c8",
-  surface: "#111111",
-  border: "rgba(255,255,255,0.07)",
-  green: "#2ecc71",
-  red: "#e74c3c",
-  bg: "#0a0a0a",
-  blue: "#3498db",
-  purple: "#9b59b6",
-};
-
-interface CalendarEvent {
-  id: string;
-  summary: string;
-  start: string;
-  end: string;
-  attendees?: string[];
-  description?: string;
-  status: string;
-}
+interface CalendarEvent { id: string; summary: string; start: string; end: string; attendees?: string[]; description?: string; status: string; }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const EVENT_COLORS = ["#E86A2A", "#3498db", "#2ecc71", "#9b59b6", "#e67e22", "#1abc9c"];
 
-function sameDay(a: string, b: Date) {
-  const d = new Date(a);
-  return d.getFullYear() === b.getFullYear() && d.getMonth() === b.getMonth() && d.getDate() === b.getDate();
-}
-
-function formatTime(d: string) {
-  return new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-}
-
-function eventColor(i: number) {
-  const colors = [T.orange, T.blue, T.green, T.purple, "#e67e22", "#1abc9c"];
-  return colors[i % colors.length];
-}
+function sameDay(a: string, b: Date) { const d = new Date(a); return d.getFullYear() === b.getFullYear() && d.getMonth() === b.getMonth() && d.getDate() === b.getDate(); }
+function formatTime(d: string) { return new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
 
 export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -57,57 +27,22 @@ export default function CalendarPage() {
   const [addMeet, setAddMeet] = useState(false);
   const [saving, setSaving] = useState(false);
   const [bookingLink, setBookingLink] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    fetchEvents();
-    setBookingLink(`${window.location.origin}/book/default`);
-  }, []);
+  useEffect(() => { fetchEvents(); setBookingLink(`${window.location.origin}/book/default`); }, []);
 
-  async function fetchEvents() {
-    const res = await fetch("/api/calendar/events");
-    const data = await res.json();
-    if (data.connected === false) {
-      setConnected(false);
-    } else {
-      setConnected(true);
-      setEvents(data.events || []);
-    }
-    setLoading(false);
-  }
+  async function fetchEvents() { const res = await fetch("/api/calendar/events"); const data = await res.json(); if (data.connected === false) { setConnected(false); } else { setConnected(true); setEvents(data.events || []); } setLoading(false); }
 
   async function handleAddEvent() {
     if (!addTitle.trim() || !selectedDate) return;
     setSaving(true);
-
     const [hours, mins] = addTime.split(":").map(Number);
-    const start = new Date(selectedDate);
-    start.setHours(hours, mins, 0, 0);
+    const start = new Date(selectedDate); start.setHours(hours, mins, 0, 0);
     const end = new Date(start.getTime() + parseInt(addDuration) * 60000);
-
-    await fetch("/api/calendar/book", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: addTitle,
-        email: addAttendee || undefined,
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
-        notes: addNotes,
-        duration: parseInt(addDuration),
-        addGoogleMeet: addMeet,
-      }),
-    });
-
-    setSaving(false);
-    setShowAdd(false);
-    setAddTitle("");
-    setAddTime("10:00");
-    setAddAttendee("");
-    setAddNotes("");
-    fetchEvents();
+    await fetch("/api/calendar/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: addTitle, email: addAttendee || undefined, startTime: start.toISOString(), endTime: end.toISOString(), notes: addNotes, duration: parseInt(addDuration), addGoogleMeet: addMeet }) });
+    setSaving(false); setShowAdd(false); setAddTitle(""); setAddTime("10:00"); setAddAttendee(""); setAddNotes(""); fetchEvents();
   }
 
-  // Build calendar grid
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -119,40 +54,22 @@ export default function CalendarPage() {
   for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
   while (calendarDays.length % 7 !== 0) calendarDays.push(null);
 
-  function prevMonth() {
-    setCurrentMonth(new Date(year, month - 1, 1));
-    setSelectedDate(null);
-  }
-  function nextMonth() {
-    setCurrentMonth(new Date(year, month + 1, 1));
-    setSelectedDate(null);
-  }
-
-  function getEventsForDay(day: number) {
-    const d = new Date(year, month, day);
-    return events.filter(e => sameDay(e.start, d));
-  }
-
   const isToday = (day: number) => day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
   const isSelected = (day: number) => selectedDate && day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
-
+  const getEventsForDay = (day: number) => events.filter(e => sameDay(e.start, new Date(year, month, day)));
   const selectedDayEvents = selectedDate ? events.filter(e => sameDay(e.start, selectedDate)) : [];
-  const selectedDateStr = selectedDate
-    ? selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
-    : "";
+  const selectedDateStr = selectedDate ? selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "";
+
+  function handleCopy() { navigator.clipboard.writeText(bookingLink); setCopied(true); setTimeout(() => setCopied(false), 2000); }
 
   if (connected === false) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-        <div style={{ textAlign: "center", maxWidth: 400 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: T.text, marginBottom: 8 }}>CONNECT YOUR CALENDAR</div>
-          <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.6, marginBottom: 24 }}>
-            Connect your Google account to sync your calendar. Leads can book appointments directly and it shows up on your Google Calendar.
-          </div>
-          <a href="/api/email/connect" style={{ display: "inline-block", padding: "12px 28px", background: T.orange, color: "#fff", borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-            Connect Google
-          </a>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-[400px]">
+          <CalendarIcon className="w-12 h-12 text-[#E86A2A] mx-auto mb-4" />
+          <div className="font-display text-2xl text-[#e8eaf0] tracking-wider mb-2">CONNECT YOUR CALENDAR</div>
+          <div className="text-sm text-[#b0b4c8] leading-relaxed mb-6">Connect your Google account to sync your calendar. Leads can book appointments directly.</div>
+          <a href="/api/email/connect" className="inline-block px-7 py-3 bg-[#E86A2A] text-white rounded-xl text-sm font-bold no-underline hover:bg-[#ff7b3a] transition-colors">Connect Google</a>
         </div>
       </div>
     );
@@ -160,205 +77,154 @@ export default function CalendarPage() {
 
   return (
     <div>
-      <style>{`
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .cal-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: ${T.text}; letter-spacing: 1px; }
-        .cal-nav { display: flex; align-items: center; gap: 12px; }
-        .cal-nav-btn { background: none; border: 1px solid ${T.border}; border-radius: 6px; color: ${T.text}; padding: 6px 12px; cursor: pointer; font-size: 14px; }
-        .cal-nav-btn:hover { border-color: ${T.orange}; }
-        .cal-month-label { font-size: 16px; font-weight: 700; color: ${T.text}; min-width: 160px; text-align: center; }
-
-        .cal-layout { display: flex; gap: 20px; }
-        .cal-grid-wrap { flex: 1; min-width: 0; }
-        .cal-sidebar { width: 300px; flex-shrink: 0; }
-
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 12px; overflow: hidden; }
-        .cal-day-header { padding: 10px; text-align: center; font-size: 11px; font-weight: 700; color: ${T.muted}; text-transform: uppercase; border-bottom: 1px solid ${T.border}; }
-        .cal-cell { min-height: 90px; padding: 6px 8px; border-right: 1px solid ${T.border}; border-bottom: 1px solid ${T.border}; cursor: pointer; transition: background 0.15s; position: relative; }
-        .cal-cell:nth-child(7n) { border-right: none; }
-        .cal-cell:hover { background: rgba(255,255,255,0.03); }
-        .cal-cell.today { background: rgba(232,106,42,0.06); }
-        .cal-cell.selected { background: rgba(232,106,42,0.12); }
-        .cal-cell.empty { cursor: default; background: rgba(0,0,0,0.1); }
-        .cal-cell-day { font-size: 12px; font-weight: 600; color: ${T.text}; margin-bottom: 4px; }
-        .cal-cell-day.today { color: ${T.orange}; font-weight: 800; }
-        .cal-cell-event { font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; cursor: pointer; max-width: 100%; display: block; }
-        .cal-cell-more { font-size: 10px; color: ${T.muted}; margin-top: 2px; }
-
-        .cal-side-header { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: ${T.text}; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .cal-side-date { font-size: 12px; color: ${T.muted}; margin-bottom: 16px; }
-        .cal-side-event { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; }
-        .cal-side-dot { width: 4px; height: 32px; border-radius: 2px; flex-shrink: 0; }
-        .cal-side-name { font-size: 13px; font-weight: 600; color: ${T.text}; }
-        .cal-side-time { font-size: 11px; color: ${T.muted}; margin-top: 2px; }
-        .cal-side-attendee { font-size: 11px; color: ${T.muted}; }
-        .cal-side-empty { font-size: 13px; color: ${T.muted}; padding: 20px 0; }
-        .cal-side-add { padding: 10px; background: ${T.orange}; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 12px; }
-
-        .cal-link-box { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .cal-link-label { font-size: 10px; font-weight: 700; color: ${T.muted}; text-transform: uppercase; }
-        .cal-link-url { font-size: 12px; color: ${T.orange}; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .cal-copy { padding: 5px 12px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 6px; color: ${T.text}; font-size: 11px; cursor: pointer; }
-
-        .cal-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 300; display: flex; align-items: center; justify-content: center; }
-        .cal-modal-box { width: 400px; max-width: 90vw; background: ${T.bg}; border: 1px solid ${T.border}; border-radius: 14px; padding: 24px; }
-        .cal-modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: ${T.text}; margin-bottom: 16px; }
-        .cal-modal-field { margin-bottom: 12px; }
-        .cal-modal-label { font-size: 11px; font-weight: 700; color: ${T.muted}; text-transform: uppercase; margin-bottom: 4px; }
-        .cal-modal-input { width: 100%; padding: 9px 12px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 8px; color: ${T.text}; font-size: 13px; outline: none; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        .cal-modal-input:focus { border-color: ${T.orange}; }
-        .cal-modal-row { display: flex; gap: 10px; }
-        .cal-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-        .cal-modal-cancel { padding: 8px 16px; background: none; border: 1px solid ${T.border}; border-radius: 8px; color: ${T.muted}; font-size: 13px; cursor: pointer; }
-        .cal-modal-save { padding: 8px 20px; background: ${T.orange}; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .cal-modal-save:disabled { opacity: 0.5; }
-      `}</style>
-
-      <div className="cal-header">
-        <div className="cal-title">CALENDAR</div>
-        <div className="cal-nav">
-          <button className="cal-nav-btn" onClick={prevMonth}>←</button>
-          <div className="cal-month-label">{MONTHS[month]} {year}</div>
-          <button className="cal-nav-btn" onClick={nextMonth}>→</button>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-5">
+        <div className="font-display text-[28px] text-[#e8eaf0] tracking-wide">CALENDAR</div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setCurrentMonth(new Date(year, month - 1, 1)); setSelectedDate(null); }}
+            className="bg-transparent border border-white/[0.07] rounded-md text-[#e8eaf0] p-1.5 cursor-pointer hover:border-[#E86A2A] transition-colors">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="text-base font-bold text-[#e8eaf0] min-w-[160px] text-center">{MONTHS[month]} {year}</div>
+          <button onClick={() => { setCurrentMonth(new Date(year, month + 1, 1)); setSelectedDate(null); }}
+            className="bg-transparent border border-white/[0.07] rounded-md text-[#e8eaf0] p-1.5 cursor-pointer hover:border-[#E86A2A] transition-colors">
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       {/* Booking Link */}
-      <div className="cal-link-box">
-        <div style={{ flex: 1 }}>
-          <div className="cal-link-label">Booking Link</div>
-          <div className="cal-link-url">{bookingLink}</div>
+      <div className="bg-[#111] border border-white/[0.07] rounded-xl px-4 py-3 mb-5 flex items-center gap-2.5">
+        <div className="flex-1">
+          <div className="text-[10px] font-bold text-[#b0b4c8] uppercase tracking-wider">Booking Link</div>
+          <div className="text-xs text-[#E86A2A] overflow-hidden text-ellipsis whitespace-nowrap">{bookingLink}</div>
         </div>
-        <button className="cal-copy" onClick={() => navigator.clipboard.writeText(bookingLink)}>Copy</button>
+        <button onClick={handleCopy} className="flex items-center gap-1 px-3 py-1.5 bg-white/[0.04] border border-white/[0.07] rounded-md text-[11px] text-[#e8eaf0] cursor-pointer hover:border-[#E86A2A] transition-colors">
+          <Copy className="w-3 h-3" /> {copied ? "Copied!" : "Copy"}
+        </button>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", color: T.muted, padding: 60 }}>Loading calendar...</div>
+        <div className="text-center text-[#b0b4c8] py-16">Loading calendar...</div>
       ) : (
-        <div className="cal-layout">
+        <div className="flex gap-5 flex-col lg:flex-row">
           {/* Month Grid */}
-          <div className="cal-grid-wrap">
-            <div className="cal-grid">
-              {DAYS.map(d => <div key={d} className="cal-day-header">{d}</div>)}
+          <div className="flex-1 min-w-0">
+            <div className="grid grid-cols-7 bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+              {DAYS.map(d => <div key={d} className="py-2.5 text-center text-[11px] font-bold text-[#b0b4c8] uppercase border-b border-white/[0.07]">{d}</div>)}
               {calendarDays.map((day, i) => {
-                if (day === null) return <div key={`e-${i}`} className="cal-cell empty" />;
+                if (day === null) return <div key={`e-${i}`} className="min-h-[90px] p-1.5 border-r border-b border-white/[0.07] [&:nth-child(7n)]:border-r-0 bg-black/10" />;
                 const dayEvents = getEventsForDay(day);
                 return (
-                  <div
-                    key={day}
-                    className={`cal-cell ${isToday(day) ? "today" : ""} ${isSelected(day) ? "selected" : ""}`}
-                    onClick={() => setSelectedDate(new Date(year, month, day))}
-                  >
-                    <div className={`cal-cell-day ${isToday(day) ? "today" : ""}`}>{day}</div>
+                  <div key={day} onClick={() => setSelectedDate(new Date(year, month, day))}
+                    className={`min-h-[90px] p-1.5 border-r border-b border-white/[0.07] [&:nth-child(7n)]:border-r-0 cursor-pointer transition-colors hover:bg-white/[0.03] ${isToday(day) ? "bg-[#E86A2A]/[0.06]" : ""} ${isSelected(day) ? "bg-[#E86A2A]/12" : ""}`}>
+                    <div className={`text-xs font-semibold mb-1 ${isToday(day) ? "text-[#E86A2A] font-extrabold" : "text-[#e8eaf0]"}`}>{day}</div>
                     {dayEvents.slice(0, 1).map((e, ei) => (
-                      <div key={e.id} className="cal-cell-event" style={{ background: eventColor(ei) }}>
+                      <div key={e.id} className="text-[9px] px-1 py-0.5 rounded text-white mb-px whitespace-nowrap overflow-hidden text-ellipsis" style={{ background: EVENT_COLORS[ei % EVENT_COLORS.length] }}>
                         {formatTime(e.start)}
                       </div>
                     ))}
-                    {dayEvents.length > 1 && <div className="cal-cell-more">+{dayEvents.length - 1} more</div>}
-                    {dayEvents.length === 1 && <div className="cal-cell-more">{dayEvents[0].summary.substring(0, 12)}</div>}
+                    {dayEvents.length > 1 && <div className="text-[10px] text-[#b0b4c8] mt-0.5">+{dayEvents.length - 1} more</div>}
+                    {dayEvents.length === 1 && <div className="text-[10px] text-[#b0b4c8] mt-0.5">{dayEvents[0].summary.substring(0, 12)}</div>}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Right Sidebar — Selected Day */}
-          <div className="cal-sidebar">
+          {/* Sidebar */}
+          <div className="w-full lg:w-[300px] flex-shrink-0">
             {selectedDate ? (
               <>
-                <div className="cal-side-header">
-                  {selectedDate.toLocaleDateString("en-US", { weekday: "long" })}
-                </div>
-                <div className="cal-side-date">{selectedDateStr}</div>
-
+                <div className="font-display text-lg text-[#e8eaf0] tracking-wider mb-1">{selectedDate.toLocaleDateString("en-US", { weekday: "long" })}</div>
+                <div className="text-xs text-[#b0b4c8] mb-4">{selectedDateStr}</div>
                 {selectedDayEvents.length === 0 ? (
-                  <div className="cal-side-empty">No appointments this day</div>
+                  <div className="text-sm text-[#b0b4c8] py-5">No appointments this day</div>
                 ) : (
                   selectedDayEvents.map((e, i) => (
-                    <div key={e.id} className="cal-side-event">
-                      <div className="cal-side-dot" style={{ background: eventColor(i) }} />
+                    <div key={e.id} className="bg-[#111] border border-white/[0.07] rounded-lg px-3 py-2.5 mb-2 flex gap-2.5 items-center hover:border-white/[0.12] transition-colors">
+                      <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: EVENT_COLORS[i % EVENT_COLORS.length] }} />
                       <div>
-                        <div className="cal-side-name">{e.summary}</div>
-                        <div className="cal-side-time">{formatTime(e.start)} - {formatTime(e.end)}</div>
-                        {e.attendees && e.attendees.length > 0 && (
-                          <div className="cal-side-attendee">{e.attendees.join(", ")}</div>
-                        )}
+                        <div className="text-[13px] font-semibold text-[#e8eaf0]">{e.summary}</div>
+                        <div className="text-[11px] text-[#b0b4c8] mt-0.5">{formatTime(e.start)} - {formatTime(e.end)}</div>
+                        {e.attendees && e.attendees.length > 0 && <div className="text-[11px] text-[#b0b4c8]">{e.attendees.join(", ")}</div>}
                       </div>
                     </div>
                   ))
                 )}
-
-                <button className="cal-side-add" onClick={() => setShowAdd(true)}>
-                  + Add Appointment
+                <button onClick={() => setShowAdd(true)} className="w-full py-2.5 bg-[#E86A2A] text-white border-none rounded-lg text-sm font-bold cursor-pointer mt-3 flex items-center justify-center gap-1.5 hover:bg-[#ff7b3a] transition-colors">
+                  <Plus className="w-3.5 h-3.5" /> Add Appointment
                 </button>
               </>
             ) : (
               <div>
-                <div className="cal-side-header">Select a Day</div>
-                <div className="cal-side-empty">Click on a date to see appointments or add a new one</div>
+                <div className="font-display text-lg text-[#e8eaf0] tracking-wider mb-1">Select a Day</div>
+                <div className="text-sm text-[#b0b4c8] py-5">Click on a date to see appointments or add a new one</div>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Add Appointment Modal */}
+      {/* Add Modal */}
       {showAdd && selectedDate && (
-        <div className="cal-modal" onClick={() => setShowAdd(false)}>
-          <div className="cal-modal-box" onClick={e => e.stopPropagation()}>
-            <div className="cal-modal-title">ADD APPOINTMENT</div>
-            <div style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>{selectedDateStr}</div>
-
-            <div className="cal-modal-field">
-              <div className="cal-modal-label">Title / Name *</div>
-              <input className="cal-modal-input" value={addTitle} onChange={e => setAddTitle(e.target.value)} placeholder="Meeting with John Smith" autoFocus />
+        <div className="fixed inset-0 bg-black/60 z-[300] flex items-center justify-center" onClick={() => setShowAdd(false)}>
+          <div className="w-[400px] max-w-[90vw] bg-[#0a0a0a] border border-white/[0.07] rounded-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-1">
+              <div className="font-display text-xl text-[#e8eaf0]">ADD APPOINTMENT</div>
+              <button onClick={() => setShowAdd(false)} className="bg-transparent border-none text-[#b0b4c8] cursor-pointer hover:text-white transition-colors"><X className="w-4 h-4" /></button>
             </div>
+            <div className="text-xs text-[#b0b4c8] mb-4">{selectedDateStr}</div>
 
-            <div className="cal-modal-row">
-              <div className="cal-modal-field" style={{ flex: 1 }}>
-                <div className="cal-modal-label">Time</div>
-                <input className="cal-modal-input" type="time" value={addTime} onChange={e => setAddTime(e.target.value)} />
+            {[{ label: "Title / Name *", value: addTitle, set: setAddTitle, ph: "Meeting with John Smith", focus: true }].map(f => (
+              <div key={f.label} className="mb-3">
+                <div className="text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider mb-1">{f.label}</div>
+                <input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.ph} autoFocus={f.focus}
+                  className="w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
               </div>
-              <div className="cal-modal-field" style={{ flex: 1 }}>
-                <div className="cal-modal-label">Duration</div>
-                <select className="cal-modal-input" value={addDuration} onChange={e => setAddDuration(e.target.value)} style={{ cursor: "pointer" }}>
-                  <option value="15">15 min</option>
-                  <option value="30">30 min</option>
-                  <option value="45">45 min</option>
-                  <option value="60">1 hour</option>
-                  <option value="90">1.5 hours</option>
-                  <option value="120">2 hours</option>
+            ))}
+
+            <div className="flex gap-2.5 mb-3">
+              <div className="flex-1">
+                <div className="text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider mb-1">Time</div>
+                <input type="time" value={addTime} onChange={e => setAddTime(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
+              </div>
+              <div className="flex-1">
+                <div className="text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider mb-1">Duration</div>
+                <select value={addDuration} onChange={e => setAddDuration(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none cursor-pointer">
+                  {[["15","15 min"],["30","30 min"],["45","45 min"],["60","1 hour"],["90","1.5 hours"],["120","2 hours"]].map(([v,l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
             </div>
 
-            <div className="cal-modal-field">
-              <div className="cal-modal-label">Attendee Email (optional)</div>
-              <input className="cal-modal-input" type="email" value={addAttendee} onChange={e => setAddAttendee(e.target.value)} placeholder="client@email.com" />
+            <div className="mb-3">
+              <div className="text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider mb-1">Attendee Email (optional)</div>
+              <input type="email" value={addAttendee} onChange={e => setAddAttendee(e.target.value)} placeholder="client@email.com"
+                className="w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
             </div>
 
-            <div className="cal-modal-field">
-              <div className="cal-modal-label">Notes (optional)</div>
-              <textarea className="cal-modal-input" value={addNotes} onChange={e => setAddNotes(e.target.value)} placeholder="Any details..." rows={2} style={{ resize: "none" }} />
+            <div className="mb-3">
+              <div className="text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider mb-1">Notes (optional)</div>
+              <textarea value={addNotes} onChange={e => setAddNotes(e.target.value)} placeholder="Any details..." rows={2}
+                className="w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none resize-none focus:border-[#E86A2A]/40 transition-colors" />
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", cursor: "pointer" }} onClick={() => setAddMeet(!addMeet)}>
-              <div style={{
-                width: 36, height: 20, borderRadius: 10, background: addMeet ? T.green : "rgba(255,255,255,0.1)",
-                position: "relative", transition: "background 0.2s",
-              }}>
-                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#fff", position: "absolute", top: 2, left: addMeet ? 18 : 2, transition: "left 0.2s" }} />
+            <div className="flex items-center gap-2.5 py-2.5 cursor-pointer" onClick={() => setAddMeet(!addMeet)}>
+              <div className={`w-9 h-5 rounded-full p-0.5 transition-colors relative ${addMeet ? "bg-emerald-400" : "bg-white/10"}`}>
+                <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all ${addMeet ? "left-[18px]" : "left-0.5"}`} />
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Add Google Meet</div>
-                <div style={{ fontSize: 11, color: T.muted }}>Auto-generate a video call link</div>
+                <div className="text-sm font-semibold text-[#e8eaf0] flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> Add Google Meet</div>
+                <div className="text-[11px] text-[#b0b4c8]">Auto-generate a video call link</div>
               </div>
             </div>
 
-            <div className="cal-modal-actions">
-              <button className="cal-modal-cancel" onClick={() => setShowAdd(false)}>Cancel</button>
-              <button className="cal-modal-save" onClick={handleAddEvent} disabled={saving || !addTitle.trim()}>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => setShowAdd(false)} className="px-4 py-2 bg-transparent border border-white/[0.07] rounded-lg text-sm text-[#b0b4c8] cursor-pointer hover:bg-white/[0.04] transition-colors">Cancel</button>
+              <button onClick={handleAddEvent} disabled={saving || !addTitle.trim()}
+                className={`px-5 py-2 bg-[#E86A2A] text-white border-none rounded-lg text-sm font-bold cursor-pointer transition-colors ${saving ? "opacity-50" : "hover:bg-[#ff7b3a]"}`}>
                 {saving ? "Saving..." : "Add Appointment"}
               </button>
             </div>
