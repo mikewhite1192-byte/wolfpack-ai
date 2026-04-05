@@ -844,7 +844,8 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                <Link href="/book-demo" className="w-full flex justify-center py-3.5 bg-transparent border border-white/15 text-white/50 rounded-xl text-sm font-medium no-underline hover:border-white/30 hover:text-white transition-all duration-300 cursor-pointer">Add to Plan</Link>
+                <button onClick={async () => { const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan: "gbp" }) }); const data = await res.json(); if (data.url) window.location.href = data.url; }}
+                  className="w-full flex justify-center py-3.5 bg-transparent border border-white/15 text-white/50 rounded-xl text-sm font-medium no-underline hover:border-white/30 hover:text-white transition-all duration-300 cursor-pointer">Add to Plan</button>
               </div>
 
               <div className="relative bg-white/[0.02] border border-white/[0.06] rounded-2xl p-9 hover:border-[#E86A2A]/20 transition-all duration-300">

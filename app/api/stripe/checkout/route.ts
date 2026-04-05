@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 const PRICE_IDS: Record<string, string | undefined> = {
-  starter: process.env.STRIPE_STARTER_PRICE_ID,
   pro: process.env.STRIPE_PRO_PRICE_ID,
+  gbp: process.env.STRIPE_GBP_PRICE_ID,
 };
 
 export async function POST(req: NextRequest) {
