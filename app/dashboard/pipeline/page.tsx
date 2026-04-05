@@ -1,18 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { Plus, X, Trash2 } from "lucide-react";
 import DealPanel from "../components/DealPanel";
-
-const T = {
-  orange: "#E86A2A",
-  text: "#e8eaf0",
-  muted: "#b0b4c8",
-  surface: "#111111",
-  surfaceAlt: "#111111",
-  border: "rgba(255,255,255,0.07)",
-  green: "#2ecc71",
-  red: "#e74c3c",
-};
 
 interface Deal {
   id: string;
@@ -50,7 +40,6 @@ export default function PipelinePage() {
   const [showNewPipeline, setShowNewPipeline] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState("");
 
-  // Load pipelines, then fetch stages for the default one
   useEffect(() => {
     fetch("/api/pipelines").then(r => r.json()).then(data => {
       const pipes = data.pipelines || [];
@@ -59,11 +48,7 @@ export default function PipelinePage() {
       if (defaultPipe) {
         setActivePipeline(defaultPipe.id);
       } else {
-        // No pipelines exist — just load stages without filter
-        fetch("/api/pipeline/stages").then(r => r.json()).then(d => {
-          setStages(d.stages || []);
-          setLoading(false);
-        });
+        fetch("/api/pipeline/stages").then(r => r.json()).then(d => { setStages(d.stages || []); setLoading(false); });
       }
     }).catch(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -76,24 +61,13 @@ export default function PipelinePage() {
     setLoading(false);
   }, [activePipeline]);
 
-  useEffect(() => {
-    if (activePipeline) fetchPipeline();
-  }, [activePipeline, fetchPipeline]);
+  useEffect(() => { if (activePipeline) fetchPipeline(); }, [activePipeline, fetchPipeline]);
 
   async function createPipeline() {
     if (!newPipelineName.trim()) return;
-    const res = await fetch("/api/pipelines", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newPipelineName.trim() }),
-    });
+    const res = await fetch("/api/pipelines", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newPipelineName.trim() }) });
     const data = await res.json();
-    if (data.pipeline) {
-      setPipelines(prev => [...prev, data.pipeline]);
-      setActivePipeline(data.pipeline.id);
-      setShowNewPipeline(false);
-      setNewPipelineName("");
-    }
+    if (data.pipeline) { setPipelines(prev => [...prev, data.pipeline]); setActivePipeline(data.pipeline.id); setShowNewPipeline(false); setNewPipelineName(""); }
   }
 
   async function deletePipeline(pipeId: string) {
@@ -107,82 +81,27 @@ export default function PipelinePage() {
   }
 
   async function moveDeal(dealId: string, newStageId: string) {
-    // Optimistic update
     setStages(prev => {
-      const updated = prev.map(s => ({
-        ...s,
-        deals: s.deals.filter(d => d.id !== dealId),
-      }));
+      const updated = prev.map(s => ({ ...s, deals: s.deals.filter(d => d.id !== dealId) }));
       const deal = prev.flatMap(s => s.deals).find(d => d.id === dealId);
-      if (deal) {
-        const targetStage = updated.find(s => s.id === newStageId);
-        if (targetStage) {
-          targetStage.deals.push({ ...deal, stage_id: newStageId });
-        }
-      }
+      if (deal) { const target = updated.find(s => s.id === newStageId); if (target) target.deals.push({ ...deal, stage_id: newStageId }); }
       return updated;
     });
-
-    // API call
-    await fetch(`/api/deals/${dealId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stageId: newStageId }),
-    });
+    await fetch(`/api/deals/${dealId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stageId: newStageId }) });
   }
 
   async function markDead(dealId: string) {
-    // Find the Closed Lost stage
     const lostStage = stages.find(s => s.is_lost);
     if (!lostStage) return;
-
-    // Optimistic: remove from board
-    setStages(prev => prev.map(s => ({
-      ...s,
-      deals: s.deals.filter(d => d.id !== dealId),
-    })));
-
-    // Move to Closed Lost + tag as dead
-    await fetch(`/api/deals/${dealId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stageId: lostStage.id }),
-    });
+    setStages(prev => prev.map(s => ({ ...s, deals: s.deals.filter(d => d.id !== dealId) })));
+    await fetch(`/api/deals/${dealId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stageId: lostStage.id }) });
   }
 
-  function handleDragStart(e: React.DragEvent, dealId: string) {
-    setDragDealId(dealId);
-    e.dataTransfer.effectAllowed = "move";
-  }
-
-  function handleDragOver(e: React.DragEvent, stageId: string) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverStage(stageId);
-  }
-
-  function handleDragLeave() {
-    setDragOverStage(null);
-  }
-
-  function handleDrop(e: React.DragEvent, stageId: string) {
-    e.preventDefault();
-    setDragOverStage(null);
-    setDragOverDead(false);
-    if (dragDealId) {
-      moveDeal(dragDealId, stageId);
-      setDragDealId(null);
-    }
-  }
-
-  function handleDeadDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragOverDead(false);
-    if (dragDealId) {
-      markDead(dragDealId);
-      setDragDealId(null);
-    }
-  }
+  function handleDragStart(e: React.DragEvent, dealId: string) { setDragDealId(dealId); e.dataTransfer.effectAllowed = "move"; }
+  function handleDragOver(e: React.DragEvent, stageId: string) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverStage(stageId); }
+  function handleDragLeave() { setDragOverStage(null); }
+  function handleDrop(e: React.DragEvent, stageId: string) { e.preventDefault(); setDragOverStage(null); setDragOverDead(false); if (dragDealId) { moveDeal(dragDealId, stageId); setDragDealId(null); } }
+  function handleDeadDrop(e: React.DragEvent) { e.preventDefault(); setDragOverDead(false); if (dragDealId) { markDead(dragDealId); setDragDealId(null); } }
 
   function daysAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -192,140 +111,96 @@ export default function PipelinePage() {
     return `${days}d ago`;
   }
 
-  function totalValue(deals: Deal[]) {
-    return deals.reduce((sum, d) => sum + (d.value ? parseFloat(d.value) : 0), 0);
-  }
+  function totalValue(deals: Deal[]) { return deals.reduce((sum, d) => sum + (d.value ? parseFloat(d.value) : 0), 0); }
 
-  if (loading) {
-    return <div style={{ color: T.muted, padding: 40, textAlign: "center" }}>Loading pipeline...</div>;
-  }
+  if (loading) return <div className="text-[#b0b4c8] py-10 text-center text-sm">Loading pipeline...</div>;
 
   return (
     <div>
-      <style>{`
-        .pipe-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .pipe-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: ${T.text}; letter-spacing: 1px; }
-        .pipe-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; }
-        .pipe-col { flex: 1; min-width: 200px; }
-        .pipe-col-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px 8px 0 0; margin-bottom: 8px; }
-        .pipe-col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-        .pipe-col-name { font-size: 12px; font-weight: 700; color: ${T.text}; }
-        .pipe-col-count { font-size: 11px; color: ${T.muted}; margin-left: auto; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 10px; }
-        .pipe-col-body { display: flex; flex-direction: column; gap: 8px; min-height: 400px; padding: 4px; border-radius: 0 0 8px 8px; transition: background 0.2s; }
-        .pipe-col-body.drag-over { background: rgba(232,106,42,0.08); border: 1px dashed rgba(232,106,42,0.3); border-radius: 8px; }
-        .pipe-empty { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.08); border-radius: 10px; padding: 24px; text-align: center; font-size: 12px; color: rgba(255,255,255,0.15); }
-        .pipe-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 14px; cursor: grab; transition: border-color 0.2s, transform 0.15s, opacity 0.15s; }
-        .pipe-card:hover { border-color: rgba(232,106,42,0.3); }
-        .pipe-card.dragging { opacity: 0.5; transform: scale(0.95); }
-        .pipe-card-name { font-size: 14px; font-weight: 600; color: ${T.text}; margin-bottom: 2px; }
-        .pipe-card-company { font-size: 11px; color: ${T.muted}; margin-bottom: 8px; }
-        .pipe-card-val { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: ${T.orange}; letter-spacing: 0.5px; }
-        .pipe-card-meta { font-size: 11px; color: ${T.muted}; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .pipe-card-score { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; }
-        .pipe-total { font-size: 11px; color: ${T.muted}; margin-top: 4px; padding: 0 12px; }
-        .pipe-dead-zone { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(231,76,60,0.08); border-top: 2px dashed rgba(231,76,60,0.3); z-index: 50; transition: all 0.2s; font-size: 14px; font-weight: 700; color: ${T.red}; }
-        .pipe-dead-zone.drag-over { background: rgba(231,76,60,0.2); border-top-color: ${T.red}; }
-        .pipe-dead-zone.hidden { display: none; }
-      `}</style>
-
-      <div className="pipe-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3 flex-wrap">
           {pipelines.map(p => (
-            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <button
-                onClick={() => setActivePipeline(p.id)}
-                style={{
-                  padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none",
-                  background: activePipeline === p.id ? "rgba(232,106,42,0.12)" : "transparent",
-                  color: activePipeline === p.id ? T.orange : T.muted,
-                  transition: "all 0.15s",
-                }}
-              >
+            <div key={p.id} className="flex items-center gap-0.5">
+              <button onClick={() => setActivePipeline(p.id)}
+                className={`px-4 py-2 rounded-md text-sm font-semibold cursor-pointer border-none transition-all duration-150 ${
+                  activePipeline === p.id ? "bg-[#E86A2A]/12 text-[#E86A2A]" : "bg-transparent text-[#b0b4c8] hover:bg-white/[0.04]"
+                }`}>
                 {p.name}
               </button>
               {!p.is_default && (
-                <button
-                  onClick={() => deletePipeline(p.id)}
-                  style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 12, padding: "4px 6px", borderRadius: 4, opacity: 0.5, transition: "opacity 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = T.red; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = "0.5"; e.currentTarget.style.color = T.muted; }}
-                  title="Delete pipeline"
-                >
-                  ×
+                <button onClick={() => deletePipeline(p.id)} title="Delete pipeline"
+                  className="bg-transparent border-none text-[#b0b4c8] cursor-pointer p-1 rounded opacity-50 hover:opacity-100 hover:text-red-400 transition-all">
+                  <X className="w-3 h-3" />
                 </button>
               )}
             </div>
           ))}
           {showNewPipeline ? (
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input
-                value={newPipelineName}
-                onChange={e => setNewPipelineName(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && createPipeline()}
-                placeholder="Pipeline name..."
-                autoFocus
-                style={{ padding: "6px 12px", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 12, color: T.text, outline: "none", width: 150 }}
-              />
-              <button onClick={createPipeline} style={{ padding: "6px 12px", background: T.orange, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Add</button>
-              <button onClick={() => { setShowNewPipeline(false); setNewPipelineName(""); }} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 14 }}>×</button>
+            <div className="flex gap-1.5 items-center">
+              <input value={newPipelineName} onChange={e => setNewPipelineName(e.target.value)} onKeyDown={e => e.key === "Enter" && createPipeline()}
+                placeholder="Pipeline name..." autoFocus
+                className="px-3 py-1.5 bg-white/[0.04] border border-white/[0.07] rounded-md text-xs text-[#e8eaf0] outline-none w-[150px] focus:border-[#E86A2A]/40 transition-colors" />
+              <button onClick={createPipeline} className="px-3 py-1.5 bg-[#E86A2A] text-white border-none rounded-md text-[11px] font-bold cursor-pointer hover:bg-[#ff7b3a] transition-colors">Add</button>
+              <button onClick={() => { setShowNewPipeline(false); setNewPipelineName(""); }} className="bg-transparent border-none text-[#b0b4c8] cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
             </div>
           ) : (
-            <button
-              onClick={() => setShowNewPipeline(true)}
-              style={{ padding: "6px 12px", background: "none", border: `1px dashed ${T.border}`, borderRadius: 6, fontSize: 12, color: T.muted, cursor: "pointer" }}
-            >
-              + New Pipeline
+            <button onClick={() => setShowNewPipeline(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-dashed border-white/[0.07] rounded-md text-xs text-[#b0b4c8] cursor-pointer hover:border-white/[0.15] transition-colors">
+              <Plus className="w-3 h-3" /> New Pipeline
             </button>
           )}
         </div>
       </div>
 
-      <div className="pipe-board">
+      {/* Board */}
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {stages.map(stage => (
-          <div key={stage.id} className="pipe-col">
-            <div className="pipe-col-header" style={{ background: `${stage.color}18` }}>
-              <div className="pipe-col-dot" style={{ background: stage.color }} />
-              <div className="pipe-col-name">{stage.name}</div>
-              <div className="pipe-col-count">{stage.deals.length}</div>
+          <div key={stage.id} className="flex-1 min-w-[200px]">
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-t-lg mb-2" style={{ background: `${stage.color}18` }}>
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: stage.color }} />
+              <div className="text-xs font-bold text-[#e8eaf0]">{stage.name}</div>
+              <div className="text-[11px] text-[#b0b4c8] ml-auto bg-white/[0.06] px-2 py-0.5 rounded-full">{stage.deals.length}</div>
             </div>
             {totalValue(stage.deals) > 0 && (
-              <div className="pipe-total">${totalValue(stage.deals).toLocaleString()}</div>
+              <div className="text-[11px] text-[#b0b4c8] px-3 mb-1">${totalValue(stage.deals).toLocaleString()}</div>
             )}
             <div
-              className={`pipe-col-body ${dragOverStage === stage.id ? "drag-over" : ""}`}
+              className={`flex flex-col gap-2 min-h-[400px] p-1 rounded-b-lg transition-all duration-200 ${
+                dragOverStage === stage.id ? "bg-[#E86A2A]/[0.08] border border-dashed border-[#E86A2A]/30 rounded-lg" : ""
+              }`}
               onDragOver={e => handleDragOver(e, stage.id)}
               onDragLeave={handleDragLeave}
               onDrop={e => handleDrop(e, stage.id)}
             >
               {stage.deals.length === 0 ? (
-                <div className="pipe-empty">No leads</div>
+                <div className="bg-white/[0.02] border border-dashed border-white/[0.08] rounded-xl p-6 text-center text-xs text-white/15">No leads</div>
               ) : (
                 stage.deals.map(deal => (
                   <div
                     key={deal.id}
-                    className={`pipe-card ${dragDealId === deal.id ? "dragging" : ""}`}
+                    className={`bg-[#111] border border-white/[0.07] rounded-xl p-3.5 cursor-grab transition-all duration-150 hover:border-[#E86A2A]/30 ${
+                      dragDealId === deal.id ? "opacity-50 scale-95" : ""
+                    }`}
                     draggable
                     onDragStart={e => handleDragStart(e, deal.id)}
                     onDragEnd={() => setDragDealId(null)}
                     onClick={() => setSelectedDeal(deal.id)}
                   >
-                    <div className="pipe-card-name">
+                    <div className="text-sm font-semibold text-[#e8eaf0] mb-0.5">
                       {[deal.first_name, deal.last_name].filter(Boolean).join(" ") || deal.title || "Untitled"}
                     </div>
-                    {deal.company && <div className="pipe-card-company">{deal.company}</div>}
-                    {deal.value && (
-                      <div className="pipe-card-val">${parseFloat(deal.value).toLocaleString()}</div>
-                    )}
-                    <div className="pipe-card-meta">
+                    {deal.company && <div className="text-[11px] text-[#b0b4c8] mb-2">{deal.company}</div>}
+                    {deal.value && <div className="font-display text-lg text-[#E86A2A] tracking-wider">${parseFloat(deal.value).toLocaleString()}</div>}
+                    <div className="text-[11px] text-[#b0b4c8] mt-2 flex justify-between items-center">
                       <span>{daysAgo(deal.created_at)}</span>
                       {deal.lead_score > 0 && (
-                        <span
-                          className="pipe-card-score"
-                          style={{
-                            background: deal.lead_score >= 70 ? `${T.green}20` : deal.lead_score >= 40 ? `${T.orange}20` : `${T.red}20`,
-                            color: deal.lead_score >= 70 ? T.green : deal.lead_score >= 40 ? T.orange : T.red,
-                          }}
-                        >
+                        <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold" style={{
+                          background: deal.lead_score >= 70 ? "rgba(46,204,113,0.12)" : deal.lead_score >= 40 ? "rgba(232,106,42,0.12)" : "rgba(231,76,60,0.12)",
+                          color: deal.lead_score >= 70 ? "#2ecc71" : deal.lead_score >= 40 ? "#E86A2A" : "#e74c3c",
+                        }}>
                           {deal.lead_score}
                         </span>
                       )}
@@ -338,24 +213,21 @@ export default function PipelinePage() {
         ))}
       </div>
 
-      {/* Dead Zone — appears when dragging */}
-      <div
-        className={`pipe-dead-zone ${!dragDealId ? "hidden" : ""} ${dragOverDead ? "drag-over" : ""}`}
-        onDragOver={e => { e.preventDefault(); setDragOverDead(true); }}
-        onDragLeave={() => setDragOverDead(false)}
-        onDrop={handleDeadDrop}
-      >
-        🗑️ Drop here to mark as Dead
-      </div>
-
-      {/* Deal Detail Panel */}
-      {selectedDeal && (
-        <DealPanel
-          dealId={selectedDeal}
-          onClose={() => setSelectedDeal(null)}
-          onUpdate={fetchPipeline}
-        />
+      {/* Dead Zone */}
+      {dragDealId && (
+        <div
+          className={`fixed bottom-0 left-0 right-0 h-[70px] flex items-center justify-center gap-2.5 z-50 transition-all duration-200 text-sm font-bold ${
+            dragOverDead ? "bg-red-500/20 border-t-2 border-red-500 text-red-400" : "bg-red-500/[0.08] border-t-2 border-dashed border-red-500/30 text-red-400"
+          }`}
+          onDragOver={e => { e.preventDefault(); setDragOverDead(true); }}
+          onDragLeave={() => setDragOverDead(false)}
+          onDrop={handleDeadDrop}
+        >
+          <Trash2 className="w-4 h-4" /> Drop here to mark as Dead
+        </div>
       )}
+
+      {selectedDeal && <DealPanel dealId={selectedDeal} onClose={() => setSelectedDeal(null)} onUpdate={fetchPipeline} />}
     </div>
   );
 }
