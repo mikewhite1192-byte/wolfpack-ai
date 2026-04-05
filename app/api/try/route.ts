@@ -54,6 +54,31 @@ export async function POST(req: NextRequest) {
       UPDATE maya_demos SET followup_at = NOW() + INTERVAL '10 minutes' WHERE phone = ${e164} AND step = 1
     `;
 
+    // ── Create contact + deal in owner's pipeline ──
+    try {
+      const ws = await sql`SELECT id FROM workspaces WHERE owner_email = 'info@thewolfpackco.com' OR name ILIKE '%wolf%' LIMIT 1`;
+      if (ws.length > 0) {
+        const workspaceId = ws[0].id;
+        const existing = await sql`SELECT id FROM contacts WHERE workspace_id = ${workspaceId} AND phone = ${e164} LIMIT 1`;
+        if (existing.length === 0) {
+          const contact = await sql`
+            INSERT INTO contacts (workspace_id, first_name, phone, source, source_detail)
+            VALUES (${workspaceId}, ${firstName}, ${e164}, 'landing_page', 'See It Work On You')
+            RETURNING id
+          `;
+          const firstStage = await sql`SELECT id FROM pipeline_stages WHERE workspace_id = ${workspaceId} ORDER BY position ASC LIMIT 1`;
+          if (firstStage.length > 0) {
+            await sql`
+              INSERT INTO deals (workspace_id, contact_id, stage_id, title, source)
+              VALUES (${workspaceId}, ${contact[0].id}, ${firstStage[0].id}, ${`Demo Lead - ${firstName}`}, 'landing_page')
+            `;
+          }
+        }
+      }
+    } catch (pipelineErr) {
+      console.error("[try] Pipeline insert error (non-fatal):", pipelineErr);
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[try]", err);
