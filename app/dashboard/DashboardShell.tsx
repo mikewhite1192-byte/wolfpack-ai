@@ -32,7 +32,7 @@ const ADMIN_NAV = [
   { label: "Outreach", href: "/dashboard/outreach", icon: "📨" },
 ];
 
-const ADMIN_EMAILS = ["info@thewolfpackco.com", "hello@buenaonda.ai"];
+const ADMIN_EMAILS = ["info@thewolfpackco.com"];
 
 function DialPad({ onClose, initialNumber }: { onClose: () => void; initialNumber?: string }) {
   const [number, setNumber] = useState(initialNumber || "");

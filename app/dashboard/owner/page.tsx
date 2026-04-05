@@ -18,7 +18,7 @@ const T = {
   purple: "#9b59b6",
 };
 
-const ADMIN_EMAILS = ["info@thewolfpackco.com", "hello@buenaonda.ai"];
+const ADMIN_EMAILS = ["info@thewolfpackco.com"];
 
 interface DashboardData {
   mrr: number;

@@ -16,7 +16,7 @@ const T = {
   yellow: "#f39c12",
 };
 
-const ADMIN_EMAILS = ["info@thewolfpackco.com", "hello@buenaonda.ai"];
+const ADMIN_EMAILS = ["info@thewolfpackco.com"];
 
 interface BusinessData {
   mrr: number;
