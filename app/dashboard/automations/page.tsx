@@ -1,12 +1,6 @@
 "use client";
 
-const T = {
-  orange: "#E86A2A",
-  text: "#e8eaf0",
-  muted: "#b0b4c8",
-  surface: "#111111",
-  border: "rgba(255,255,255,0.07)",
-};
+import { Plus } from "lucide-react";
 
 const EXAMPLE_AUTOMATIONS = [
   { trigger: "New Lead", actions: ["Send SMS immediately", "Send email after 5 min"], active: false },
@@ -17,49 +11,32 @@ const EXAMPLE_AUTOMATIONS = [
 export default function AutomationsPage() {
   return (
     <div>
-      <style>{`
-        .auto-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .auto-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: ${T.text}; letter-spacing: 1px; }
-        .auto-btn { padding: 10px 20px; background: ${T.orange}; color: #fff; font-size: 13px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; }
-        .auto-list { display: flex; flex-direction: column; gap: 12px; }
-        .auto-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 12px; padding: 20px 24px; display: flex; align-items: flex-start; gap: 16px; }
-        .auto-card-body { flex: 1; }
-        .auto-trigger-label { font-size: 10px; font-weight: 700; color: ${T.orange}; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
-        .auto-trigger-name { font-size: 15px; font-weight: 600; color: ${T.text}; margin-bottom: 10px; }
-        .auto-actions { display: flex; flex-direction: column; gap: 6px; }
-        .auto-action { display: flex; align-items: center; gap: 8px; font-size: 13px; color: ${T.muted}; }
-        .auto-action-dot { width: 6px; height: 6px; border-radius: 50%; background: ${T.orange}; flex-shrink: 0; }
-        .auto-toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
-        .auto-toggle input { opacity: 0; width: 0; height: 0; }
-        .auto-toggle-slider { position: absolute; inset: 0; background: rgba(255,255,255,0.1); border-radius: 22px; cursor: pointer; transition: 0.2s; }
-        .auto-toggle input:checked + .auto-toggle-slider { background: ${T.orange}; }
-        .auto-toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: 0.2s; }
-        .auto-toggle input:checked + .auto-toggle-slider::before { transform: translateX(18px); }
-      `}</style>
-
-      <div className="auto-header">
-        <div className="auto-title">AUTOMATIONS</div>
-        <button className="auto-btn">+ New Automation</button>
+      <div className="flex justify-between items-center mb-6">
+        <div className="font-display text-[28px] text-[#e8eaf0] tracking-wide">AUTOMATIONS</div>
+        <button className="flex items-center gap-1.5 px-5 py-2.5 bg-[#E86A2A] text-white text-sm font-bold border-none rounded-lg cursor-pointer hover:bg-[#ff7b3a] transition-colors">
+          <Plus className="w-3.5 h-3.5" /> New Automation
+        </button>
       </div>
 
-      <div className="auto-list">
+      <div className="flex flex-col gap-3">
         {EXAMPLE_AUTOMATIONS.map((a, i) => (
-          <div key={i} className="auto-card">
-            <div className="auto-card-body">
-              <div className="auto-trigger-label">When stage becomes</div>
-              <div className="auto-trigger-name">{a.trigger}</div>
-              <div className="auto-actions">
+          <div key={i} className="bg-[#111] border border-white/[0.07] rounded-xl px-6 py-5 flex items-start gap-4 hover:border-white/[0.12] transition-colors">
+            <div className="flex-1">
+              <div className="text-[10px] font-bold text-[#E86A2A] tracking-widest uppercase mb-1.5">When stage becomes</div>
+              <div className="text-[15px] font-semibold text-[#e8eaf0] mb-2.5">{a.trigger}</div>
+              <div className="flex flex-col gap-1.5">
                 {a.actions.map(action => (
-                  <div key={action} className="auto-action">
-                    <div className="auto-action-dot" />
+                  <div key={action} className="flex items-center gap-2 text-sm text-[#b0b4c8]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#E86A2A] flex-shrink-0" />
                     {action}
                   </div>
                 ))}
               </div>
             </div>
-            <label className="auto-toggle">
-              <input type="checkbox" defaultChecked={a.active} />
-              <span className="auto-toggle-slider" />
+            <label className="relative w-10 h-[22px] flex-shrink-0 cursor-pointer">
+              <input type="checkbox" defaultChecked={a.active} className="peer sr-only" />
+              <div className="absolute inset-0 bg-white/10 rounded-full transition-colors peer-checked:bg-[#E86A2A]" />
+              <div className="absolute w-4 h-4 bg-white rounded-full top-[3px] left-[3px] transition-transform peer-checked:translate-x-[18px]" />
             </label>
           </div>
         ))}
