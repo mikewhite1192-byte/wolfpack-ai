@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
+// Colors used inline throughout — kept as constants for the 2400+ line file
 const T = {
   orange: "#E86A2A",
   text: "#e8eaf0",
@@ -83,7 +84,14 @@ export default function OutreachPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeState, setScrapeState] = useState("");
   const [scrapeCount, setScrapeCount] = useState(30);
-  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts" | "campaigns" | "scraper" | "sent">("overview");
+  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts" | "campaigns" | "scraper" | "sent" | "postmaster">("overview");
+
+  // Postmaster state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [postmasterData, setPostmasterData] = useState<any>(null);
+  const [postmasterLoading, setPostmasterLoading] = useState(false);
+  const [postmasterError, setPostmasterError] = useState("");
+  const [postmasterRange, setPostmasterRange] = useState("7d");
   const [expandedEmail, setExpandedEmail] = useState<number | null>(null);
   const [contactSearch, setContactSearch] = useState("");
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -820,6 +828,17 @@ export default function OutreachPage() {
           )}
         </button>
         <button className={`out-tab ${tab === "sent" ? "active" : ""}`} onClick={() => setTab("sent")}>Sent ({recentEmails.length})</button>
+        <button className={`out-tab ${tab === "postmaster" ? "active" : ""}`} onClick={() => {
+          setTab("postmaster");
+          if (!postmasterData && !postmasterLoading) {
+            setPostmasterLoading(true);
+            setPostmasterError("");
+            fetch(`/api/outreach/postmaster?range=${postmasterRange}`)
+              .then(r => r.json())
+              .then(d => { if (d.error) setPostmasterError(d.error); else setPostmasterData(d); setPostmasterLoading(false); })
+              .catch(() => { setPostmasterError("Failed to load"); setPostmasterLoading(false); });
+          }
+        }}>Postmaster</button>
       </div>
 
       {loading ? (
@@ -2426,6 +2445,213 @@ export default function OutreachPage() {
               })()}
             </>
           )}
+        </div>
+      )}
+
+      {/* ============= POSTMASTER TAB ============= */}
+      {tab === "postmaster" && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div className="out-label">Google Postmaster Tools</div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {["7d", "30d", "90d"].map(r => (
+                <button key={r} onClick={() => {
+                  setPostmasterRange(r);
+                  setPostmasterLoading(true);
+                  fetch(`/api/outreach/postmaster?range=${r}`)
+                    .then(res => res.json())
+                    .then(d => { if (d.error) setPostmasterError(d.error); else { setPostmasterData(d); setPostmasterError(""); } setPostmasterLoading(false); })
+                    .catch(() => { setPostmasterError("Failed to load"); setPostmasterLoading(false); });
+                }}
+                  style={{
+                    padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    border: `1px solid ${postmasterRange === r ? T.orange + "40" : T.border}`,
+                    borderRadius: 6,
+                    background: postmasterRange === r ? "rgba(232,106,42,0.15)" : "transparent",
+                    color: postmasterRange === r ? T.orange : T.muted,
+                  }}
+                >
+                  {r === "7d" ? "7 days" : r === "30d" ? "30 days" : "90 days"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {postmasterLoading ? (
+            <div style={{ textAlign: "center", color: T.muted, padding: 60 }}>Loading Postmaster data...</div>
+          ) : postmasterError ? (
+            <div className="out-card" style={{ textAlign: "center", padding: 40 }}>
+              <div style={{ fontSize: 14, color: T.red, marginBottom: 12, whiteSpace: "pre-line" }}>{postmasterError}</div>
+              {postmasterError.includes("reconnect") || postmasterError.includes("Reconnect") ? (
+                <a href="/api/email/connect" style={{ padding: "10px 24px", background: T.orange, color: "#fff", borderRadius: 8, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
+                  Reconnect Gmail →
+                </a>
+              ) : null}
+            </div>
+          ) : postmasterData?.domains?.length === 0 ? (
+            <div className="out-card" style={{ textAlign: "center", padding: 40 }}>
+              <div style={{ fontSize: 14, color: T.muted, marginBottom: 12 }}>
+                {postmasterData.message || "No domains found in Postmaster Tools."}
+              </div>
+              <a href="https://postmaster.google.com" target="_blank" rel="noopener noreferrer"
+                style={{ color: T.orange, fontSize: 13, fontWeight: 600 }}>
+                Add domains at postmaster.google.com →
+              </a>
+            </div>
+          ) : postmasterData?.domains ? (
+            <div>
+              {postmasterData.domains.map((d: {
+                domain: string;
+                status: string;
+                summary: {
+                  avgSpamRate: number | null;
+                  avgSpfSuccess: number | null;
+                  avgDkimSuccess: number | null;
+                  avgDmarcSuccess: number | null;
+                  domainReputation: string | null;
+                  avgEncryption: number | null;
+                };
+                stats: Array<{
+                  date: string;
+                  spamRate?: number;
+                  domainReputation?: string;
+                  spfSuccessRatio?: number;
+                  dkimSuccessRatio?: number;
+                  dmarcSuccessRatio?: number;
+                }>;
+              }) => (
+                <div key={d.domain} className="out-card" style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 }}>{d.domain}</div>
+                      <div style={{ fontSize: 11, color: d.status === "verified" ? T.green : T.muted }}>
+                        {d.status === "verified" ? "Verified" : "Not Verified — verify at postmaster.google.com"}
+                      </div>
+                    </div>
+                    {d.summary.domainReputation && (
+                      <div style={{
+                        padding: "4px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+                        background: d.summary.domainReputation === "HIGH" ? `${T.green}20` : d.summary.domainReputation === "MEDIUM" ? `${T.orange}20` : `${T.red}20`,
+                        color: d.summary.domainReputation === "HIGH" ? T.green : d.summary.domainReputation === "MEDIUM" ? T.orange : T.red,
+                      }}>
+                        {d.summary.domainReputation} Reputation
+                      </div>
+                    )}
+                  </div>
+
+                  {d.status === "verified" && (
+                    <>
+                      {/* Summary stats */}
+                      <div className="out-stats" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                        <div className="out-stat">
+                          <div className="out-stat-val" style={{
+                            color: d.summary.avgSpamRate !== null ? (d.summary.avgSpamRate < 0.03 ? T.green : d.summary.avgSpamRate < 0.1 ? T.orange : T.red) : T.muted,
+                          }}>
+                            {d.summary.avgSpamRate !== null ? `${(d.summary.avgSpamRate * 100).toFixed(2)}%` : "—"}
+                          </div>
+                          <div className="out-stat-label">Spam Rate</div>
+                        </div>
+                        <div className="out-stat">
+                          <div className="out-stat-val" style={{ color: d.summary.avgSpfSuccess !== null && d.summary.avgSpfSuccess > 0.95 ? T.green : T.orange }}>
+                            {d.summary.avgSpfSuccess !== null ? `${(d.summary.avgSpfSuccess * 100).toFixed(0)}%` : "—"}
+                          </div>
+                          <div className="out-stat-label">SPF Pass Rate</div>
+                        </div>
+                        <div className="out-stat">
+                          <div className="out-stat-val" style={{ color: d.summary.avgDkimSuccess !== null && d.summary.avgDkimSuccess > 0.95 ? T.green : T.orange }}>
+                            {d.summary.avgDkimSuccess !== null ? `${(d.summary.avgDkimSuccess * 100).toFixed(0)}%` : "—"}
+                          </div>
+                          <div className="out-stat-label">DKIM Pass Rate</div>
+                        </div>
+                      </div>
+                      <div className="out-stats" style={{ gridTemplateColumns: "repeat(3, 1fr)", marginTop: 0 }}>
+                        <div className="out-stat">
+                          <div className="out-stat-val" style={{ color: d.summary.avgDmarcSuccess !== null && d.summary.avgDmarcSuccess > 0.95 ? T.green : T.orange }}>
+                            {d.summary.avgDmarcSuccess !== null ? `${(d.summary.avgDmarcSuccess * 100).toFixed(0)}%` : "—"}
+                          </div>
+                          <div className="out-stat-label">DMARC Pass Rate</div>
+                        </div>
+                        <div className="out-stat">
+                          <div className="out-stat-val" style={{ color: d.summary.avgEncryption !== null && d.summary.avgEncryption > 0.95 ? T.green : T.muted }}>
+                            {d.summary.avgEncryption !== null ? `${(d.summary.avgEncryption * 100).toFixed(0)}%` : "—"}
+                          </div>
+                          <div className="out-stat-label">Encryption</div>
+                        </div>
+                        <div className="out-stat">
+                          <div className="out-stat-val" style={{ color: T.text }}>{d.stats.length}</div>
+                          <div className="out-stat-label">Days of Data</div>
+                        </div>
+                      </div>
+
+                      {/* Daily breakdown */}
+                      {d.stats.length > 0 && (
+                        <div style={{ marginTop: 14 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Daily Breakdown</div>
+                          <div style={{ overflowX: "auto" }}>
+                            <table className="out-table">
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Reputation</th>
+                                  <th>Spam Rate</th>
+                                  <th>SPF</th>
+                                  <th>DKIM</th>
+                                  <th>DMARC</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {d.stats.slice().reverse().map((s: {
+                                  date: string;
+                                  domainReputation?: string;
+                                  spamRate?: number;
+                                  spfSuccessRatio?: number;
+                                  dkimSuccessRatio?: number;
+                                  dmarcSuccessRatio?: number;
+                                }, i: number) => (
+                                  <tr key={i}>
+                                    <td>{s.date || "—"}</td>
+                                    <td>
+                                      {s.domainReputation ? (
+                                        <span style={{
+                                          fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6,
+                                          background: s.domainReputation === "HIGH" ? `${T.green}20` : s.domainReputation === "MEDIUM" ? `${T.orange}20` : `${T.red}20`,
+                                          color: s.domainReputation === "HIGH" ? T.green : s.domainReputation === "MEDIUM" ? T.orange : T.red,
+                                        }}>
+                                          {s.domainReputation}
+                                        </span>
+                                      ) : "—"}
+                                    </td>
+                                    <td style={{ color: s.spamRate !== undefined ? (s.spamRate < 0.03 ? T.green : s.spamRate < 0.1 ? T.orange : T.red) : T.muted }}>
+                                      {s.spamRate !== undefined ? `${(s.spamRate * 100).toFixed(2)}%` : "—"}
+                                    </td>
+                                    <td style={{ color: s.spfSuccessRatio !== undefined && s.spfSuccessRatio > 0.95 ? T.green : T.orange }}>
+                                      {s.spfSuccessRatio !== undefined ? `${(s.spfSuccessRatio * 100).toFixed(0)}%` : "—"}
+                                    </td>
+                                    <td style={{ color: s.dkimSuccessRatio !== undefined && s.dkimSuccessRatio > 0.95 ? T.green : T.orange }}>
+                                      {s.dkimSuccessRatio !== undefined ? `${(s.dkimSuccessRatio * 100).toFixed(0)}%` : "—"}
+                                    </td>
+                                    <td style={{ color: s.dmarcSuccessRatio !== undefined && s.dmarcSuccessRatio > 0.95 ? T.green : T.orange }}>
+                                      {s.dmarcSuccessRatio !== undefined ? `${(s.dmarcSuccessRatio * 100).toFixed(0)}%` : "—"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {d.stats.length === 0 && (
+                        <div style={{ textAlign: "center", color: T.muted, padding: 20, fontSize: 13 }}>
+                          No traffic data for this period. Google needs sufficient email volume to generate stats.
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </div>
