@@ -1,68 +1,15 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { ArrowLeft, Mail, Pen, Reply, Forward, Send, X } from "lucide-react";
 
-const T = {
-  orange: "#E86A2A",
-  text: "#e8eaf0",
-  muted: "#b0b4c8",
-  surface: "#111111",
-  border: "rgba(255,255,255,0.07)",
-  green: "#2ecc71",
-  red: "#e74c3c",
-  bg: "#0a0a0a",
-  blue: "#3498db",
-};
+interface Thread { id: string; subject: string; from: string; to: string; lastFrom: string; date: string; snippet: string; messageCount: number; isRead: boolean; }
+interface EmailMsg { id: string; threadId: string; from: string; to: string; subject: string; body: string; date: string; isRead: boolean; }
 
-interface Thread {
-  id: string;
-  subject: string;
-  from: string;
-  to: string;
-  lastFrom: string;
-  date: string;
-  snippet: string;
-  messageCount: number;
-  isRead: boolean;
-}
-
-interface EmailMsg {
-  id: string;
-  threadId: string;
-  from: string;
-  to: string;
-  subject: string;
-  body: string;
-  date: string;
-  isRead: boolean;
-}
-
-function formatEmailName(raw: string) {
-  const match = raw.match(/^"?([^"<]+)"?\s*<?/);
-  return match?.[1]?.trim() || raw.split("@")[0] || raw;
-}
-
-function formatEmailAddr(raw: string) {
-  const match = raw.match(/<([^>]+)>/);
-  return match?.[1] || raw;
-}
-
-function timeAgo(dateStr: string) {
-  const d = new Date(dateStr);
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return "Now";
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-  if (diff < 604800000) return d.toLocaleDateString("en-US", { weekday: "short" });
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function fullDate(dateStr: string) {
-  return new Date(dateStr).toLocaleString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-    hour: "numeric", minute: "2-digit",
-  });
-}
+function formatEmailName(raw: string) { const match = raw.match(/^"?([^"<]+)"?\s*<?/); return match?.[1]?.trim() || raw.split("@")[0] || raw; }
+function formatEmailAddr(raw: string) { const match = raw.match(/<([^>]+)>/); return match?.[1] || raw; }
+function timeAgo(dateStr: string) { const d = new Date(dateStr); const diff = Date.now() - d.getTime(); if (diff < 60000) return "Now"; if (diff < 3600000) return `${Math.floor(diff / 60000)}m`; if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`; if (diff < 604800000) return d.toLocaleDateString("en-US", { weekday: "short" }); return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+function fullDate(dateStr: string) { return new Date(dateStr).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }); }
 
 export default function EmailPage() {
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -80,264 +27,122 @@ export default function EmailPage() {
   const [search, setSearch] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchThreads();
-  }, []);
+  useEffect(() => { fetchThreads(); }, []);
 
-  async function fetchThreads() {
-    setLoading(true);
-    const res = await fetch("/api/email/threads");
-    const data = await res.json();
-    if (data.connected === false) {
-      setConnected(false);
-    } else {
-      setConnected(true);
-      setThreads(data.threads || []);
-    }
-    setLoading(false);
-  }
+  async function fetchThreads() { setLoading(true); const res = await fetch("/api/email/threads"); const data = await res.json(); if (data.connected === false) { setConnected(false); } else { setConnected(true); setThreads(data.threads || []); } setLoading(false); }
+  async function loadThread(threadId: string) { setMsgLoading(true); setActiveThread(threadId); setReplyTo(null); const res = await fetch(`/api/email/threads/${threadId}`); const data = await res.json(); setMessages(data.messages || []); setMsgLoading(false); setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100); setThreads(prev => prev.map(t => t.id === threadId ? { ...t, isRead: true } : t)); }
+  async function handleSend() { if (!composeBody.trim()) return; setSending(true); const payload: Record<string, string | undefined> = { to: replyTo ? formatEmailAddr(replyTo.from) : composeTo, subject: replyTo ? `Re: ${replyTo.subject}` : composeSubject, body: composeBody }; if (replyTo) { payload.threadId = replyTo.threadId; payload.inReplyTo = replyTo.id; } await fetch("/api/email/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); setSending(false); setComposeBody(""); setComposeTo(""); setComposeSubject(""); setShowCompose(false); if (replyTo) { setReplyTo(null); loadThread(replyTo.threadId); } else { fetchThreads(); } }
+  function startReply(msg: EmailMsg) { setReplyTo(msg); setShowCompose(false); }
+  function startCompose() { setReplyTo(null); setShowCompose(true); setComposeTo(""); setComposeSubject(""); setComposeBody(""); }
 
-  async function loadThread(threadId: string) {
-    setMsgLoading(true);
-    setActiveThread(threadId);
-    setReplyTo(null);
-    const res = await fetch(`/api/email/threads/${threadId}`);
-    const data = await res.json();
-    setMessages(data.messages || []);
-    setMsgLoading(false);
-    setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-    // Mark as read in UI
-    setThreads(prev => prev.map(t => t.id === threadId ? { ...t, isRead: true } : t));
-  }
+  const filtered = search ? threads.filter(t => t.subject.toLowerCase().includes(search.toLowerCase()) || t.from.toLowerCase().includes(search.toLowerCase()) || t.snippet.toLowerCase().includes(search.toLowerCase())) : threads;
 
-  async function handleSend() {
-    if (!composeBody.trim()) return;
-    setSending(true);
-
-    const payload: Record<string, string | undefined> = {
-      to: replyTo ? formatEmailAddr(replyTo.from) : composeTo,
-      subject: replyTo ? `Re: ${replyTo.subject}` : composeSubject,
-      body: composeBody,
-    };
-
-    if (replyTo) {
-      payload.threadId = replyTo.threadId;
-      payload.inReplyTo = replyTo.id;
-    }
-
-    await fetch("/api/email/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    setSending(false);
-    setComposeBody("");
-    setComposeTo("");
-    setComposeSubject("");
-    setShowCompose(false);
-
-    if (replyTo) {
-      setReplyTo(null);
-      loadThread(replyTo.threadId);
-    } else {
-      fetchThreads();
-    }
-  }
-
-  function startReply(msg: EmailMsg) {
-    setReplyTo(msg);
-    setShowCompose(false);
-  }
-
-  function startCompose() {
-    setReplyTo(null);
-    setShowCompose(true);
-    setComposeTo("");
-    setComposeSubject("");
-    setComposeBody("");
-  }
-
-  const filtered = search
-    ? threads.filter(t =>
-        t.subject.toLowerCase().includes(search.toLowerCase()) ||
-        t.from.toLowerCase().includes(search.toLowerCase()) ||
-        t.snippet.toLowerCase().includes(search.toLowerCase())
-      )
-    : threads;
-
-  // Not connected state
   if (connected === false) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-        <div style={{ textAlign: "center", maxWidth: 400 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: T.text, letterSpacing: 0.5, marginBottom: 8 }}>
-            CONNECT YOUR EMAIL
-          </div>
-          <div style={{ fontSize: 13, color: T.muted, lineHeight: 1.6, marginBottom: 24 }}>
-            Connect your Gmail account to see all emails with your leads, reply, forward, and compose right from the CRM.
-          </div>
-          <a
-            href="/api/email/connect"
-            style={{
-              display: "inline-block", padding: "12px 28px", background: T.orange, color: "#fff",
-              borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: "none",
-            }}
-          >
-            Connect Gmail
-          </a>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-[400px]">
+          <Mail className="w-12 h-12 text-[#E86A2A] mx-auto mb-4" />
+          <div className="font-display text-2xl text-[#e8eaf0] tracking-wider mb-2">CONNECT YOUR EMAIL</div>
+          <div className="text-sm text-[#b0b4c8] leading-relaxed mb-6">Connect your Gmail account to see all emails with your leads, reply, forward, and compose right from the CRM.</div>
+          <a href="/api/email/connect" className="inline-block px-7 py-3 bg-[#E86A2A] text-white rounded-xl text-sm font-bold no-underline hover:bg-[#ff7b3a] transition-colors">Connect Gmail</a>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 60px)", margin: "-24px", overflow: "hidden" }}>
-      <style>{`
-        .em-sidebar { width: 340px; border-right: 1px solid ${T.border}; display: flex; flex-direction: column; background: ${T.bg}; flex-shrink: 0; overflow: hidden; }
-        .em-search { padding: 12px; border-bottom: 1px solid ${T.border}; display: flex; gap: 6px; }
-        .em-search input { flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 8px; font-size: 13px; color: ${T.text}; outline: none; font-family: 'Inter', sans-serif; box-sizing: border-box; }
-        .em-search input::placeholder { color: ${T.muted}; }
-        .em-list { flex: 1; overflow-y: auto; }
-        .em-item { padding: 14px 16px; border-bottom: 1px solid ${T.border}; cursor: pointer; transition: background 0.15s; }
-        .em-item:hover { background: rgba(255,255,255,0.03); }
-        .em-item.active { background: rgba(232,106,42,0.08); border-left: 3px solid ${T.orange}; }
-        .em-item.unread { border-left: 3px solid ${T.blue}; }
-        .em-from { font-size: 13px; font-weight: 600; color: ${T.text}; display: flex; justify-content: space-between; margin-bottom: 2px; }
-        .em-from.unread { font-weight: 800; }
-        .em-subject { font-size: 13px; color: ${T.text}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-        .em-snippet { font-size: 12px; color: ${T.muted}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .em-time { font-size: 10px; color: ${T.muted}; flex-shrink: 0; }
-        .em-count { font-size: 10px; color: ${T.muted}; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
-
-        .em-main { flex: 1; display: flex; flex-direction: column; background: ${T.bg}; min-width: 0; overflow: hidden; width: 0; }
-        .em-thread-header { padding: 16px 20px; border-bottom: 1px solid ${T.border}; flex-shrink: 0; }
-        .em-thread-subject { font-size: 18px; font-weight: 700; color: ${T.text}; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.5px; }
-        .em-msgs { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px; }
-        .em-msg-card { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; padding: 16px; margin-bottom: 12px; overflow: hidden; max-width: 100%; }
-        .em-msg-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .em-msg-from { font-size: 13px; font-weight: 700; color: ${T.text}; }
-        .em-msg-to { font-size: 11px; color: ${T.muted}; margin-top: 2px; }
-        .em-msg-date { font-size: 11px; color: ${T.muted}; flex-shrink: 0; }
-        .em-msg-body { font-size: 13px; color: ${T.text}; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%; overflow: hidden; }
-        .em-msg-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid ${T.border}; }
-        .em-action-btn { padding: 6px 14px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 6px; color: ${T.muted}; font-size: 11px; cursor: pointer; }
-        .em-action-btn:hover { border-color: ${T.orange}; color: ${T.orange}; }
-
-        .em-reply { padding: 16px 20px; border-top: 1px solid ${T.border}; flex-shrink: 0; }
-        .em-reply-header { font-size: 12px; color: ${T.muted}; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .em-compose-field { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-        .em-compose-label { font-size: 12px; color: ${T.muted}; width: 60px; flex-shrink: 0; }
-        .em-compose-input { flex: 1; padding: 8px 12px; background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 8px; color: ${T.text}; font-size: 13px; outline: none; font-family: 'Inter', sans-serif; }
-        .em-compose-input:focus { border-color: ${T.orange}; }
-        .em-reply-textarea { width: 100%; padding: 10px 14px; background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 10px; color: ${T.text}; font-size: 13px; resize: vertical; outline: none; font-family: 'Inter', sans-serif; min-height: 80px; box-sizing: border-box; }
-        .em-reply-textarea:focus { border-color: ${T.orange}; }
-        .em-reply-actions { display: flex; justify-content: space-between; margin-top: 8px; }
-        .em-send-btn { padding: 8px 20px; background: ${T.orange}; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .em-send-btn:disabled { opacity: 0.5; }
-        .em-cancel-btn { padding: 8px 14px; background: none; border: 1px solid ${T.border}; border-radius: 8px; color: ${T.muted}; font-size: 12px; cursor: pointer; }
-        .em-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: ${T.muted}; font-size: 14px; }
-      `}</style>
-
+    <div className="flex h-[calc(100vh-60px)] -m-6 overflow-hidden">
       {/* Left — Thread List */}
-      <div className="em-sidebar">
-        <div className="em-search">
-          <input placeholder="Search emails..." value={search} onChange={e => setSearch(e.target.value)} />
-          <button onClick={startCompose} style={{ padding: "6px 14px", background: T.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Compose</button>
+      <div className="w-[340px] border-r border-white/[0.07] flex flex-col bg-[#0a0a0a] flex-shrink-0 overflow-hidden">
+        <div className="p-3 border-b border-white/[0.07] flex gap-1.5">
+          <input placeholder="Search emails..." value={search} onChange={e => setSearch(e.target.value)}
+            className="flex-1 px-3 py-2 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
+          <button onClick={startCompose} className="flex items-center gap-1 px-3.5 py-2 bg-[#E86A2A] text-white border-none rounded-lg text-[11px] font-bold cursor-pointer whitespace-nowrap hover:bg-[#ff7b3a] transition-colors">
+            <Pen className="w-3 h-3" /> Compose
+          </button>
         </div>
-        <div className="em-list">
+        <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div style={{ padding: 40, textAlign: "center", color: T.muted, fontSize: 13 }}>Loading emails...</div>
+            <div className="p-10 text-center text-[#b0b4c8] text-sm">Loading emails...</div>
           ) : filtered.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", color: T.muted, fontSize: 13 }}>No emails found</div>
+            <div className="p-10 text-center text-[#b0b4c8] text-sm">No emails found</div>
           ) : (
             filtered.map(t => (
-              <div
-                key={t.id}
-                className={`em-item ${activeThread === t.id ? "active" : ""} ${!t.isRead ? "unread" : ""}`}
-                onClick={() => loadThread(t.id)}
-              >
-                <div className={`em-from ${!t.isRead ? "unread" : ""}`}>
-                  <span>
-                    {formatEmailName(t.from)}
-                    {t.messageCount > 1 && <span className="em-count">{t.messageCount}</span>}
-                  </span>
-                  <span className="em-time">{timeAgo(t.date)}</span>
+              <div key={t.id} onClick={() => loadThread(t.id)}
+                className={`px-4 py-3.5 border-b border-white/[0.07] cursor-pointer transition-colors hover:bg-white/[0.03] ${activeThread === t.id ? "bg-[#E86A2A]/[0.08] border-l-[3px] border-l-[#E86A2A]" : ""} ${!t.isRead ? "border-l-[3px] border-l-blue-400" : ""}`}>
+                <div className={`text-[13px] text-[#e8eaf0] flex justify-between mb-0.5 ${!t.isRead ? "font-extrabold" : "font-semibold"}`}>
+                  <span>{formatEmailName(t.from)}{t.messageCount > 1 && <span className="text-[10px] text-[#b0b4c8] bg-white/[0.06] px-1.5 py-0.5 rounded-md ml-1.5">{t.messageCount}</span>}</span>
+                  <span className="text-[10px] text-[#b0b4c8] flex-shrink-0">{timeAgo(t.date)}</span>
                 </div>
-                <div className="em-subject">{t.subject}</div>
-                <div className="em-snippet">{t.snippet}</div>
+                <div className="text-[13px] text-[#e8eaf0] whitespace-nowrap overflow-hidden text-ellipsis mb-0.5">{t.subject}</div>
+                <div className="text-xs text-[#b0b4c8] whitespace-nowrap overflow-hidden text-ellipsis">{t.snippet}</div>
               </div>
             ))
           )}
         </div>
       </div>
 
-      {/* Right — Thread Detail or Compose */}
-      <div className="em-main">
+      {/* Right — Thread or Compose */}
+      <div className="flex-1 flex flex-col bg-[#0a0a0a] min-w-0 overflow-hidden">
         {showCompose ? (
           <>
-            <div className="em-thread-header">
-              <div className="em-thread-subject">NEW EMAIL</div>
+            <div className="px-5 py-4 border-b border-white/[0.07] flex-shrink-0 flex justify-between items-center">
+              <div className="font-display text-lg text-[#e8eaf0] tracking-wider">NEW EMAIL</div>
+              <button onClick={() => setShowCompose(false)} className="bg-transparent border-none text-[#b0b4c8] cursor-pointer hover:text-white transition-colors"><X className="w-4 h-4" /></button>
             </div>
-            <div style={{ padding: 20, flex: 1 }}>
-              <div className="em-compose-field">
-                <span className="em-compose-label">To:</span>
-                <input className="em-compose-input" value={composeTo} onChange={e => setComposeTo(e.target.value)} placeholder="email@example.com" />
-              </div>
-              <div className="em-compose-field">
-                <span className="em-compose-label">Subject:</span>
-                <input className="em-compose-input" value={composeSubject} onChange={e => setComposeSubject(e.target.value)} placeholder="Subject" />
-              </div>
-              <textarea
-                className="em-reply-textarea"
-                style={{ minHeight: 200, marginTop: 8 }}
-                placeholder="Write your email..."
-                value={composeBody}
-                onChange={e => setComposeBody(e.target.value)}
-              />
-              <div className="em-reply-actions">
-                <button className="em-cancel-btn" onClick={() => setShowCompose(false)}>Cancel</button>
-                <button className="em-send-btn" onClick={handleSend} disabled={sending || !composeTo.trim() || !composeBody.trim()}>
-                  {sending ? "Sending..." : "Send"}
+            <div className="p-5 flex-1 flex flex-col gap-2">
+              {[{ label: "To:", value: composeTo, set: setComposeTo, ph: "email@example.com" }, { label: "Subject:", value: composeSubject, set: setComposeSubject, ph: "Subject" }].map(f => (
+                <div key={f.label} className="flex gap-2 items-center">
+                  <span className="text-xs text-[#b0b4c8] w-[60px] flex-shrink-0">{f.label}</span>
+                  <input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.ph}
+                    className="flex-1 px-3 py-2 bg-[#111] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A] transition-colors" />
+                </div>
+              ))}
+              <textarea placeholder="Write your email..." value={composeBody} onChange={e => setComposeBody(e.target.value)}
+                className="w-full flex-1 px-3.5 py-2.5 bg-[#111] border border-white/[0.07] rounded-xl text-sm text-[#e8eaf0] resize-y outline-none min-h-[200px] focus:border-[#E86A2A] transition-colors mt-2" />
+              <div className="flex justify-between mt-2">
+                <button onClick={() => setShowCompose(false)} className="px-3.5 py-2 bg-transparent border border-white/[0.07] rounded-lg text-xs text-[#b0b4c8] cursor-pointer hover:bg-white/[0.04] transition-colors">Cancel</button>
+                <button onClick={handleSend} disabled={sending || !composeTo.trim() || !composeBody.trim()}
+                  className={`flex items-center gap-1.5 px-5 py-2 bg-[#E86A2A] text-white border-none rounded-lg text-sm font-bold cursor-pointer transition-colors ${sending ? "opacity-50" : "hover:bg-[#ff7b3a]"}`}>
+                  <Send className="w-3.5 h-3.5" /> {sending ? "Sending..." : "Send"}
                 </button>
               </div>
             </div>
           </>
         ) : !activeThread ? (
-          <div className="em-empty">Select an email to read</div>
+          <div className="flex-1 flex items-center justify-center text-[#b0b4c8] text-sm">Select an email to read</div>
         ) : (
           <>
-            <div className="em-thread-header" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <button onClick={() => { setActiveThread(null); setReplyTo(null); }} style={{ background: "none", border: "none", color: T.muted, fontSize: 16, cursor: "pointer", padding: "4px 8px", borderRadius: 4, flexShrink: 0 }}>←</button>
-              <div className="em-thread-subject" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div className="px-5 py-4 border-b border-white/[0.07] flex items-center gap-3 flex-shrink-0">
+              <button onClick={() => { setActiveThread(null); setReplyTo(null); }} className="bg-transparent border-none text-[#b0b4c8] cursor-pointer p-1 rounded hover:bg-white/[0.04] transition-colors flex-shrink-0">
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div className="font-display text-lg text-[#e8eaf0] tracking-wider overflow-hidden text-ellipsis whitespace-nowrap">
                 {messages[0]?.subject || "Loading..."}
               </div>
             </div>
-            <div className="em-msgs">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4">
               {msgLoading ? (
-                <div style={{ textAlign: "center", color: T.muted, padding: 40 }}>Loading...</div>
+                <div className="text-center text-[#b0b4c8] py-10">Loading...</div>
               ) : (
                 messages.map(m => (
-                  <div key={m.id} className="em-msg-card">
-                    <div className="em-msg-header">
+                  <div key={m.id} className="bg-[#111] border border-white/[0.07] rounded-xl p-4 mb-3 overflow-hidden max-w-full hover:border-white/[0.12] transition-colors">
+                    <div className="flex justify-between items-start mb-2.5">
                       <div>
-                        <div className="em-msg-from">{formatEmailName(m.from)}</div>
-                        <div className="em-msg-to">to {formatEmailName(m.to)}</div>
+                        <div className="text-sm font-bold text-[#e8eaf0]">{formatEmailName(m.from)}</div>
+                        <div className="text-[11px] text-[#b0b4c8] mt-0.5">to {formatEmailName(m.to)}</div>
                       </div>
-                      <div className="em-msg-date">{fullDate(m.date)}</div>
+                      <div className="text-[11px] text-[#b0b4c8] flex-shrink-0">{fullDate(m.date)}</div>
                     </div>
-                    <div className="em-msg-body">{m.body.substring(0, 2000)}</div>
-                    <div className="em-msg-actions">
-                      <button className="em-action-btn" onClick={() => startReply(m)}>Reply</button>
-                      <button className="em-action-btn" onClick={() => {
-                        setComposeTo("");
-                        setComposeSubject(`Fwd: ${m.subject}`);
-                        setComposeBody(`\n\n---------- Forwarded message ----------\nFrom: ${m.from}\nDate: ${m.date}\nSubject: ${m.subject}\n\n${m.body}`);
-                        setShowCompose(true);
-                        setReplyTo(null);
-                        setActiveThread(null);
-                      }}>Forward</button>
+                    <div className="text-sm text-[#e8eaf0] leading-relaxed whitespace-pre-wrap break-words overflow-hidden">{m.body.substring(0, 2000)}</div>
+                    <div className="flex gap-2 mt-3 pt-2.5 border-t border-white/[0.07]">
+                      <button onClick={() => startReply(m)} className="flex items-center gap-1 px-3 py-1.5 bg-white/[0.04] border border-white/[0.07] rounded-md text-[11px] text-[#b0b4c8] cursor-pointer hover:border-[#E86A2A] hover:text-[#E86A2A] transition-colors">
+                        <Reply className="w-3 h-3" /> Reply
+                      </button>
+                      <button onClick={() => { setComposeTo(""); setComposeSubject(`Fwd: ${m.subject}`); setComposeBody(`\n\n---------- Forwarded message ----------\nFrom: ${m.from}\nDate: ${m.date}\nSubject: ${m.subject}\n\n${m.body}`); setShowCompose(true); setReplyTo(null); setActiveThread(null); }}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-white/[0.04] border border-white/[0.07] rounded-md text-[11px] text-[#b0b4c8] cursor-pointer hover:border-[#E86A2A] hover:text-[#E86A2A] transition-colors">
+                        <Forward className="w-3 h-3" /> Forward
+                      </button>
                     </div>
                   </div>
                 ))
@@ -345,24 +150,18 @@ export default function EmailPage() {
               <div ref={endRef} />
             </div>
 
-            {/* Reply Box */}
             {replyTo && (
-              <div className="em-reply">
-                <div className="em-reply-header">
+              <div className="px-5 py-4 border-t border-white/[0.07] flex-shrink-0">
+                <div className="text-xs text-[#b0b4c8] mb-2 flex justify-between items-center">
                   <span>Replying to {formatEmailName(replyTo.from)}</span>
-                  <button className="em-cancel-btn" onClick={() => setReplyTo(null)} style={{ padding: "3px 10px" }}>Cancel</button>
+                  <button onClick={() => setReplyTo(null)} className="bg-transparent border-none text-[#b0b4c8] cursor-pointer hover:text-white transition-colors"><X className="w-3 h-3" /></button>
                 </div>
-                <textarea
-                  className="em-reply-textarea"
-                  placeholder="Write your reply..."
-                  value={composeBody}
-                  onChange={e => setComposeBody(e.target.value)}
-                  autoFocus
-                />
-                <div className="em-reply-actions">
-                  <div />
-                  <button className="em-send-btn" onClick={handleSend} disabled={sending || !composeBody.trim()}>
-                    {sending ? "Sending..." : "Send Reply"}
+                <textarea placeholder="Write your reply..." value={composeBody} onChange={e => setComposeBody(e.target.value)} autoFocus
+                  className="w-full px-3.5 py-2.5 bg-[#111] border border-white/[0.07] rounded-xl text-sm text-[#e8eaf0] resize-y outline-none min-h-[80px] focus:border-[#E86A2A] transition-colors" />
+                <div className="flex justify-end mt-2">
+                  <button onClick={handleSend} disabled={sending || !composeBody.trim()}
+                    className={`flex items-center gap-1.5 px-5 py-2 bg-[#E86A2A] text-white border-none rounded-lg text-sm font-bold cursor-pointer transition-colors ${sending ? "opacity-50" : "hover:bg-[#ff7b3a]"}`}>
+                    <Send className="w-3.5 h-3.5" /> {sending ? "Sending..." : "Send Reply"}
                   </button>
                 </div>
               </div>
