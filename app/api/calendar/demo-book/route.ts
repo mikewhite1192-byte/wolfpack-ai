@@ -67,8 +67,8 @@ export async function POST(req: Request) {
           const firstStage = await sql`SELECT id FROM pipeline_stages WHERE workspace_id = ${workspaceId} ORDER BY position ASC LIMIT 1`;
           if (firstStage.length > 0) {
             await sql`
-              INSERT INTO deals (workspace_id, contact_id, stage_id, title, source)
-              VALUES (${workspaceId}, ${contactId}, ${firstStage[0].id}, ${`Demo - ${name}`}, 'landing_page')
+              INSERT INTO deals (workspace_id, contact_id, stage_id, title)
+              VALUES (${workspaceId}, ${contactId}, ${firstStage[0].id}, ${`Demo - ${name}`})
             `;
           }
         }

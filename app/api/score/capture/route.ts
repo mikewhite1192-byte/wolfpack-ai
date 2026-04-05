@@ -54,8 +54,8 @@ export async function POST(req: Request) {
           const firstStage = await db.execute(sql`SELECT id FROM pipeline_stages WHERE workspace_id = ${workspaceId} ORDER BY position ASC LIMIT 1`);
           if (firstStage.rows.length > 0 && contact.rows.length > 0) {
             await db.execute(sql`
-              INSERT INTO deals (workspace_id, contact_id, stage_id, title, source)
-              VALUES (${workspaceId}, ${contact.rows[0].id}, ${firstStage.rows[0].id}, ${`${type === "gbp" ? "GBP" : "Website"} Score Lead - ${name || email}`}, 'landing_page')
+              INSERT INTO deals (workspace_id, contact_id, stage_id, title)
+              VALUES (${workspaceId}, ${contact.rows[0].id}, ${firstStage.rows[0].id}, ${`${type === "gbp" ? "GBP" : "Website"} Score Lead - ${name || email}`})
             `);
           }
         }
