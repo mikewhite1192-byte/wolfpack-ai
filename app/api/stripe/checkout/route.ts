@@ -20,6 +20,10 @@ export async function POST(req: NextRequest) {
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/sign-up?plan=${plan}`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/#pricing`,
+    allow_promotion_codes: true,
+    subscription_data: {
+      trial_period_days: 14,
+    },
     metadata: { plan },
   });
 

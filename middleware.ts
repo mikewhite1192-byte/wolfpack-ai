@@ -29,8 +29,27 @@ function getVisitorId(req: NextRequest): string {
   return crypto.randomUUID();
 }
 
-export default clerkMiddleware(async (_auth, req) => {
+export default clerkMiddleware(async (authFn, req) => {
   const path = req.nextUrl.pathname;
+
+  // Protect dashboard and API routes (except public APIs)
+  const isProtected = path.startsWith("/dashboard") || (
+    path.startsWith("/api/") &&
+    !path.startsWith("/api/stripe/webhook") &&
+    !path.startsWith("/api/analytics/traffic") &&
+    !path.startsWith("/api/score/") &&
+    !path.startsWith("/api/try") &&
+    !path.startsWith("/api/calendar/demo") &&
+    !path.startsWith("/api/chat-widget") &&
+    !path.startsWith("/api/affiliates") &&
+    !path.startsWith("/api/cron") &&
+    !path.startsWith("/api/loop") &&
+    !path.startsWith("/api/book")
+  );
+
+  if (isProtected) {
+    await authFn.protect();
+  }
 
   if (shouldTrack(path)) {
     const visitorId = getVisitorId(req);
