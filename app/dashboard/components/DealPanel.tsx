@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { X, Phone, MessageSquare, Mail, Send } from "lucide-react";
 
 const T = {
   orange: "#E86A2A",
@@ -389,7 +390,7 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
       <style>{`
         .deal-panel-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; justify-content: flex-end; }
         .deal-panel-container { display: flex; height: 100vh; }
-        .deal-panel { width: 480px; max-width: 50vw; height: 100vh; background: ${T.bg}; border-left: 1px solid ${T.border}; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
+        .deal-panel { width: 480px; max-width: 50vw; height: 100vh; background: #0a0a0a; border-left: 1px solid rgba(255,255,255,0.07); overflow-y: auto; display: flex; flex-direction: column; position: relative; }
         .dp-chat-panel { width: 400px; max-width: 45vw; height: 100vh; background: ${T.bg}; border-left: 1px solid ${T.border}; display: flex; flex-direction: column; }
         .dp-chat-header { padding: 14px 18px; border-bottom: 1px solid ${T.border}; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
         .dp-chat-title { font-size: 16px; font-weight: 700; color: ${T.text}; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.5px; }
@@ -498,7 +499,7 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
                     </div>
                     <span style={{ fontSize: 10, color: chatAiEnabled ? T.green : T.muted, fontWeight: 600 }}>AI</span>
                   </div>
-                  <button className="dp-chat-close" onClick={() => setShowChat(false)}>×</button>
+                  <button className="dp-chat-close" onClick={() => setShowChat(false)}><X className="w-4 h-4" /></button>
                 </div>
               </div>
               <div className="dp-chat-messages">
@@ -558,7 +559,7 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
 
           {/* Deal Info Panel — always on the RIGHT */}
           <div className="deal-panel">
-            <button className="dp-close" onClick={onClose}>×</button>
+            <button className="dp-close" onClick={onClose}><X className="w-5 h-5" /></button>
 
             <div className="dp-header">
               <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 10 }}>
@@ -601,17 +602,17 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
                   <button className="dp-action-btn" onClick={() => {
                     window.dispatchEvent(new CustomEvent("open-dialer", { detail: { number: deal.phone } }));
                   }}>
-                    📞 Call
+                    <Phone className="w-3.5 h-3.5" /> Call
                   </button>
                 )}
                 {deal.phone && (
                   <button className={`dp-action-btn ${showChat ? "active" : ""}`} onClick={() => setShowChat(!showChat)}>
-                    💬 Text
+                    <MessageSquare className="w-3.5 h-3.5" /> Text
                   </button>
                 )}
                 {deal.email && (
                   <button className="dp-action-btn" onClick={() => setTab("emails")}>
-                    📧 Email
+                    <Mail className="w-3.5 h-3.5" /> Email
                   </button>
                 )}
               </div>
