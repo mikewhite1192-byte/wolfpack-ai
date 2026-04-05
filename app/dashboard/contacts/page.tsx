@@ -1,40 +1,20 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { Plus, X, MessageSquare, Trash2, Upload } from "lucide-react";
 import DealPanel from "../components/DealPanel";
 import CsvImportModal from "../components/CsvImportModal";
 
-const T = {
-  orange: "#E86A2A",
-  text: "#e8eaf0",
-  muted: "#b0b4c8",
-  surface: "#111111",
-  border: "rgba(255,255,255,0.07)",
-  green: "#2ecc71",
-  red: "#e74c3c",
-  bg: "#0a0a0a",
-};
-
 interface Contact {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  phone: string | null;
-  company: string | null;
-  source: string | null;
-  lead_score: number;
-  stage_name: string | null;
-  stage_color: string | null;
-  deal_value: string | null;
-  deal_id: string | null;
-  last_contacted: string | null;
-  created_at: string;
+  id: string; first_name: string | null; last_name: string | null; email: string | null;
+  phone: string | null; company: string | null; source: string | null; lead_score: number;
+  stage_name: string | null; stage_color: string | null; deal_value: string | null;
+  deal_id: string | null; last_contacted: string | null; created_at: string;
 }
 
-const COLS = ["Name", "Phone", "Email", "Stage", "Value", "Last Contact", "Actions"];
-
 interface ContactList { id: string; name: string; color: string; contact_count: string; }
+
+const COLS = ["Name", "Phone", "Email", "Stage", "Value", "Last Contact", ""];
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -51,28 +31,15 @@ export default function ContactsPage() {
   const [activeList, setActiveList] = useState<string | null>(null);
   const [showNewList, setShowNewList] = useState(false);
   const [newListName, setNewListName] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
-  // Load lists
-  useEffect(() => {
-    fetch("/api/contact-lists").then(r => r.json()).then(data => {
-      setLists(data.lists || []);
-    }).catch(() => {});
-  }, []);
+  useEffect(() => { fetch("/api/contact-lists").then(r => r.json()).then(data => setLists(data.lists || [])).catch(() => {}); }, []);
 
   async function createList() {
     if (!newListName.trim()) return;
-    const res = await fetch("/api/contact-lists", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newListName.trim() }),
-    });
+    const res = await fetch("/api/contact-lists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newListName.trim() }) });
     const data = await res.json();
-    if (data.list) {
-      setLists(prev => [...prev, { ...data.list, contact_count: "0" }]);
-      setActiveList(data.list.id);
-      setShowNewList(false);
-      setNewListName("");
-    }
+    if (data.list) { setLists(prev => [...prev, { ...data.list, contact_count: "0" }]); setActiveList(data.list.id); setShowNewList(false); setNewListName(""); }
   }
 
   const fetchContacts = useCallback(async () => {
@@ -83,275 +50,172 @@ export default function ContactsPage() {
     if (activeList) params.set("listId", activeList);
     const res = await fetch(`/api/contacts?${params}`);
     const data = await res.json();
-    setContacts(data.contacts || []);
-    setCounts(data.counts || { active: 0, won: 0, lost: 0 });
-    setLoading(false);
+    setContacts(data.contacts || []); setCounts(data.counts || { active: 0, won: 0, lost: 0 }); setLoading(false);
   }, [search, statusTab, activeList]);
 
-  useEffect(() => {
-    fetchContacts();
-  }, [fetchContacts]);
-
-  // Debounced search
-  const [searchInput, setSearchInput] = useState("");
-  useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput), 300);
-    return () => clearTimeout(t);
-  }, [searchInput]);
+  useEffect(() => { fetchContacts(); }, [fetchContacts]);
+  useEffect(() => { const t = setTimeout(() => setSearch(searchInput), 300); return () => clearTimeout(t); }, [searchInput]);
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    const res = await fetch("/api/contacts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-    if (res.ok) {
-      setFormData({ firstName: "", lastName: "", email: "", phone: "", company: "" });
-      setShowForm(false);
-      fetchContacts();
-    } else {
-      const err = await res.json();
-      alert(err.error || "Failed to create contact");
-    }
+    e.preventDefault(); setSaving(true);
+    const res = await fetch("/api/contacts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
+    if (res.ok) { setFormData({ firstName: "", lastName: "", email: "", phone: "", company: "" }); setShowForm(false); fetchContacts(); } else { const err = await res.json(); alert(err.error || "Failed"); }
     setSaving(false);
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this contact and all associated data?")) return;
-    await fetch(`/api/contacts/${id}`, { method: "DELETE" });
-    fetchContacts();
-  }
-
-  function formatDate(d: string | null) {
-    if (!d) return "—";
-    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }
+  async function handleDelete(id: string) { if (!confirm("Delete this contact and all associated data?")) return; await fetch(`/api/contacts/${id}`, { method: "DELETE" }); fetchContacts(); }
+  function formatDate(d: string | null) { if (!d) return "—"; return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
 
   return (
     <div>
-      <style>{`
-        .contacts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .contacts-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: ${T.text}; letter-spacing: 1px; }
-        .contacts-btn { padding: 10px 20px; background: ${T.orange}; color: #fff; font-size: 13px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; }
-        .contacts-btn:hover { opacity: 0.9; }
-        .contacts-toolbar { display: flex; gap: 10px; margin-bottom: 16px; }
-        .contacts-search { flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 8px; font-size: 13px; color: ${T.text}; outline: none; font-family: 'Inter', sans-serif; }
-        .contacts-search::placeholder { color: ${T.muted}; }
-        .contacts-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid ${T.border}; }
-        .contacts-tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: ${T.muted}; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 8px; }
-        .contacts-tab:hover { color: ${T.text}; }
-        .contacts-tab.active { color: ${T.orange}; border-bottom-color: ${T.orange}; }
-        .contacts-tab-count { font-size: 11px; background: rgba(255,255,255,0.06); padding: 1px 8px; border-radius: 10px; }
-        .contacts-table { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 12px; overflow: hidden; }
-        .contacts-thead { display: grid; grid-template-columns: 1.5fr 1fr 1.5fr 1fr 0.8fr 1fr 0.6fr; padding: 12px 20px; border-bottom: 1px solid ${T.border}; }
-        .contacts-th { font-size: 11px; font-weight: 700; color: ${T.muted}; text-transform: uppercase; letter-spacing: 0.5px; }
-        .contacts-row { display: grid; grid-template-columns: 1.5fr 1fr 1.5fr 1fr 0.8fr 1fr 0.6fr; padding: 14px 20px; border-bottom: 1px solid ${T.border}; align-items: center; transition: background 0.15s; cursor: pointer; }
-        .contacts-row:hover { background: rgba(255,255,255,0.03); }
-        .contacts-row:last-child { border-bottom: none; }
-        .contacts-cell { font-size: 13px; color: ${T.text}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .contacts-cell-muted { font-size: 13px; color: ${T.muted}; }
-        .contacts-empty { padding: 60px 20px; text-align: center; font-size: 14px; color: ${T.muted}; }
-        .contacts-empty-sub { font-size: 12px; color: rgba(255,255,255,0.2); margin-top: 6px; }
-        .contacts-count { font-size: 12px; color: ${T.muted}; margin-top: 12px; }
-        .stage-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-        .del-btn { background: none; border: none; color: ${T.muted}; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px; }
-        .del-btn:hover { color: ${T.red}; background: rgba(231,76,60,0.1); }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .modal { background: ${T.surface}; border: 1px solid ${T.border}; border-radius: 14px; padding: 28px; width: 440px; max-width: 90vw; }
-        .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: ${T.text}; margin-bottom: 20px; letter-spacing: 0.5px; }
-        .modal-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
-        .modal-label { font-size: 11px; font-weight: 700; color: ${T.muted}; text-transform: uppercase; letter-spacing: 0.5px; }
-        .modal-input { padding: 10px 14px; background: rgba(255,255,255,0.04); border: 1px solid ${T.border}; border-radius: 8px; font-size: 13px; color: ${T.text}; outline: none; font-family: 'Inter', sans-serif; }
-        .modal-input:focus { border-color: ${T.orange}; }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-        .modal-cancel { padding: 10px 20px; background: none; border: 1px solid ${T.border}; border-radius: 8px; color: ${T.muted}; font-size: 13px; cursor: pointer; }
-      `}</style>
-
-      <div className="contacts-header">
-        <div className="contacts-title">CONTACTS</div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setShowImport(true)} style={{ padding: "10px 18px", background: T.surface, color: T.text, fontSize: 13, fontWeight: 600, border: `1px solid ${T.border}`, borderRadius: 8, cursor: "pointer" }}>📄 Import CSV</button>
-          <button className="contacts-btn" onClick={() => setShowForm(true)}>+ Add Contact</button>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-5">
+        <div className="font-display text-[28px] text-[#e8eaf0] tracking-wide">CONTACTS</div>
+        <div className="flex gap-2">
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-[#111] text-[#e8eaf0] text-sm font-semibold border border-white/[0.07] rounded-lg cursor-pointer hover:bg-white/[0.06] transition-colors">
+            <Upload className="w-3.5 h-3.5" /> Import CSV
+          </button>
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-5 py-2.5 bg-[#E86A2A] text-white text-sm font-bold border-none rounded-lg cursor-pointer hover:bg-[#ff7b3a] transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add Contact
+          </button>
         </div>
       </div>
 
       {/* List tabs */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="flex gap-1.5 mb-3 flex-wrap items-center">
         {lists.length > 0 && (
           <>
-            <button
-              onClick={() => setActiveList(null)}
-              style={{
-                padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
-                background: !activeList ? "rgba(232,106,42,0.12)" : "rgba(255,255,255,0.04)",
-                color: !activeList ? T.orange : T.muted,
-              }}
-            >
+            <button onClick={() => setActiveList(null)}
+              className={`px-3.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all ${!activeList ? "bg-[#E86A2A]/12 text-[#E86A2A]" : "bg-white/[0.04] text-[#b0b4c8] hover:bg-white/[0.06]"}`}>
               All Contacts
             </button>
             {lists.map(list => (
-              <button
-                key={list.id}
-                onClick={() => setActiveList(list.id)}
-                style={{
-                  padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
-                  background: activeList === list.id ? `${list.color}20` : "rgba(255,255,255,0.04)",
-                  color: activeList === list.id ? list.color : T.muted,
-                }}
-              >
-                {list.name} <span style={{ fontSize: 10, opacity: 0.6 }}>{list.contact_count}</span>
+              <button key={list.id} onClick={() => setActiveList(list.id)}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all ${activeList === list.id ? "text-white" : "bg-white/[0.04] text-[#b0b4c8] hover:bg-white/[0.06]"}`}
+                style={activeList === list.id ? { background: `${list.color}20`, color: list.color } : {}}>
+                {list.name} <span className="text-[10px] opacity-60">{list.contact_count}</span>
               </button>
             ))}
           </>
         )}
         {showNewList ? (
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <input
-              value={newListName}
-              onChange={e => setNewListName(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && createList()}
-              placeholder="List name..."
-              autoFocus
-              style={{ padding: "5px 10px", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 11, color: T.text, outline: "none", width: 120 }}
-            />
-            <button onClick={createList} style={{ padding: "5px 10px", background: T.orange, color: "#fff", border: "none", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Add</button>
-            <button onClick={() => { setShowNewList(false); setNewListName(""); }} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 14 }}>×</button>
+          <div className="flex gap-1 items-center">
+            <input value={newListName} onChange={e => setNewListName(e.target.value)} onKeyDown={e => e.key === "Enter" && createList()} placeholder="List name..." autoFocus
+              className="px-2.5 py-1.5 bg-white/[0.04] border border-white/[0.07] rounded-md text-[11px] text-[#e8eaf0] outline-none w-[120px] focus:border-[#E86A2A]/40 transition-colors" />
+            <button onClick={createList} className="px-2.5 py-1.5 bg-[#E86A2A] text-white border-none rounded-md text-[10px] font-bold cursor-pointer">Add</button>
+            <button onClick={() => { setShowNewList(false); setNewListName(""); }} className="bg-transparent border-none text-[#b0b4c8] cursor-pointer"><X className="w-3 h-3" /></button>
           </div>
         ) : (
-          <button
-            onClick={() => setShowNewList(true)}
-            style={{ padding: "5px 10px", background: "none", border: `1px dashed ${T.border}`, borderRadius: 6, fontSize: 11, color: T.muted, cursor: "pointer" }}
-          >
-            + New List
+          <button onClick={() => setShowNewList(true)} className="flex items-center gap-1 px-2.5 py-1.5 bg-transparent border border-dashed border-white/[0.07] rounded-md text-[11px] text-[#b0b4c8] cursor-pointer hover:border-white/[0.15] transition-colors">
+            <Plus className="w-2.5 h-2.5" /> New List
           </button>
         )}
       </div>
 
       {/* Status tabs */}
-      <div className="contacts-tabs">
-        <div className={`contacts-tab ${statusTab === "active" ? "active" : ""}`} onClick={() => setStatusTab("active")}>
-          Active <span className="contacts-tab-count">{counts.active}</span>
-        </div>
-        <div className={`contacts-tab ${statusTab === "won" ? "active" : ""}`} onClick={() => setStatusTab("won")}>
-          Closed Won <span className="contacts-tab-count">{counts.won}</span>
-        </div>
-        <div className={`contacts-tab ${statusTab === "lost" ? "active" : ""}`} onClick={() => setStatusTab("lost")}>
-          Dead / Lost <span className="contacts-tab-count">{counts.lost}</span>
-        </div>
+      <div className="flex border-b border-white/[0.07] mb-4">
+        {[
+          { id: "active" as const, label: "Active", count: counts.active },
+          { id: "won" as const, label: "Closed Won", count: counts.won },
+          { id: "lost" as const, label: "Dead / Lost", count: counts.lost },
+        ].map(t => (
+          <button key={t.id} onClick={() => setStatusTab(t.id)}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold cursor-pointer border-b-2 bg-transparent transition-all ${
+              statusTab === t.id ? "text-[#E86A2A] border-[#E86A2A]" : "text-[#b0b4c8] border-transparent hover:text-[#e8eaf0]"
+            }`}>
+            {t.label} <span className="text-[11px] bg-white/[0.06] px-2 py-0.5 rounded-full">{t.count}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="contacts-toolbar">
-        <input
-          className="contacts-search"
-          placeholder="Search by name, phone, or email..."
-          value={searchInput}
-          onChange={e => setSearchInput(e.target.value)}
-        />
+      {/* Search */}
+      <div className="mb-4">
+        <input placeholder="Search by name, phone, or email..." value={searchInput} onChange={e => setSearchInput(e.target.value)}
+          className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
       </div>
 
-      <div className="contacts-table">
-        <div className="contacts-thead">
-          {COLS.map(c => <div key={c} className="contacts-th">{c}</div>)}
+      {/* Table */}
+      <div className="bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+        <div className="hidden md:grid grid-cols-[1.5fr_1fr_1.5fr_1fr_0.8fr_1fr_0.6fr] px-5 py-3 border-b border-white/[0.07]">
+          {COLS.map(c => <div key={c} className="text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider">{c}</div>)}
         </div>
 
         {loading ? (
-          <div className="contacts-empty">Loading...</div>
+          <div className="py-16 text-center text-[#b0b4c8] text-sm">Loading...</div>
         ) : contacts.length === 0 ? (
-          <div className="contacts-empty">
-            No contacts yet
-            <div className="contacts-empty-sub">Add your first lead or import a list to get started</div>
+          <div className="py-16 text-center">
+            <div className="text-sm text-[#b0b4c8]">No contacts yet</div>
+            <div className="text-xs text-white/20 mt-1.5">Add your first lead or import a list to get started</div>
           </div>
         ) : (
           contacts.map(c => (
-            <div key={c.id} className="contacts-row" onClick={() => c.deal_id && setSelectedDeal(c.deal_id)}>
-              <div className="contacts-cell">
-                {[c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}
-                {c.company && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{c.company}</div>}
+            <div key={c.id} onClick={() => c.deal_id && setSelectedDeal(c.deal_id)}
+              className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1.5fr_1fr_0.8fr_1fr_0.6fr] px-5 py-3.5 border-b border-white/[0.07] last:border-b-0 items-center cursor-pointer hover:bg-white/[0.03] transition-colors">
+              <div>
+                <div className="text-sm text-[#e8eaf0] font-medium">{[c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}</div>
+                {c.company && <div className="text-[11px] text-[#b0b4c8] mt-0.5">{c.company}</div>}
               </div>
-              <div className="contacts-cell-muted">{c.phone || "—"}</div>
-              <div className="contacts-cell-muted">{c.email || "—"}</div>
+              <div className="text-sm text-[#b0b4c8]">{c.phone || "—"}</div>
+              <div className="text-sm text-[#b0b4c8] truncate">{c.email || "—"}</div>
               <div>
                 {c.stage_name ? (
-                  <span className="stage-badge" style={{ background: `${c.stage_color}20`, color: c.stage_color || T.muted }}>
-                    {c.stage_name}
-                  </span>
-                ) : (
-                  <span className="contacts-cell-muted">—</span>
-                )}
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: `${c.stage_color}20`, color: c.stage_color || "#b0b4c8" }}>{c.stage_name}</span>
+                ) : <span className="text-sm text-[#b0b4c8]">—</span>}
               </div>
-              <div className="contacts-cell">{c.deal_value ? `$${parseFloat(c.deal_value).toLocaleString()}` : "—"}</div>
-              <div className="contacts-cell-muted">{formatDate(c.last_contacted)}</div>
-              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <div className="text-sm text-[#e8eaf0]">{c.deal_value ? `$${parseFloat(c.deal_value).toLocaleString()}` : "—"}</div>
+              <div className="text-sm text-[#b0b4c8]">{formatDate(c.last_contacted)}</div>
+              <div className="flex gap-1 items-center">
                 {c.phone && c.deal_id && (
-                  <button
-                    className="del-btn"
-                    style={{ color: T.orange }}
-                    onClick={e => { e.stopPropagation(); setSelectedDeal(c.deal_id); }}
-                    title="Text"
-                  >💬</button>
+                  <button onClick={e => { e.stopPropagation(); setSelectedDeal(c.deal_id); }} title="Text"
+                    className="bg-transparent border-none text-[#E86A2A] cursor-pointer p-1 rounded hover:bg-[#E86A2A]/10 transition-colors">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </button>
                 )}
-                <button className="del-btn" onClick={e => { e.stopPropagation(); handleDelete(c.id); }} title="Delete">×</button>
+                <button onClick={e => { e.stopPropagation(); handleDelete(c.id); }} title="Delete"
+                  className="bg-transparent border-none text-[#b0b4c8] cursor-pointer p-1 rounded hover:text-red-400 hover:bg-red-400/10 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {contacts.length > 0 && <div className="contacts-count">{contacts.length} contact{contacts.length !== 1 ? "s" : ""}</div>}
+      {contacts.length > 0 && <div className="text-xs text-[#b0b4c8] mt-3">{contacts.length} contact{contacts.length !== 1 ? "s" : ""}</div>}
 
       {/* Add Contact Modal */}
       {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">ADD CONTACT</div>
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center" onClick={() => setShowForm(false)}>
+          <div className="bg-[#111] border border-white/[0.07] rounded-2xl p-7 w-[440px] max-w-[90vw]" onClick={e => e.stopPropagation()}>
+            <div className="font-display text-[22px] text-[#e8eaf0] tracking-wider mb-5">ADD CONTACT</div>
             <form onSubmit={handleCreate}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <div className="modal-field">
-                  <label className="modal-label">First Name</label>
-                  <input className="modal-input" value={formData.firstName} onChange={e => setFormData(p => ({ ...p, firstName: e.target.value }))} autoFocus />
+              <div className="grid grid-cols-2 gap-3.5">
+                {[{ label: "First Name", key: "firstName" }, { label: "Last Name", key: "lastName" }].map(f => (
+                  <div key={f.key} className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider">{f.label}</label>
+                    <input value={formData[f.key as keyof typeof formData]} onChange={e => setFormData(p => ({ ...p, [f.key]: e.target.value }))}
+                      className="px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" autoFocus={f.key === "firstName"} />
+                  </div>
+                ))}
+              </div>
+              {[{ label: "Phone", key: "phone", ph: "+1 (555) 000-0000" }, { label: "Email", key: "email", type: "email" }, { label: "Company", key: "company" }].map(f => (
+                <div key={f.key} className="flex flex-col gap-1 mt-3.5">
+                  <label className="text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider">{f.label}</label>
+                  <input type={f.type || "text"} placeholder={f.ph} value={formData[f.key as keyof typeof formData]} onChange={e => setFormData(p => ({ ...p, [f.key]: e.target.value }))}
+                    className="px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
                 </div>
-                <div className="modal-field">
-                  <label className="modal-label">Last Name</label>
-                  <input className="modal-input" value={formData.lastName} onChange={e => setFormData(p => ({ ...p, lastName: e.target.value }))} />
-                </div>
-              </div>
-              <div className="modal-field">
-                <label className="modal-label">Phone</label>
-                <input className="modal-input" value={formData.phone} onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="+1 (555) 000-0000" />
-              </div>
-              <div className="modal-field">
-                <label className="modal-label">Email</label>
-                <input className="modal-input" type="email" value={formData.email} onChange={e => setFormData(p => ({ ...p, email: e.target.value }))} />
-              </div>
-              <div className="modal-field">
-                <label className="modal-label">Company</label>
-                <input className="modal-input" value={formData.company} onChange={e => setFormData(p => ({ ...p, company: e.target.value }))} />
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="modal-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="contacts-btn" disabled={saving}>{saving ? "Saving..." : "Add Contact"}</button>
+              ))}
+              <div className="flex gap-2.5 justify-end mt-5">
+                <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 bg-transparent border border-white/[0.07] rounded-lg text-sm text-[#b0b4c8] cursor-pointer hover:bg-white/[0.04] transition-colors">Cancel</button>
+                <button type="submit" disabled={saving} className="px-5 py-2.5 bg-[#E86A2A] text-white text-sm font-bold border-none rounded-lg cursor-pointer hover:bg-[#ff7b3a] transition-colors">{saving ? "Saving..." : "Add Contact"}</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* CSV Import */}
-      {showImport && (
-        <CsvImportModal onClose={() => setShowImport(false)} onComplete={fetchContacts} />
-      )}
-
-      {/* Deal Detail Panel */}
-      {selectedDeal && (
-        <DealPanel
-          dealId={selectedDeal}
-          onClose={() => setSelectedDeal(null)}
-          onUpdate={fetchContacts}
-        />
-      )}
-
+      {showImport && <CsvImportModal onClose={() => setShowImport(false)} onComplete={fetchContacts} />}
+      {selectedDeal && <DealPanel dealId={selectedDeal} onClose={() => setSelectedDeal(null)} onUpdate={fetchContacts} />}
     </div>
   );
 }
