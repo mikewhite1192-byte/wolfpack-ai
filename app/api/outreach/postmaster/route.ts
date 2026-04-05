@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { neon } from "@neondatabase/serverless";
 import { refreshAccessToken } from "@/lib/gmail";
 
@@ -23,14 +22,11 @@ interface DomainTrafficStats {
 
 export async function GET(req: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "7d";
 
-    // Get workspace with Gmail tokens
-    const ws = await sql`SELECT id, gmail_refresh_token, gmail_connected FROM workspaces WHERE clerk_user_id = ${userId} LIMIT 1`;
+    // Get workspace with Gmail tokens (first active workspace)
+    const ws = await sql`SELECT id, gmail_refresh_token, gmail_connected FROM workspaces WHERE status = 'active' AND gmail_connected = true ORDER BY created_at ASC LIMIT 1`;
     if (!ws[0]?.gmail_connected || !ws[0]?.gmail_refresh_token) {
       return NextResponse.json({ error: "Gmail not connected. Reconnect Gmail to use Postmaster Tools.", needsReconnect: true });
     }
