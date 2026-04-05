@@ -23,7 +23,8 @@ export async function GET(req: Request) {
     const timeMax = `${date}T23:59:59-04:00`;
     const busyTimes = await getBusyTimes(token, timeMin, timeMax);
 
-    const slots = getAvailableSlots(date, busyTimes, 30, 15, 8, 18);
+    // Weekdays: 9am-9pm, Weekends: 10am-7pm
+    const slots = getAvailableSlots(date, busyTimes, 30, 15, 9, 21, "America/New_York", 10, 19);
 
     return NextResponse.json({ date, slots, duration: 30 });
   } catch (err) {

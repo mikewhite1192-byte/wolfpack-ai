@@ -41,16 +41,24 @@ export function getAvailableSlots(
   durationMinutes: number = 30,
   bufferMinutes: number = 15,
   startHour: number = 9,
-  endHour: number = 17,
-  timezone: string = "America/New_York"
+  endHour: number = 21,
+  timezone: string = "America/New_York",
+  weekendStartHour?: number,
+  weekendEndHour?: number,
 ): TimeSlot[] {
   const slots: TimeSlot[] = [];
-  const dayStart = new Date(`${date}T${String(startHour).padStart(2, "0")}:00:00`);
-  const dayEnd = new Date(`${date}T${String(endHour).padStart(2, "0")}:00:00`);
 
-  // Skip weekends
-  const dayOfWeek = dayStart.getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) return [];
+  // Use timezone-aware date parsing (append EDT offset)
+  const dayCheck = new Date(`${date}T12:00:00-04:00`);
+  const dayOfWeek = dayCheck.getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+  // Use weekend hours if provided, otherwise use default hours
+  const actualStart = isWeekend && weekendStartHour !== undefined ? weekendStartHour : startHour;
+  const actualEnd = isWeekend && weekendEndHour !== undefined ? weekendEndHour : endHour;
+
+  const dayStart = new Date(`${date}T${String(actualStart).padStart(2, "0")}:00:00-04:00`);
+  const dayEnd = new Date(`${date}T${String(actualEnd).padStart(2, "0")}:00:00-04:00`);
 
   // Skip past times if today
   const now = new Date();

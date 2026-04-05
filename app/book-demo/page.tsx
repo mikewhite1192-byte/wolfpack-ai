@@ -144,7 +144,7 @@ export default function BookDemoPage() {
             <div>
               <div className="bk-label">Select a date</div>
               <div className="bk-dates">
-                {weekdays.map(d => (
+                {dates.map(d => (
                   <div key={d.value} className={`bk-date ${selectedDate === d.value ? "selected" : ""}`} onClick={() => selectDate(d.value)}>
                     <div className="bk-date-day">{d.day}</div>
                     <div className="bk-date-num">{d.date}</div>
