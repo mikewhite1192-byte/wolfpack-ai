@@ -10,7 +10,15 @@ function shouldTrack(path: string): boolean {
   if (path.startsWith("/sign-in")) return false;
   if (path.startsWith("/sign-up")) return false;
   if (path.startsWith("/dashboard")) return false;
-  if (path.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff|woff2|ttf|map)$/)) return false;
+  if (path.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff|woff2|ttf|map|json|xml|txt)$/)) return false;
+  // Filter bot probes and non-page paths
+  if (path.startsWith("/.env")) return false;
+  if (path.startsWith("/.git")) return false;
+  if (path.startsWith("/wp-")) return false;
+  if (path.startsWith("/admin")) return false;
+  if (path === "/robots.txt") return false;
+  if (path === "/sitemap.xml") return false;
+  if (path === "/favicon.ico") return false;
   return true;
 }
 

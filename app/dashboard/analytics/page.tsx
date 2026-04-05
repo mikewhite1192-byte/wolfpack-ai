@@ -204,7 +204,7 @@ export default function AnalyticsPage() {
               <Card className="mb-5">
                 <div className="flex items-end gap-0.5 h-[140px]">
                   {trafficData.daily.map((d, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div key={i} className="flex flex-col items-center gap-1" style={{ flex: trafficData.daily.length < 7 ? "0 0 40px" : "1" }}>
                       <div className="text-[10px] text-[#b0b4c8]">{d.views}</div>
                       <div className="w-full max-w-[32px] rounded-t" style={{ background: "linear-gradient(180deg, #E86A2A, rgba(232,106,42,0.5))", height: `${Math.max((d.views / maxDailyViews) * 100, 4)}%`, transition: "height 0.3s ease" }} title={`${d.date}: ${d.views} views`} />
                       <div className="text-[9px] text-[#b0b4c8] -rotate-45 whitespace-nowrap">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
