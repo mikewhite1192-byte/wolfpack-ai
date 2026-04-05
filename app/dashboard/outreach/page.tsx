@@ -69,7 +69,7 @@ interface EmailHealthData {
   totalReplied: number;
 }
 
-const ADMIN_EMAILS = ["info@thewolfpackco.com"];
+const ADMIN_EMAILS = ["info@thewolfpackco.com", "hello@buenaonda.ai"];
 
 export default function OutreachPage() {
   const { user, isLoaded } = useUser();
