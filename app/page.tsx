@@ -232,8 +232,13 @@ function HeroSection({ setDemoOpen }: { setDemoOpen: (v: boolean) => void }) {
         }}
       />
 
-      {/* Orange smoke + embers — parallax opposite direction */}
-      <div style={{ transform: `translate(${smokeX}px, ${smokeY}px)`, transition: "transform 0.2s ease-out" }}>
+      {/* Gradients — z-2 so smoke shows on top */}
+      <div className="absolute inset-0 z-[2]" style={{ background: "linear-gradient(to right, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.85) 25%, rgba(10,10,10,0.5) 55%, rgba(10,10,10,0.2) 80%, rgba(10,10,10,0.15) 100%)" }} />
+      <div className="absolute inset-0 z-[2]" style={{ background: "linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(10,10,10,0.7) 85%, #0a0a0a 100%)" }} />
+      <div className="absolute inset-0 z-[2]" style={{ background: "radial-gradient(ellipse at 70% 40%, transparent 30%, rgba(10,10,10,0.4) 100%)" }} />
+
+      {/* Orange smoke + embers — z-3, on top of gradients, parallax opposite direction */}
+      <div className="absolute inset-0 z-[3] pointer-events-none" style={{ transform: `translate(${smokeX}px, ${smokeY}px)`, transition: "transform 0.2s ease-out" }}>
         <HeroSmoke />
       </div>
 
@@ -244,13 +249,8 @@ function HeroSection({ setDemoOpen }: { setDemoOpen: (v: boolean) => void }) {
         filter: "blur(60px)",
       }} />
 
-      {/* Gradients */}
-      <div className="absolute inset-0 z-[3]" style={{ background: "linear-gradient(to right, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.85) 25%, rgba(10,10,10,0.5) 55%, rgba(10,10,10,0.2) 80%, rgba(10,10,10,0.15) 100%)" }} />
-      <div className="absolute inset-0 z-[3]" style={{ background: "linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(10,10,10,0.7) 85%, #0a0a0a 100%)" }} />
-      <div className="absolute inset-0 z-[3]" style={{ background: "radial-gradient(ellipse at 70% 40%, transparent 30%, rgba(10,10,10,0.4) 100%)" }} />
-
-      {/* Content — slight parallax up on scroll */}
-      <div className="relative z-[4] max-w-[1200px] w-full mx-auto px-6 md:px-16" style={{ transform: `translateY(${contentY}px)` }}>
+      {/* Content — slight parallax up on scroll, above smoke */}
+      <div className="relative z-[5] max-w-[1200px] w-full mx-auto px-6 md:px-16" style={{ transform: `translateY(${contentY}px)` }}>
         <div className="max-w-[580px]">
           <div className="animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#E86A2A]/15 border border-[#E86A2A]/30 rounded-full text-[11px] font-semibold text-[#E86A2A] tracking-widest uppercase mb-7 backdrop-blur-sm">
