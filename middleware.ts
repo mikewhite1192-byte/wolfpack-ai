@@ -44,7 +44,17 @@ export default clerkMiddleware(async (authFn, req) => {
     !path.startsWith("/api/affiliates") &&
     !path.startsWith("/api/cron") &&
     !path.startsWith("/api/loop") &&
-    !path.startsWith("/api/book")
+    !path.startsWith("/api/book") &&
+    !path.startsWith("/api/outreach") &&
+    !path.startsWith("/api/webhooks") &&
+    !path.startsWith("/api/ai-agent/follow-up") &&
+    !path.startsWith("/api/ai-agent/reminders") &&
+    !path.startsWith("/api/ai-agent/learn") &&
+    !path.startsWith("/api/ai-agent/daily-report") &&
+    !path.startsWith("/api/email-assistant") &&
+    !path.startsWith("/api/gbp") &&
+    !path.startsWith("/api/leads") &&
+    !path.startsWith("/api/owner")
   );
 
   if (isProtected) {
