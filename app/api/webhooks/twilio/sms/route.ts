@@ -3,18 +3,55 @@ import { neon } from "@neondatabase/serverless";
 import { sendLinqSMS } from "@/lib/loop";
 import { generateSMSReply } from "@/lib/ai";
 import { checkUpgradeEvent } from "@/lib/outreach/upgrade-sequence";
+import twilio from "twilio";
 
 const sql = neon(process.env.DATABASE_URL!);
+
+// SMS opt-out keywords per TCPA compliance
+const OPT_OUT_KEYWORDS = ["stop", "unsubscribe", "cancel", "quit", "end", "opt out", "optout"];
+const OPT_IN_KEYWORDS = ["start", "unstop", "subscribe", "opt in", "optin"];
 
 // POST /api/webhooks/twilio/sms — incoming SMS from Twilio
 export async function POST(req: Request) {
   try {
+    // Verify Twilio webhook signature
+    const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+    const twilioSignature = req.headers.get("x-twilio-signature");
+    if (twilioAuthToken && twilioSignature) {
+      const url = `${process.env.NEXT_PUBLIC_APP_URL || "https://thewolfpack.ai"}/api/webhooks/twilio/sms`;
+      const clonedReq = req.clone();
+      const formDataForVerify = await clonedReq.formData();
+      const params: Record<string, string> = {};
+      formDataForVerify.forEach((value, key) => { params[key] = value as string; });
+      const isValid = twilio.validateRequest(twilioAuthToken, twilioSignature, url, params);
+      if (!isValid) {
+        console.error("[sms] Invalid Twilio signature — rejecting");
+        return new Response("<Response></Response>", { headers: { "Content-Type": "text/xml" } });
+      }
+    }
+
     const formData = await req.formData();
     const from = formData.get("From") as string;
     const to = formData.get("To") as string;
     const body = formData.get("Body") as string;
 
     console.log(`[sms] Incoming from ${from}: ${body}`);
+
+    // TCPA opt-out handling
+    const bodyLower = (body || "").trim().toLowerCase();
+    if (OPT_OUT_KEYWORDS.some(kw => bodyLower === kw)) {
+      // Mark contact as opted out
+      await sql`UPDATE contacts SET opted_out = TRUE WHERE phone = ${from}`;
+      await sql`UPDATE conversations SET ai_enabled = FALSE WHERE contact_id IN (SELECT id FROM contacts WHERE phone = ${from})`;
+      console.log(`[sms] Contact ${from} opted out`);
+      return new Response("<Response><Message>You have been unsubscribed. Reply START to re-subscribe.</Message></Response>", { headers: { "Content-Type": "text/xml" } });
+    }
+
+    if (OPT_IN_KEYWORDS.some(kw => bodyLower === kw)) {
+      await sql`UPDATE contacts SET opted_out = FALSE WHERE phone = ${from}`;
+      console.log(`[sms] Contact ${from} opted back in`);
+      return new Response("<Response><Message>You have been re-subscribed. Reply STOP to unsubscribe.</Message></Response>", { headers: { "Content-Type": "text/xml" } });
+    }
 
     // Find workspace by Twilio phone number
     // First check workspace-specific numbers, then fall back to default
@@ -98,8 +135,14 @@ export async function POST(req: Request) {
       UPDATE contacts SET last_contacted = NOW() WHERE id = ${contactId}
     `;
 
+    // Check opt-out status before AI reply
+    if (contact[0].opted_out === true) {
+      console.log(`[sms] Contact ${from} is opted out — skipping AI reply`);
+      return new Response("<Response></Response>", { headers: { "Content-Type": "text/xml" } });
+    }
+
     // If AI is enabled, generate and send reply
-    if (conversation[0].ai_enabled !== false) {
+    if (conversation[0].ai_enabled === true) {
       // Load recent messages for context
       const recentMessages = await sql`
         SELECT direction, body FROM messages

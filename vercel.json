@@ -1,3 +1,11 @@
 {
-  "alias": ["thewolfpack.ai", "thewolfpack-ai.vercel.app"]
+  "alias": ["thewolfpack.ai", "thewolfpack-ai.vercel.app"],
+  "crons": [
+    { "path": "/api/ai-agent/follow-up", "schedule": "0 */2 * * *" },
+    { "path": "/api/ai-agent/reminders", "schedule": "*/15 * * * *" },
+    { "path": "/api/outreach/warmup?type=send&batch=0", "schedule": "0 */2 * * *" },
+    { "path": "/api/outreach/warmup?type=reply&batch=0", "schedule": "30 */2 * * *" },
+    { "path": "/api/outreach/warmup?type=bounce&batch=0", "schedule": "0 */12 * * *" },
+    { "path": "/api/gbp/reviews?process=true", "schedule": "0 */6 * * *" }
+  ]
 }

@@ -70,22 +70,41 @@ export async function getGbpToken(connectionId: string): Promise<string | null> 
     const newToken = await refreshGbpToken(conn[0].refresh_token as string);
     await sql`UPDATE gbp_connections SET access_token = ${newToken}, updated_at = NOW() WHERE id = ${connectionId}`;
     return newToken;
-  } catch {
-    return conn[0].access_token as string;
+  } catch (err) {
+    console.error(`[gbp] Token refresh failed for connection ${connectionId}:`, err);
+    // Mark as disconnected so user knows to re-auth
+    await sql`UPDATE gbp_connections SET connected = FALSE, updated_at = NOW() WHERE id = ${connectionId}`;
+    return null;
   }
 }
 
 // ── API Helpers ─────────────────────────────────────────────────────
 async function gbpFetch(token: string, url: string, options?: RequestInit) {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
-  });
-  return res.json();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...(options?.headers || {}),
+      },
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      const msg = error?.error?.message || error?.message || res.statusText;
+      console.error(`[gbp] API error ${res.status} on ${url}: ${msg}`);
+      throw new Error(`GBP API error ${res.status}: ${msg}`);
+    }
+
+    return res.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // v4 legacy API (reviews, posts, photos)
@@ -414,11 +433,15 @@ export async function processReviews(): Promise<{ checked: number; replied: numb
             console.error(`[gbp] Failed to reply to review:`, err);
           }
         } else if (rating < 3 && !review.reviewReply) {
-          // Negative reviews — store but don't auto-reply, notify owner
+          // Negative reviews — mark as needs_attention, notify owner
+          await sql`
+            UPDATE gbp_reviews SET reply_status = 'needs_attention'
+            WHERE connection_id = ${conn.id} AND google_review_id = ${googleReviewId}
+          `;
           const ownerPhone = process.env.OWNER_PHONE;
           if (ownerPhone) {
             await sendLoop(ownerPhone,
-              `Heads up — ${conn.location_name} got a ${rating}-star review from ${reviewerName}: "${comment.substring(0, 150)}". Suggested reply is saved in the dashboard.`
+              `Heads up — ${conn.location_name} got a ${rating}-star review from ${reviewerName}: "${comment.substring(0, 150)}". Needs your response in the dashboard.`
             );
           }
         }

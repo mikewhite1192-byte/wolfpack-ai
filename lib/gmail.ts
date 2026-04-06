@@ -8,7 +8,7 @@ const REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL
   ? `${process.env.NEXT_PUBLIC_APP_URL}/api/email/callback`
   : "https://thewolfpack.ai/api/email/callback";
 
-export function getGoogleAuthUrl() {
+export function getGoogleAuthUrl(state?: string) {
   const scopes = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
@@ -27,6 +27,11 @@ export function getGoogleAuthUrl() {
     access_type: "offline",
     prompt: "consent",
   });
+
+  // Add state parameter for CSRF protection
+  if (state) {
+    params.set("state", state);
+  }
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
 }
@@ -70,8 +75,11 @@ export async function getGmailToken(workspaceId: string): Promise<string | null>
     const newToken = await refreshAccessToken(ws[0].gmail_refresh_token as string);
     await sql`UPDATE workspaces SET gmail_access_token = ${newToken} WHERE id = ${workspaceId}`;
     return newToken;
-  } catch {
-    return ws[0].gmail_access_token as string;
+  } catch (err) {
+    console.error(`[gmail] Token refresh failed for workspace ${workspaceId}:`, err);
+    // Mark as disconnected so user knows to re-auth
+    await sql`UPDATE workspaces SET gmail_connected = FALSE WHERE id = ${workspaceId}`;
+    return null;
   }
 }
 

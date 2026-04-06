@@ -11,10 +11,20 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code");
     const error = searchParams.get("error");
+    const state = searchParams.get("state");
 
     if (error || !code) {
       return NextResponse.redirect(new URL("/dashboard/settings?email=error", req.url));
     }
+
+    // Validate state parameter (CSRF protection)
+    // State format: "workspaceId:nonce"
+    if (!state || !state.includes(":")) {
+      console.error("[email-callback] Missing or invalid state parameter");
+      return NextResponse.redirect(new URL("/dashboard/settings?email=error", req.url));
+    }
+
+    const [stateWorkspaceId] = state.split(":");
 
     const tokens = await exchangeCodeForTokens(code);
 
@@ -28,7 +38,14 @@ export async function GET(req: Request) {
     });
     const user = await userInfo.json();
 
+    // Use workspace ID from state to ensure correct workspace
     const workspace = await getOrCreateWorkspace();
+
+    // Verify the workspace matches the one that initiated the flow
+    if (stateWorkspaceId && stateWorkspaceId !== workspace.id) {
+      console.error("[email-callback] State workspace mismatch");
+      return NextResponse.redirect(new URL("/dashboard/settings?email=error", req.url));
+    }
 
     await sql`
       UPDATE workspaces SET

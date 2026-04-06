@@ -83,9 +83,24 @@ export async function POST(req: Request) {
       }
     }
 
+    // Send confirmation SMS if contact has phone
+    const confirmPhone = contact?.phone || (phone ? (phone.startsWith("+") ? phone : "+1" + phone.replace(/\D/g, "")) : null);
+    if (confirmPhone) {
+      try {
+        const { sendMessage } = await import("@/lib/loop/client");
+        const dayStr = start.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "America/New_York" });
+        const timeStr = start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+        const meetLink = (event as unknown as Record<string, unknown>).hangoutLink ? ` Join here: ${(event as unknown as Record<string, unknown>).hangoutLink}` : "";
+        await sendMessage(confirmPhone, `Your appointment is confirmed for ${dayStr} at ${timeStr} ET.${meetLink} Calendar invite sent to your email!`);
+      } catch (confirmErr) {
+        console.error("[calendar-book] Confirmation SMS failed:", confirmErr);
+      }
+    }
+
     return NextResponse.json({
       booked: true,
       eventId: event.id,
+      googleMeetLink: (event as unknown as Record<string, unknown>).hangoutLink || null,
       start: start.toISOString(),
       end: end.toISOString(),
       contactId: contact?.id,

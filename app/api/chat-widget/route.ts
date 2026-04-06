@@ -89,19 +89,20 @@ const TOOLS: Anthropic.Tool[] = [
 ];
 
 async function getCalendarToken(): Promise<string | null> {
-  // Try workspace token first
-  const ws = await sql`SELECT id, gmail_refresh_token, gmail_connected FROM workspaces WHERE status = 'active' AND gmail_connected = TRUE ORDER BY created_at ASC LIMIT 1`;
-  if (ws.length > 0 && ws[0].gmail_refresh_token) {
-    try {
-      return await refreshAccessToken(ws[0].gmail_refresh_token as string);
-    } catch { /* fall through */ }
-  }
-
-  // Fall back to demo booking token
+  // Use the dedicated demo booking token (not a random workspace)
   const refreshToken = process.env.DEMO_BOOKING_REFRESH_TOKEN;
   if (refreshToken) {
     try {
       return await refreshAccessToken(refreshToken);
+    } catch { /* fall through */ }
+  }
+
+  // Fallback: owner workspace (the Wolf Pack workspace specifically)
+  const ownerEmail = process.env.OWNER_EMAIL || "info@thewolfpackco.com";
+  const ws = await sql`SELECT id, gmail_refresh_token FROM workspaces WHERE gmail_connected = TRUE AND (owner_email = ${ownerEmail} OR gmail_email = ${ownerEmail}) LIMIT 1`;
+  if (ws.length > 0 && ws[0].gmail_refresh_token) {
+    try {
+      return await refreshAccessToken(ws[0].gmail_refresh_token as string);
     } catch { /* no token */ }
   }
 

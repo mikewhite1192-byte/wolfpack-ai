@@ -199,7 +199,7 @@ async function createLeadFromWebhook(workspaceId: string, lead: LeadInput) {
     if (phone) {
       const conv = await sql`
         INSERT INTO conversations (workspace_id, contact_id, channel, status, ai_enabled)
-        VALUES (${ws.id}, ${contact[0].id}, 'sms', 'open', TRUE)
+        VALUES (${ws.id}, ${contact[0].id}, 'facebook_lead', 'open', TRUE)
         RETURNING *
       `;
 

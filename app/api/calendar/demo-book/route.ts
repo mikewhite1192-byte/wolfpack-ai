@@ -37,8 +37,11 @@ export async function POST(req: Request) {
 
     // ── Create contact + deal in owner's pipeline ──
     try {
-      // Find the owner workspace (info@thewolfpackco.com)
-      const ws = await sql`SELECT id FROM workspaces WHERE owner_email = 'info@thewolfpackco.com' OR name ILIKE '%wolf%' LIMIT 1`;
+      // Find the owner workspace — use env var first, then fallback
+      const demoWsId = process.env.DEMO_BOOKING_WORKSPACE_ID;
+      const ws = demoWsId
+        ? await sql`SELECT id FROM workspaces WHERE id = ${demoWsId} LIMIT 1`
+        : await sql`SELECT id FROM workspaces WHERE owner_email = 'info@thewolfpackco.com' OR gmail_email = 'info@thewolfpackco.com' LIMIT 1`;
       if (ws.length > 0) {
         const workspaceId = ws[0].id;
         const firstName = name.split(" ")[0] || name;

@@ -55,7 +55,26 @@ async function callVercel(path, method, timeoutMs) {
     return data;
   } catch (e) {
     console.error("[master] " + path + " failed: " + e.message);
+    // Alert owner on critical cron failures
+    notifyCronError(path, e.message).catch(function() {});
     return { error: e.message };
+  }
+}
+
+// Send SMS alert on cron failures (max 1 per route per hour to avoid spam)
+var errorCooldowns = {};
+async function notifyCronError(path, message) {
+  var key = path;
+  var now = Date.now();
+  if (errorCooldowns[key] && now - errorCooldowns[key] < 3600000) return; // 1 hour cooldown
+  errorCooldowns[key] = now;
+  var ownerPhone = process.env.OWNER_PHONE;
+  if (!ownerPhone) return;
+  try {
+    await callVercel("/api/webhooks/loop?notify=true", "POST", 10000);
+  } catch (e2) {
+    // Can't notify, just log
+    console.error("[master] Failed to send error alert:", e2.message);
   }
 }
 
@@ -506,13 +525,23 @@ setInterval(function() {
   jobWarmupBounce();
 }, 12 * 60 * 60 * 1000);
 
-// Daily at 7am ET — AI reminders, learn, upgrade
+// Daily at 7am ET — AI reminders, learn, upgrade, morning report
 setInterval(function() {
   var h = parseInt(getETHour());
   if (h === 7) {
     jobAiReminders();
     jobAiLearn();
     jobUpgrade();
+    // Morning daily report
+    callVercel("/api/ai-agent/daily-report", "POST", { type: "morning" })
+      .then(function(r) { console.log("[master] Morning report:", JSON.stringify(r)); })
+      .catch(function(e) { console.error("[master] Morning report failed:", e.message); });
+  }
+  if (h === 17) {
+    // End-of-day report
+    callVercel("/api/ai-agent/daily-report", "POST", { type: "eod" })
+      .then(function(r) { console.log("[master] EOD report:", JSON.stringify(r)); })
+      .catch(function(e) { console.error("[master] EOD report failed:", e.message); });
   }
 }, 60 * 60 * 1000); // check every hour
 

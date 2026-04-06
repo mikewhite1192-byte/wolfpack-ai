@@ -9,6 +9,19 @@ import { createCalendarEvent } from "@/lib/calendar";
 
 const sql = neon(process.env.DATABASE_URL!);
 
+// Simple in-memory rate limiter for inbound messages (10 per minute per phone)
+const inboundRateMap = new Map<string, { count: number; resetAt: number }>();
+function isInboundRateLimited(phone: string): boolean {
+  const now = Date.now();
+  const entry = inboundRateMap.get(phone);
+  if (!entry || now > entry.resetAt) {
+    inboundRateMap.set(phone, { count: 1, resetAt: now + 60000 });
+    return false;
+  }
+  entry.count++;
+  return entry.count > 10;
+}
+
 // POST /api/webhooks/loop — Loop Message webhook receiver
 export async function POST(req: Request) {
   try {
@@ -38,6 +51,12 @@ export async function POST(req: Request) {
     }
 
     console.log(`[loop-webhook] ${channel} from ${from}: "${text.substring(0, 80)}"`);
+
+    // Rate limit inbound messages
+    if (isInboundRateLimited(from)) {
+      console.log(`[loop-webhook] Rate limited ${from}`);
+      return NextResponse.json({ received: true });
+    }
 
     // Normalize phone for lookup
     const fromDigits = from.replace(/\D/g, "");
@@ -190,6 +209,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
+    // --- TCPA Opt-out handling ---
+    const OPT_OUT_KEYWORDS = ["stop", "unsubscribe", "cancel", "quit", "end", "opt out", "optout"];
+    const OPT_IN_KEYWORDS = ["start", "unstop", "subscribe", "opt in", "optin"];
+    const textLower = text.toLowerCase().trim();
+
+    if (OPT_OUT_KEYWORDS.some(kw => textLower === kw)) {
+      await sql`UPDATE contacts SET opted_out = TRUE WHERE phone = ${from} OR phone = ${fromE164}`;
+      await sql`UPDATE conversations SET ai_enabled = FALSE WHERE contact_id IN (SELECT id FROM contacts WHERE phone = ${from} OR phone = ${fromE164})`;
+      try { await sendMessage(fromE164, "You have been unsubscribed. Reply START to re-subscribe."); } catch {}
+      console.log(`[loop-webhook] Contact ${from} opted out`);
+      return NextResponse.json({ received: true });
+    }
+
+    if (OPT_IN_KEYWORDS.some(kw => textLower === kw)) {
+      await sql`UPDATE contacts SET opted_out = FALSE WHERE phone = ${from} OR phone = ${fromE164}`;
+      try { await sendMessage(fromE164, "You have been re-subscribed. Reply STOP to unsubscribe."); } catch {}
+      console.log(`[loop-webhook] Contact ${from} opted back in`);
+      return NextResponse.json({ received: true });
+    }
+
     // --- CRM Integration ---
 
     const workspace = await sql`
@@ -245,8 +284,14 @@ export async function POST(req: Request) {
     await sql`UPDATE conversations SET last_message_at = NOW(), status = 'open' WHERE id = ${convId}`;
     await sql`UPDATE contacts SET last_contacted = NOW() WHERE id = ${contactId}`;
 
+    // Check opt-out before AI reply
+    if (contact[0].opted_out === true) {
+      console.log(`[loop-webhook] Contact ${from} opted out — skipping AI reply`);
+      return NextResponse.json({ received: true });
+    }
+
     // AI Sales Agent reply
-    if (conversation[0].ai_enabled !== false) {
+    if (conversation[0].ai_enabled === true) {
       // Show typing indicator
       showTyping(fromE164, 5, messageId).catch(() => {});
 
@@ -325,6 +370,17 @@ export async function POST(req: Request) {
           ai_followup_count = 0
         WHERE id = ${contactId}
       `;
+
+      // Handle handoff: disable AI and notify owner
+      if (result.updatedStage === "handed_off") {
+        await sql`UPDATE conversations SET ai_enabled = FALSE WHERE id = ${convId}`;
+        const ownerPhone = process.env.OWNER_PHONE;
+        if (ownerPhone) {
+          const leadName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || from;
+          sendMessage(ownerPhone, `Lead needs human attention: ${leadName} (${from}). AI has been disabled on this conversation. Check your dashboard.`).catch(() => {});
+        }
+        console.log(`[loop-webhook] Handed off ${from} to human — AI disabled`);
+      }
 
       // Auto-book calendar if appointment detected
       if (result.appointmentDetected) {

@@ -72,6 +72,7 @@ export async function POST(req: Request) {
       let imported = 0;
       let skipped = 0;
       let errors = 0;
+      const errorRows: Array<{ row: number; reason: string }> = [];
 
       for (const row of rows) {
         try {
@@ -123,12 +124,13 @@ export async function POST(req: Request) {
           }
 
           imported++;
-        } catch {
+        } catch (rowErr) {
           errors++;
+          errorRows.push({ row: rows.indexOf(row) + 1, reason: rowErr instanceof Error ? rowErr.message : "Unknown error" });
         }
       }
 
-      return NextResponse.json({ imported, skipped, errors, total: rows.length });
+      return NextResponse.json({ imported, skipped, errors, total: rows.length, errorRows: errorRows.slice(0, 20) });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });

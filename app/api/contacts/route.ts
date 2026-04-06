@@ -83,6 +83,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "At least one field is required" }, { status: 400 });
     }
 
+    // Validate email format
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    }
+
+    // Validate phone length
+    if (phone) {
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length < 10 || digits.length > 15) {
+        return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+      }
+    }
+
     // Duplicate check
     if (phone || email) {
       const dupe = await sql`

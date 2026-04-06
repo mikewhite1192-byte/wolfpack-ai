@@ -48,8 +48,26 @@ export function getAvailableSlots(
 ): TimeSlot[] {
   const slots: TimeSlot[] = [];
 
-  // Use timezone-aware date parsing (append EDT offset)
-  const dayCheck = new Date(`${date}T12:00:00-04:00`);
+  // Calculate timezone offset dynamically (handles EST/EDT automatically)
+  function getTzOffset(tz: string, refDate: Date): string {
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" }).formatToParts(refDate);
+      const offsetPart = parts.find(p => p.type === "timeZoneName");
+      if (offsetPart?.value) {
+        const match = offsetPart.value.match(/GMT([+-]\d+)/);
+        if (match) {
+          const hours = parseInt(match[1]);
+          return `${hours >= 0 ? "+" : ""}${String(hours).padStart(2, "0")}:00`;
+        }
+      }
+    } catch { /* fallback */ }
+    return "-05:00"; // safe fallback to EST
+  }
+
+  const refDate = new Date(`${date}T12:00:00Z`);
+  const tzOffset = getTzOffset(timezone, refDate);
+
+  const dayCheck = new Date(`${date}T12:00:00${tzOffset}`);
   const dayOfWeek = dayCheck.getDay();
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
@@ -57,8 +75,8 @@ export function getAvailableSlots(
   const actualStart = isWeekend && weekendStartHour !== undefined ? weekendStartHour : startHour;
   const actualEnd = isWeekend && weekendEndHour !== undefined ? weekendEndHour : endHour;
 
-  const dayStart = new Date(`${date}T${String(actualStart).padStart(2, "0")}:00:00-04:00`);
-  const dayEnd = new Date(`${date}T${String(actualEnd).padStart(2, "0")}:00:00-04:00`);
+  const dayStart = new Date(`${date}T${String(actualStart).padStart(2, "0")}:00:00${tzOffset}`);
+  const dayEnd = new Date(`${date}T${String(actualEnd).padStart(2, "0")}:00:00${tzOffset}`);
 
   // Skip past times if today
   const now = new Date();

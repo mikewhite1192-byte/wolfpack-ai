@@ -5,13 +5,50 @@ const sql = neon(process.env.DATABASE_URL!);
 
 // POST /api/leads — public endpoint for website contact forms
 // Creates a contact + deal in the CRM pipeline
+// Simple in-memory rate limiter (per IP, 5 requests per minute)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 60000 });
+    return false;
+  }
+  entry.count++;
+  return entry.count > 5;
+}
+
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit by IP
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+    if (isRateLimited(ip)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await req.json();
     const { firstName, lastName, email, phone, source, sourceDetail, notes } = body;
 
     if (!email && !phone) {
       return NextResponse.json({ error: "Email or phone required" }, { status: 400 });
+    }
+
+    // Validate email format
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    }
+
+    // Validate phone (at least 10 digits)
+    if (phone) {
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length < 10 || digits.length > 15) {
+        return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+      }
+    }
+
+    // Sanitize input lengths
+    if ((firstName && firstName.length > 100) || (lastName && lastName.length > 100) || (email && email.length > 254) || (notes && notes.length > 2000)) {
+      return NextResponse.json({ error: "Input too long" }, { status: 400 });
     }
 
     // Get the first active workspace
@@ -69,7 +106,10 @@ export async function POST(req: NextRequest) {
       }
     } catch { /* silent */ }
 
-    return NextResponse.json({ id: contactId, existing: false }, { headers: { "Access-Control-Allow-Origin": "*" } });
+    const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "https://thewolfpack.ai,https://www.thewolfpack.ai,https://thewolfpackco.com,https://www.thewolfpackco.com").split(",");
+    const origin = req.headers.get("origin") || "";
+    const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+    return NextResponse.json({ id: contactId, existing: false }, { headers: { "Access-Control-Allow-Origin": corsOrigin } });
   } catch (err) {
     console.error("[leads] Error:", err);
     return NextResponse.json({ error: err instanceof Error ? err.message : "Error" }, { status: 500 });
@@ -77,10 +117,13 @@ export async function POST(req: NextRequest) {
 }
 
 // Handle CORS preflight
-export async function OPTIONS() {
+export async function OPTIONS(req: NextRequest) {
+  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "https://thewolfpack.ai,https://www.thewolfpack.ai,https://thewolfpackco.com,https://www.thewolfpackco.com").split(",");
+  const origin = req.headers.get("origin") || "";
+  const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
   return new NextResponse(null, {
     headers: {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": corsOrigin,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     },

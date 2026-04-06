@@ -5,8 +5,19 @@ import Stripe from "stripe";
 const sql = neon(process.env.DATABASE_URL!);
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-export async function GET() {
+const OWNER_SECRET = process.env.OWNER_DASHBOARD_SECRET || process.env.CRON_SECRET;
+
+export async function GET(req: Request) {
   try {
+    // Auth: require Bearer token or query param
+    const authHeader = req.headers.get("authorization");
+    const { searchParams } = new URL(req.url);
+    const tokenParam = searchParams.get("token");
+    const providedToken = authHeader?.replace("Bearer ", "") || tokenParam;
+
+    if (!OWNER_SECRET || providedToken !== OWNER_SECRET) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     // ── Stripe Revenue & Subscription Data ──
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

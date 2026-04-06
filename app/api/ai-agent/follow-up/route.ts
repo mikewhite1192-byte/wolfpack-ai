@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     // Simple auth check
     const authHeader = req.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,6 +26,7 @@ export async function POST(req: Request) {
       WHERE c.ai_next_followup IS NOT NULL
         AND c.ai_next_followup <= NOW()
         AND conv.status = 'open'
+        AND (c.opted_out IS NULL OR c.opted_out = FALSE)
       LIMIT 20
     `;
 

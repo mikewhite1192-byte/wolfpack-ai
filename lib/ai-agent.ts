@@ -296,13 +296,42 @@ RESPOND WITH JSON (and nothing else):
       nextFollowUpHours: parsed.nextFollowUpHours ?? 24,
       appointmentDetected: parsed.appointmentDetected || null,
     };
-  } catch {
-    console.error("[ai-agent] Failed to parse JSON response, using raw text");
+  } catch (parseErr) {
+    console.error("[ai-agent] Failed to parse JSON response, attempting recovery. Raw:", raw.substring(0, 500));
+
+    // Try to extract at least the reply text from common patterns
+    let extractedReply = "";
+
+    // Try: "reply": "some text"
+    const replyMatch = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (replyMatch) {
+      extractedReply = replyMatch[1].replace(/\\"/g, '"').replace(/\\n/g, "\n");
+    }
+
+    // Try: extract stage if possible
+    const stageMatch = raw.match(/"stage"\s*:\s*"(\w+)"/);
+    const extractedStage = stageMatch?.[1] as ConversationStage | undefined;
+
+    // Try: extract score
+    const scoreMatch = raw.match(/"score"\s*:\s*(\d+)/);
+    const extractedScore = scoreMatch ? parseInt(scoreMatch[1]) : undefined;
+
+    // Try: extract qualification fields
+    let partialQual = { ...ctx.qualification };
+    const engagementMatch = raw.match(/"engagementLevel"\s*:\s*"(\w+)"/);
+    if (engagementMatch) {
+      partialQual.engagementLevel = engagementMatch[1] as LeadQualification["engagementLevel"];
+    }
+    const notesMatch = raw.match(/"notes"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (notesMatch) {
+      partialQual.notes = notesMatch[1].replace(/\\"/g, '"');
+    }
+
     return {
-      reply: raw.length > 10 ? raw.substring(0, 300) : "Thanks for reaching out! Someone from our team will get back to you shortly.",
-      updatedQualification: ctx.qualification,
-      updatedStage: ctx.conversationStage,
-      suggestedScore: 50,
+      reply: extractedReply || (raw.length > 10 ? raw.substring(0, 300) : "Thanks for reaching out! Someone from our team will get back to you shortly."),
+      updatedQualification: partialQual,
+      updatedStage: extractedStage || ctx.conversationStage,
+      suggestedScore: extractedScore ?? 50,
       shouldFollowUp: true,
       nextFollowUpHours: 24,
       appointmentDetected: null,

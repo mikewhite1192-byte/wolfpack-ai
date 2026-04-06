@@ -441,14 +441,17 @@ async function handleCallBooking(
   eventId?: string;
 }> {
   try {
-    // Get workspace with Gmail token for calendar access
+    // Get the specific workspace's Gmail token (not a random one)
+    // Use owner workspace for email assistant calendar access
+    const ownerEmail = process.env.OWNER_EMAIL || "info@thewolfpackco.com";
     const workspaces = await sql`
       SELECT id, gmail_refresh_token FROM workspaces
       WHERE gmail_connected = TRUE AND gmail_refresh_token IS NOT NULL
+        AND (owner_email = ${ownerEmail} OR gmail_email = ${ownerEmail})
       LIMIT 1
     `;
     if (workspaces.length === 0) {
-      console.error("[email-assistant] No workspace with Gmail connected");
+      console.error("[email-assistant] No workspace with Gmail connected for owner");
       return { booked: false, reply: aiReply };
     }
 

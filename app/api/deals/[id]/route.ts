@@ -64,8 +64,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             body: JSON.stringify({ conversationId: conv[0].id, outcome }),
           }).catch(() => {});
 
-          // If WON → send review request after 24 hours
+          // If WON → send review request + start GBP review nudges
           if (newStage[0].is_won) {
+            // Start GBP review nudge sequence
+            try {
+              const { startReviewNudges } = await import("@/lib/gbp");
+              const gbpConn = await sql`SELECT id FROM gbp_connections WHERE workspace_id = ${workspace.id} AND connected = TRUE LIMIT 1`;
+              const wsConfig = await sql`SELECT ai_config, name FROM workspaces WHERE id = ${workspace.id}`;
+              const reviewLink = (wsConfig[0]?.ai_config as Record<string, string>)?.googleReviewLink || "";
+              const nudgeContact = await sql`SELECT phone, first_name FROM contacts WHERE id = ${current[0].contact_id}`;
+              if (gbpConn.length > 0 && nudgeContact.length > 0 && nudgeContact[0].phone && reviewLink) {
+                await startReviewNudges(
+                  gbpConn[0].id as string,
+                  nudgeContact[0].phone as string,
+                  (nudgeContact[0].first_name as string) || "there",
+                  (wsConfig[0]?.name as string) || "our business",
+                  reviewLink,
+                );
+              }
+            } catch (nudgeErr) {
+              console.error("[deals] Failed to start review nudges:", nudgeErr);
+            }
+
             const contact = await sql`SELECT * FROM contacts WHERE id = ${current[0].contact_id}`;
             if (contact.length > 0 && contact[0].phone) {
               // Schedule review request (set followup for 24h from now)
