@@ -277,6 +277,22 @@ export async function POST(req: Request) {
         WHERE id = ${contactId}
       `;
 
+      // Handle handoff: disable AI and notify owner
+      if (result.updatedStage === "handed_off") {
+        await sql`UPDATE conversations SET ai_enabled = FALSE WHERE id = ${convId}`;
+        // TODO: Build a proper owner notification system (in-app alert, push notification, etc.)
+        const ownerPhone = process.env.OWNER_PHONE;
+        if (ownerPhone) {
+          const handoffName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || from;
+          sendMessage(chat_id, "").catch(() => {}); // noop, owner notification below uses Loop
+          try {
+            const { sendMessage: sendLoop } = await import("@/lib/loop/client");
+            sendLoop(ownerPhone, `Lead needs human attention: ${handoffName} (${from}). AI has been disabled on this conversation. Check your dashboard.`).catch(() => {});
+          } catch {}
+        }
+        console.log(`[webhook] Handed off ${from} to human — AI disabled`);
+      }
+
       // Save AI note for the user
       const aiNotes = result.updatedQualification.notes;
       if (aiNotes) {

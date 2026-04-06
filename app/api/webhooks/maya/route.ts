@@ -197,23 +197,25 @@ RULES:
       // Book on Google Calendar
       try {
         const { getGmailToken } = await import("@/lib/gmail");
-        const { createCalendarEvent } = await import("@/lib/calendar");
+        const { createCalendarEvent, getTzOffset } = await import("@/lib/calendar");
         const ws = await sql`SELECT * FROM workspaces WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`;
         if (ws.length > 0) {
           const calToken = await getGmailToken(ws[0].id);
           if (calToken) {
-            // Book for next available — tomorrow at 2pm as default
+            // Book for next available — tomorrow at 2pm ET (DST-aware)
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(18, 0, 0, 0); // 2pm ET (UTC-4 during EDT)
-            const end = new Date(tomorrow.getTime() + 30 * 60000);
+            const tomorrowStr = tomorrow.toISOString().split("T")[0];
+            const offset = getTzOffset("America/New_York", tomorrow);
+            const startDt = new Date(`${tomorrowStr}T14:00:00${offset}`);
+            const endDt = new Date(startDt.getTime() + 30 * 60000);
 
             const calEvent = await createCalendarEvent(
               calToken,
               `Wolf Pack Co — ${firstName}`,
               `Agency demo call with ${firstName}\nPhone: ${demo.phone}\nEmail: ${email}\nIndustry: ${actualIndustry}\nBooked by Maya AI`,
-              tomorrow.toISOString(),
-              end.toISOString(),
+              startDt.toISOString(),
+              endDt.toISOString(),
               email,
               true,
             );
@@ -386,18 +388,21 @@ Write ONLY the text message. Nothing else.`;
           const refreshToken = process.env.DEMO_BOOKING_REFRESH_TOKEN;
           if (refreshToken) {
             const { refreshAccessToken } = await import("@/lib/gmail");
-            const { createCalendarEvent } = await import("@/lib/calendar");
+            const { createCalendarEvent, getTzOffset } = await import("@/lib/calendar");
             const calToken = await refreshAccessToken(refreshToken);
+            if (!calToken) throw new Error("Token refresh returned empty");
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(18, 0, 0, 0); // 2pm ET (UTC-4 during EDT)
-            const end = new Date(tomorrow.getTime() + 30 * 60000);
+            const tmrStr = tomorrow.toISOString().split("T")[0];
+            const offset = getTzOffset("America/New_York", tomorrow);
+            const startDt = new Date(`${tmrStr}T14:00:00${offset}`);
+            const endDt = new Date(startDt.getTime() + 30 * 60000);
             const calEvent = await createCalendarEvent(
               calToken,
               `Wolf Pack AI Demo — ${firstName}`,
               `Demo call with ${firstName}\nPhone: ${demo.phone}\nEmail: ${email}\nIndustry: ${industry}\nBooked by Maya AI`,
-              tomorrow.toISOString(),
-              end.toISOString(),
+              startDt.toISOString(),
+              endDt.toISOString(),
               email,
               true,
             );
@@ -423,10 +428,9 @@ Write ONLY the text message. Nothing else.`;
         const notifyPhone = process.env.OWNER_PHONE;
         if (notifyPhone) {
           try {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(18, 0, 0, 0); // 2pm ET (UTC-4 during EDT)
-            const timeStr = tomorrow.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "America/New_York" }) + " at 2:00 PM ET";
+            const tomorrow2 = new Date();
+            tomorrow2.setDate(tomorrow2.getDate() + 1);
+            const timeStr = tomorrow2.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "America/New_York" }) + " at 2:00 PM ET";
             await sendMessage(notifyPhone, `New demo booked by Maya!\n\nName: ${firstName}\nEmail: ${email}\nPhone: ${demo.phone}\nIndustry: ${industry}\nTime: ${timeStr}\n\nThey came through the Wolf Pack AI demo.`);
           } catch { /* silent */ }
         }

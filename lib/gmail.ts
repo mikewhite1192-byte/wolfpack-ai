@@ -63,6 +63,10 @@ export async function refreshAccessToken(refreshToken: string): Promise<string> 
     }),
   });
   const data = await res.json();
+  if (!data.access_token) {
+    const errMsg = data.error_description || data.error || "unknown error";
+    throw new Error(`Gmail token refresh failed: ${errMsg}`);
+  }
   return data.access_token;
 }
 

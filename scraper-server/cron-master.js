@@ -45,12 +45,17 @@ function setRunning(name, val) {
 }
 
 // ── Call Vercel API route ───────────────────────────────────────────
-async function callVercel(path, method, timeoutMs) {
+async function callVercel(path, method, timeoutMs, body) {
   method = method || "GET";
   timeoutMs = timeoutMs || 120000; // 2 min default (no Vercel timeout applies from droplet)
   var url = VERCEL_URL + path;
   try {
-    var r = await fetch(url, { method: method, signal: AbortSignal.timeout(timeoutMs) });
+    var opts = { method: method, signal: AbortSignal.timeout(timeoutMs) };
+    if (body) {
+      opts.headers = { "Content-Type": "application/json" };
+      opts.body = JSON.stringify(body);
+    }
+    var r = await fetch(url, opts);
     var data = await r.json().catch(function() { return {}; });
     return data;
   } catch (e) {
@@ -533,13 +538,13 @@ setInterval(function() {
     jobAiLearn();
     jobUpgrade();
     // Morning daily report
-    callVercel("/api/ai-agent/daily-report", "POST", { type: "morning" })
+    callVercel("/api/ai-agent/daily-report", "POST", 120000, { type: "morning" })
       .then(function(r) { console.log("[master] Morning report:", JSON.stringify(r)); })
       .catch(function(e) { console.error("[master] Morning report failed:", e.message); });
   }
   if (h === 17) {
     // End-of-day report
-    callVercel("/api/ai-agent/daily-report", "POST", { type: "eod" })
+    callVercel("/api/ai-agent/daily-report", "POST", 120000, { type: "eod" })
       .then(function(r) { console.log("[master] EOD report:", JSON.stringify(r)); })
       .catch(function(e) { console.error("[master] EOD report failed:", e.message); });
   }

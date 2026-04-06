@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { refreshAccessToken } from "@/lib/gmail";
-import { getBusyTimes, getAvailableSlots } from "@/lib/calendar";
+import { getBusyTimes, getAvailableSlots, getTzOffset } from "@/lib/calendar";
 
 // GET /api/calendar/demo-slots?date=2026-03-28 — slots for demo booking (always uses info@thewolfpackco.com)
 export async function GET(req: Request) {
@@ -19,8 +19,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "date parameter required" }, { status: 400 });
     }
 
-    const timeMin = `${date}T00:00:00-04:00`;
-    const timeMax = `${date}T23:59:59-04:00`;
+    const offset = getTzOffset("America/New_York", new Date(`${date}T12:00:00Z`));
+    const timeMin = `${date}T00:00:00${offset}`;
+    const timeMax = `${date}T23:59:59${offset}`;
     const busyTimes = await getBusyTimes(token, timeMin, timeMax);
 
     // Weekdays: 9am-9pm, Weekends: 10am-7pm

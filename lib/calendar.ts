@@ -1,5 +1,24 @@
 import { getGmailToken, gmailFetch } from "./gmail";
 
+/**
+ * Calculate the UTC offset string (e.g. "-05:00", "-04:00") for a given
+ * IANA timezone at a specific reference date.  Handles DST automatically.
+ */
+export function getTzOffset(tz: string, refDate: Date = new Date()): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" }).formatToParts(refDate);
+    const offsetPart = parts.find(p => p.type === "timeZoneName");
+    if (offsetPart?.value) {
+      const match = offsetPart.value.match(/GMT([+-]\d+)/);
+      if (match) {
+        const hours = parseInt(match[1]);
+        return `${hours >= 0 ? "+" : ""}${String(Math.abs(hours)).padStart(2, "0")}:00`;
+      }
+    }
+  } catch { /* fallback */ }
+  return "-05:00"; // safe fallback to EST
+}
+
 export interface TimeSlot {
   start: string; // ISO
   end: string;   // ISO
@@ -47,22 +66,6 @@ export function getAvailableSlots(
   weekendEndHour?: number,
 ): TimeSlot[] {
   const slots: TimeSlot[] = [];
-
-  // Calculate timezone offset dynamically (handles EST/EDT automatically)
-  function getTzOffset(tz: string, refDate: Date): string {
-    try {
-      const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" }).formatToParts(refDate);
-      const offsetPart = parts.find(p => p.type === "timeZoneName");
-      if (offsetPart?.value) {
-        const match = offsetPart.value.match(/GMT([+-]\d+)/);
-        if (match) {
-          const hours = parseInt(match[1]);
-          return `${hours >= 0 ? "+" : ""}${String(hours).padStart(2, "0")}:00`;
-        }
-      }
-    } catch { /* fallback */ }
-    return "-05:00"; // safe fallback to EST
-  }
 
   const refDate = new Date(`${date}T12:00:00Z`);
   const tzOffset = getTzOffset(timezone, refDate);
@@ -127,12 +130,13 @@ export async function createCalendarEvent(
   endTime: string,
   attendeeEmail?: string,
   addGoogleMeet?: boolean,
+  timezone: string = "America/New_York",
 ): Promise<CalendarEvent> {
   const event: Record<string, unknown> = {
     summary,
     description,
-    start: { dateTime: startTime, timeZone: "America/New_York" },
-    end: { dateTime: endTime, timeZone: "America/New_York" },
+    start: { dateTime: startTime, timeZone: timezone },
+    end: { dateTime: endTime, timeZone: timezone },
     reminders: {
       useDefault: false,
       overrides: [
@@ -183,12 +187,14 @@ export async function updateCalendarEvent(
     summary?: string;
     description?: string;
     attendeeEmail?: string;
+    timezone?: string;
   },
 ): Promise<CalendarEvent> {
   const event: Record<string, unknown> = {};
+  const tz = updates.timezone || "America/New_York";
 
-  if (updates.startTime) event.start = { dateTime: updates.startTime, timeZone: "America/New_York" };
-  if (updates.endTime) event.end = { dateTime: updates.endTime, timeZone: "America/New_York" };
+  if (updates.startTime) event.start = { dateTime: updates.startTime, timeZone: tz };
+  if (updates.endTime) event.end = { dateTime: updates.endTime, timeZone: tz };
   if (updates.summary) event.summary = updates.summary;
   if (updates.description) event.description = updates.description;
   if (updates.attendeeEmail) {

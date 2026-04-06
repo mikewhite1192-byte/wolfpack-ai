@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { neon } from "@neondatabase/serverless";
-import { getBusyTimes, getAvailableSlots, createCalendarEvent } from "@/lib/calendar";
+import { getBusyTimes, getAvailableSlots, createCalendarEvent, getTzOffset } from "@/lib/calendar";
 import { refreshAccessToken } from "@/lib/gmail";
 
 const sql = neon(process.env.DATABASE_URL!);
@@ -113,8 +113,9 @@ async function handleGetAvailableSlots(date: string): Promise<string> {
   const token = await getCalendarToken();
   if (!token) return "Calendar is not connected. Please try again later or email info@thewolfpackco.com to book.";
 
-  const dayStart = `${date}T00:00:00-04:00`;
-  const dayEnd = `${date}T23:59:59-04:00`;
+  const offset = getTzOffset("America/New_York", new Date(`${date}T12:00:00Z`));
+  const dayStart = `${date}T00:00:00${offset}`;
+  const dayEnd = `${date}T23:59:59${offset}`;
 
   const busyTimes = await getBusyTimes(token, dayStart, dayEnd);
   const slots = getAvailableSlots(date, busyTimes, 15, 15, 9, 17, "America/New_York");

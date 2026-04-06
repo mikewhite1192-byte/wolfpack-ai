@@ -141,7 +141,7 @@ export async function POST(req: Request) {
         try {
           const { sendMessage } = await import("@/lib/loop/client");
           const { refreshAccessToken } = await import("@/lib/gmail");
-          const { createCalendarEvent } = await import("@/lib/calendar");
+          const { createCalendarEvent, getTzOffset } = await import("@/lib/calendar");
           const demo = mayaReschedule[0];
           const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
 
@@ -169,22 +169,23 @@ export async function POST(req: Request) {
                 }
               }
 
-              // Parse time
+              // Parse time (DST-aware — construct date in ET, not UTC)
+              let targetHour = 14; // default 2pm ET
               if (hourMatch) {
-                let hour = parseInt(hourMatch[1]);
-                if (hourMatch[2].toLowerCase() === "pm" && hour < 12) hour += 12;
-                if (hourMatch[2].toLowerCase() === "am" && hour === 12) hour = 0;
-                newDate.setHours(hour + 4, 0, 0, 0); // Convert ET to UTC
-              } else {
-                newDate.setHours(18, 0, 0, 0); // Default 2pm ET
+                targetHour = parseInt(hourMatch[1]);
+                if (hourMatch[2].toLowerCase() === "pm" && targetHour < 12) targetHour += 12;
+                if (hourMatch[2].toLowerCase() === "am" && targetHour === 12) targetHour = 0;
               }
+              const dateStr = newDate.toISOString().split("T")[0];
+              const offset = getTzOffset("America/New_York", newDate);
+              const startDt = new Date(`${dateStr}T${String(targetHour).padStart(2, "0")}:00:00${offset}`);
 
-              const end = new Date(newDate.getTime() + 30 * 60000);
+              const end = new Date(startDt.getTime() + 30 * 60000);
               const calEvent = await createCalendarEvent(
                 calToken,
                 `Wolf Pack AI Demo — ${demo.first_name}`,
                 `Rescheduled demo with ${demo.first_name}\nPhone: ${demo.phone}`,
-                newDate.toISOString(),
+                startDt.toISOString(),
                 end.toISOString(),
                 emailMatch?.[0] || undefined,
                 true,
@@ -192,8 +193,8 @@ export async function POST(req: Request) {
 
               await sql`UPDATE maya_demos SET step = 99, calendar_event_id = ${calEvent.id} WHERE id = ${demo.id}`;
 
-              const dayStr = newDate.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "America/New_York" });
-              const timeStr = newDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+              const dayStr = startDt.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "America/New_York" });
+              const timeStr = startDt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
               await sendMessage(fromE164, `You're all set! New appointment booked for ${dayStr} at ${timeStr} ET. Calendar invite is on its way. See you then!`);
             }
           } else {

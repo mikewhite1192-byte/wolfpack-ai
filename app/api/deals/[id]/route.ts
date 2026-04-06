@@ -73,9 +73,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
               const wsConfig = await sql`SELECT ai_config, name FROM workspaces WHERE id = ${workspace.id}`;
               const reviewLink = (wsConfig[0]?.ai_config as Record<string, string>)?.googleReviewLink || "";
               const nudgeContact = await sql`SELECT phone, first_name FROM contacts WHERE id = ${current[0].contact_id}`;
-              if (gbpConn.length > 0 && nudgeContact.length > 0 && nudgeContact[0].phone && reviewLink) {
+              if (nudgeContact.length > 0 && nudgeContact[0].phone && reviewLink) {
                 await startReviewNudges(
-                  gbpConn[0].id as string,
+                  gbpConn.length > 0 ? (gbpConn[0].id as string) : null,
                   nudgeContact[0].phone as string,
                   (nudgeContact[0].first_name as string) || "there",
                   (wsConfig[0]?.name as string) || "our business",

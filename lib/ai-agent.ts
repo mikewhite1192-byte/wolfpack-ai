@@ -87,6 +87,76 @@ interface AgentContext {
   learnings?: string;  // accumulated learnings from past conversations
 }
 
+// Detect if the lead's latest message warrants handoff to a human
+function detectHandoffNeeded(ctx: AgentContext): { needed: boolean; reason: string } {
+  const lastUserMsg = [...ctx.messages].reverse().find(m => m.role === "user");
+  if (!lastUserMsg) return { needed: false, reason: "" };
+  const text = lastUserMsg.content.toLowerCase();
+
+  // 1. Lead explicitly asks for a human / person / manager
+  const humanPatterns = [
+    /talk\s*(to|with)\s*(a\s*)?(human|person|real\s*person|someone|manager|owner|supervisor|rep)/,
+    /speak\s*(to|with)\s*(a\s*)?(human|person|real\s*person|someone|manager|owner|supervisor|rep)/,
+    /get\s*me\s*(a\s*)?(human|person|manager|owner|supervisor|rep)/,
+    /can\s*(i|we)\s*(talk|speak|chat)\s*(to|with)\s*(a\s*)?(human|person|real\s*person|someone|manager|owner)/,
+    /transfer\s*me/,
+    /connect\s*me\s*(to|with)/,
+    /want\s*(a\s*)?(human|person|real\s*person)/,
+    /is\s*this\s*(a\s*)?(bot|ai|automated|robot)/,
+    /am\s*i\s*talking\s*to\s*(a\s*)?(bot|ai|robot|computer)/,
+  ];
+  for (const pattern of humanPatterns) {
+    if (pattern.test(text)) return { needed: true, reason: "lead_requested_human" };
+  }
+
+  // 2. Lead asks about complex topics the AI can't handle
+  const complexPatterns = [
+    /custom\s*contract/,
+    /legal\s*(question|issue|concern|review)/,
+    /lawyer|attorney/,
+    /pricing\s*exception/,
+    /special\s*(pricing|rate|deal|discount)/,
+    /negotiate\s*(the\s*)?(price|rate|contract|terms)/,
+    /warranty\s*(claim|issue|dispute)/,
+    /insurance\s*(claim|issue)/,
+    /lien|lawsuit|sue/,
+    /financing\s*(option|plan|term)/,
+  ];
+  for (const pattern of complexPatterns) {
+    if (pattern.test(text)) return { needed: true, reason: "complex_question" };
+  }
+
+  // 3. Strong frustration / anger detection (check recent user messages for pattern)
+  const recentUserMsgs = ctx.messages.filter(m => m.role === "user").slice(-3);
+  const angerPatterns = [
+    /this\s*is\s*(bullshit|bs|ridiculous|unacceptable|terrible|awful)/,
+    /piss(ed|ing)\s*(me\s*)?off/,
+    /sick\s*(of|and\s*tired)/,
+    /waste\s*(of|my)\s*(time|money)/,
+    /scam|fraud|rip\s*off|ripoff/,
+    /fuck|shit|damn\s*it|wtf|hell/,
+    /worst\s*(experience|service|company)/,
+    /report\s*(you|this|your\s*company)/,
+    /bbb|better\s*business\s*bureau|attorney\s*general/,
+  ];
+  let angerCount = 0;
+  for (const msg of recentUserMsgs) {
+    const msgLower = msg.content.toLowerCase();
+    for (const pattern of angerPatterns) {
+      if (pattern.test(msgLower)) { angerCount++; break; }
+    }
+  }
+  if (angerCount >= 2) return { needed: true, reason: "lead_frustrated" };
+
+  // 4. AI has exhausted all follow-up stages without conversion
+  const maxFollowUps = (ctx.config.followUpHours || [24, 72, 168, 336]).length;
+  if (ctx.isFollowUp && ctx.followUpCount >= maxFollowUps && ctx.conversationStage === "nurture") {
+    return { needed: true, reason: "exhausted_follow_ups" };
+  }
+
+  return { needed: false, reason: "" };
+}
+
 export async function runSalesAgent(ctx: AgentContext): Promise<{
   reply: string;
   updatedQualification: LeadQualification;
@@ -96,6 +166,27 @@ export async function runSalesAgent(ctx: AgentContext): Promise<{
   nextFollowUpHours: number | null;
   appointmentDetected: string | null;
 }> {
+  // Check for handoff triggers BEFORE calling the AI
+  const handoff = detectHandoffNeeded(ctx);
+  if (handoff.needed) {
+    const ownerLabel = ctx.config.ownerName || "a team member";
+    const handoffReply = `Let me connect you with ${ownerLabel} who can help with that. They'll be in touch shortly.`;
+    console.log(`[ai-agent] Handoff triggered: ${handoff.reason} for ${ctx.contactName}`);
+    return {
+      reply: handoffReply,
+      updatedQualification: {
+        ...ctx.qualification,
+        notes: `${ctx.qualification.notes || ""} [HANDOFF: ${handoff.reason}]`.trim(),
+      },
+      updatedStage: "handed_off",
+      suggestedScore: typeof ctx.qualification.engagementLevel === "string"
+        ? ({ hot: 80, warm: 60, cold: 30, dead: 10 }[ctx.qualification.engagementLevel] ?? 50)
+        : 50,
+      shouldFollowUp: false,
+      nextFollowUpHours: null,
+      appointmentDetected: null,
+    };
+  }
   const toneGuide = {
     professional: "Professional and polished. Use proper grammar. Respectful but confident.",
     friendly: "Warm and approachable. Use their first name. Conversational but still professional.",
@@ -297,9 +388,45 @@ RESPOND WITH JSON (and nothing else):
       appointmentDetected: parsed.appointmentDetected || null,
     };
   } catch (parseErr) {
-    console.error("[ai-agent] Failed to parse JSON response, attempting recovery. Raw:", raw.substring(0, 500));
+    console.error("[ai-agent] JSON parse failed. Error:", parseErr instanceof Error ? parseErr.message : parseErr);
+    console.error("[ai-agent] Raw response (first 800 chars):", raw.substring(0, 800));
 
-    // Try to extract at least the reply text from common patterns
+    // Attempt lenient recovery: try fixing common JSON issues (trailing commas, unescaped newlines)
+    let lenientParsed = null;
+    try {
+      const cleaned = raw
+        .replace(/```json\s*/g, "").replace(/```\s*/g, "")  // strip markdown code fences
+        .replace(/,\s*([\]}])/g, "$1")                       // remove trailing commas
+        .replace(/[\x00-\x1f]/g, (ch) => ch === "\n" ? "\\n" : ch === "\t" ? "\\t" : ""); // escape control chars
+      const jsonMatch2 = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch2) {
+        lenientParsed = JSON.parse(jsonMatch2[0]);
+        console.log("[ai-agent] Lenient JSON parse succeeded");
+      }
+    } catch {
+      // Lenient parse also failed, continue with field extraction
+    }
+
+    if (lenientParsed) {
+      return {
+        reply: lenientParsed.reply || "Thanks for reaching out! Someone from our team will get back to you shortly.",
+        updatedQualification: {
+          ...ctx.qualification,
+          ...lenientParsed.qualification,
+          objections: [
+            ...(ctx.qualification.objections || []),
+            ...(lenientParsed.qualification?.objections || []),
+          ].filter((v: string, i: number, a: string[]) => a.indexOf(v) === i),
+        },
+        updatedStage: lenientParsed.stage || ctx.conversationStage,
+        suggestedScore: typeof lenientParsed.score === "number" ? lenientParsed.score : (ctx.qualification.engagementLevel ? ({ hot: 80, warm: 60, cold: 30, dead: 10 }[ctx.qualification.engagementLevel] ?? 50) : 50),
+        shouldFollowUp: lenientParsed.shouldFollowUp ?? true,
+        nextFollowUpHours: lenientParsed.nextFollowUpHours ?? 24,
+        appointmentDetected: lenientParsed.appointmentDetected || null,
+      };
+    }
+
+    // Fallback: extract individual fields via regex, PRESERVING existing data
     let extractedReply = "";
 
     // Try: "reply": "some text"
@@ -312,12 +439,15 @@ RESPOND WITH JSON (and nothing else):
     const stageMatch = raw.match(/"stage"\s*:\s*"(\w+)"/);
     const extractedStage = stageMatch?.[1] as ConversationStage | undefined;
 
-    // Try: extract score
+    // Try: extract score — fall back to EXISTING score based on engagement, NOT 50
     const scoreMatch = raw.match(/"score"\s*:\s*(\d+)/);
-    const extractedScore = scoreMatch ? parseInt(scoreMatch[1]) : undefined;
+    const existingScoreFallback = ctx.qualification.engagementLevel
+      ? ({ hot: 80, warm: 60, cold: 30, dead: 10 }[ctx.qualification.engagementLevel] ?? 50)
+      : 50;
+    const extractedScore = scoreMatch ? parseInt(scoreMatch[1]) : existingScoreFallback;
 
-    // Try: extract qualification fields
-    let partialQual = { ...ctx.qualification };
+    // Preserve existing qualification, only overlay fields we can extract
+    const partialQual = { ...ctx.qualification };
     const engagementMatch = raw.match(/"engagementLevel"\s*:\s*"(\w+)"/);
     if (engagementMatch) {
       partialQual.engagementLevel = engagementMatch[1] as LeadQualification["engagementLevel"];
@@ -330,8 +460,8 @@ RESPOND WITH JSON (and nothing else):
     return {
       reply: extractedReply || (raw.length > 10 ? raw.substring(0, 300) : "Thanks for reaching out! Someone from our team will get back to you shortly."),
       updatedQualification: partialQual,
-      updatedStage: extractedStage || ctx.conversationStage,
-      suggestedScore: extractedScore ?? 50,
+      updatedStage: extractedStage || ctx.conversationStage,  // preserve existing stage
+      suggestedScore: extractedScore,                          // preserve existing score
       shouldFollowUp: true,
       nextFollowUpHours: 24,
       appointmentDetected: null,

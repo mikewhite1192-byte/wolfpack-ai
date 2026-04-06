@@ -7,6 +7,7 @@ import {
   getBusyTimes,
   getAvailableSlots,
   createCalendarEvent,
+  getTzOffset,
 } from "./calendar";
 import { refreshAccessToken } from "./gmail";
 
@@ -466,10 +467,11 @@ async function handleCallBooking(
       date.setDate(date.getDate() + d);
       const dateStr = date.toISOString().split("T")[0];
 
+      const offset = getTzOffset("America/New_York", new Date(`${dateStr}T12:00:00Z`));
       const busyTimes = await getBusyTimes(
         token,
-        `${dateStr}T00:00:00-05:00`,
-        `${dateStr}T23:59:59-05:00`,
+        `${dateStr}T00:00:00${offset}`,
+        `${dateStr}T23:59:59${offset}`,
       );
 
       const daySlots = getAvailableSlots(dateStr, busyTimes, 15, 15, 9, 17, "America/New_York");

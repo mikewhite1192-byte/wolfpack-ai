@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrCreateWorkspace } from "@/lib/workspace";
 import { getGmailToken } from "@/lib/gmail";
-import { getBusyTimes, getAvailableSlots } from "@/lib/calendar";
+import { getBusyTimes, getAvailableSlots, getTzOffset } from "@/lib/calendar";
 
 // GET /api/calendar/slots?date=2026-03-28 — get available time slots (public)
 export async function GET(req: Request) {
@@ -21,9 +21,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "date parameter required (YYYY-MM-DD)" }, { status: 400 });
     }
 
-    // Get busy times for the requested date
-    const timeMin = `${date}T00:00:00-04:00`;
-    const timeMax = `${date}T23:59:59-04:00`;
+    // Get busy times for the requested date (DST-aware)
+    const tz = (workspace.timezone as string) || "America/New_York";
+    const offset = getTzOffset(tz, new Date(`${date}T12:00:00Z`));
+    const timeMin = `${date}T00:00:00${offset}`;
+    const timeMax = `${date}T23:59:59${offset}`;
     const busyTimes = await getBusyTimes(token, timeMin, timeMax);
 
     // Calculate available slots
