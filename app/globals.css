@@ -76,6 +76,49 @@ button { cursor: pointer; font-family: inherit; }
   animation: float-smoke var(--duration, 3s) var(--delay, 0s) ease-out infinite;
 }
 
+/* Ember particles — tiny rising dots */
+@keyframes float-ember {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateY(-60px) translateX(var(--drift, 10px)); opacity: 0.8; }
+  100% { transform: translateY(-140px) translateX(var(--drift-end, -5px)); opacity: 0; }
+}
+
+.ember-particle {
+  position: absolute;
+  width: var(--size, 3px);
+  height: var(--size, 3px);
+  border-radius: 50%;
+  background: #E86A2A;
+  box-shadow: 0 0 6px 1px rgba(232,106,42,0.6);
+  pointer-events: none;
+  animation: float-ember var(--duration, 4s) var(--delay, 0s) ease-out infinite;
+}
+
+/* Cinematic scroll reveal */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(60px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes reveal-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes reveal-scale {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cinematic-reveal {
+  animation: reveal-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.cinematic-reveal-left {
+  animation: reveal-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.cinematic-reveal-scale {
+  animation: reveal-scale 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-slide-reveal,

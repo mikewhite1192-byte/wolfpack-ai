@@ -85,18 +85,29 @@ function ScrambleText({ text, delay = 0 }: { text: string; delay?: number }) {
   return <span className="inline-block" style={{ minWidth: `${text.length * 0.6}em` }}>{display}</span>;
 }
 
-function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function ScrollReveal({ children, delay = 0, type = "up" }: { children: React.ReactNode; delay?: number; type?: "up" | "left" | "scale" }) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold: 0.1, rootMargin: "0px 0px -60px 0px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  const transforms = {
+    up: { from: "translateY(60px) scale(0.97)", to: "translateY(0) scale(1)" },
+    left: { from: "translateX(-40px)", to: "translateX(0)" },
+    scale: { from: "scale(0.92)", to: "scale(1)" },
+  };
+
   return (
-    <div ref={ref} style={{ opacity: vis ? 1 : 0, transform: vis ? "translateY(0)" : "translateY(40px)", transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s` }}>
+    <div ref={ref} style={{
+      opacity: vis ? 1 : 0,
+      transform: vis ? transforms[type].to : transforms[type].from,
+      transition: `opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+    }}>
       {children}
     </div>
   );
@@ -121,34 +132,156 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-// ── Smoke Effect ──────────────────────────────────────────────────────────────
+// ── Immersive Hero Effects ─────────────────────────────────────────────────────
 
 function HeroSmoke() {
-  const particles = Array.from({ length: 12 }, (_, i) => ({
+  // Smoke particles — larger, more dramatic
+  const smokeParticles = Array.from({ length: 18 }, (_, i) => ({
     id: i,
-    size: 20 + Math.random() * 40,
-    left: 50 + Math.random() * 40,
-    top: 30 + Math.random() * 30,
-    duration: 2.5 + Math.random() * 2,
-    delay: Math.random() * 3,
+    size: 25 + Math.random() * 60,
+    left: 45 + Math.random() * 45,
+    top: 25 + Math.random() * 40,
+    duration: 2.5 + Math.random() * 3,
+    delay: Math.random() * 4,
+  }));
+
+  // Ember particles — tiny glowing dots rising
+  const emberParticles = Array.from({ length: 24 }, (_, i) => ({
+    id: i,
+    left: 40 + Math.random() * 50,
+    top: 40 + Math.random() * 50,
+    size: 1.5 + Math.random() * 3,
+    duration: 3 + Math.random() * 4,
+    delay: Math.random() * 5,
+    drift: -15 + Math.random() * 30,
+    driftEnd: -10 + Math.random() * 20,
   }));
 
   return (
     <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden">
-      {particles.map(p => (
-        <div
-          key={p.id}
-          className="smoke-particle"
-          style={{
-            width: p.size,
-            height: p.size,
-            left: `${p.left}%`,
-            top: `${p.top}%`,
-            "--duration": `${p.duration}s`,
-            "--delay": `${p.delay}s`,
-          } as React.CSSProperties}
-        />
+      {/* Smoke */}
+      {smokeParticles.map(p => (
+        <div key={`s-${p.id}`} className="smoke-particle" style={{ width: p.size, height: p.size, left: `${p.left}%`, top: `${p.top}%`, "--duration": `${p.duration}s`, "--delay": `${p.delay}s` } as React.CSSProperties} />
       ))}
+      {/* Embers */}
+      {emberParticles.map(p => (
+        <div key={`e-${p.id}`} className="ember-particle" style={{ left: `${p.left}%`, top: `${p.top}%`, "--size": `${p.size}px`, "--duration": `${p.duration}s`, "--delay": `${p.delay}s`, "--drift": `${p.drift}px`, "--drift-end": `${p.driftEnd}px` } as React.CSSProperties} />
+      ))}
+    </div>
+  );
+}
+
+function useMouseParallax() {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    function handleMove(e: MouseEvent) {
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+      setOffset({ x, y });
+    }
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
+  return offset;
+}
+
+function useScrollParallax() {
+  const [scrollY, setScrollY] = useState(0);
+  useEffect(() => {
+    function handleScroll() { setScrollY(window.scrollY); }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+  return scrollY;
+}
+
+// ── Immersive Hero Section ────────────────────────────────────────────────────
+
+function HeroSection({ setDemoOpen }: { setDemoOpen: (v: boolean) => void }) {
+  const mouse = useMouseParallax();
+  const scrollY = useScrollParallax();
+
+  // Wolf parallax: moves slower than scroll, shifts with mouse
+  const wolfX = mouse.x * 15;
+  const wolfY = mouse.y * 10 + scrollY * 0.15;
+  const wolfScale = 1 + scrollY * 0.0002;
+
+  // Smoke layer moves opposite to mouse for depth
+  const smokeX = mouse.x * -8;
+  const smokeY = mouse.y * -5;
+
+  // Content parallax — moves up slightly faster
+  const contentY = scrollY * -0.08;
+
+  // Hero opacity fades as you scroll
+  const heroOpacity = Math.max(1 - scrollY / 700, 0);
+
+  return (
+    <div className="relative h-[92vh] min-h-[600px] max-h-[900px] flex items-center overflow-hidden" style={{ opacity: heroOpacity }}>
+      {/* Wolf image — parallax on mouse + scroll */}
+      <div
+        className="absolute z-0 opacity-70 will-change-transform"
+        style={{
+          inset: "-5%",
+          backgroundImage: "url(/images/hero-wolf.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "70% 35%",
+          filter: "contrast(1.3) brightness(0.9)",
+          transform: `translate(${wolfX}px, ${wolfY}px) scale(${wolfScale})`,
+          transition: "transform 0.15s ease-out",
+        }}
+      />
+
+      {/* Orange smoke + embers — parallax opposite direction */}
+      <div style={{ transform: `translate(${smokeX}px, ${smokeY}px)`, transition: "transform 0.2s ease-out" }}>
+        <HeroSmoke />
+      </div>
+
+      {/* Ambient orange glow behind wolf — pulses */}
+      <div className="absolute z-[1] pointer-events-none animate-glow-pulse" style={{
+        top: "20%", right: "10%", width: "50%", height: "60%", borderRadius: "50%",
+        background: "radial-gradient(ellipse, rgba(232,106,42,0.12) 0%, transparent 60%)",
+        filter: "blur(60px)",
+      }} />
+
+      {/* Gradients */}
+      <div className="absolute inset-0 z-[3]" style={{ background: "linear-gradient(to right, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.85) 25%, rgba(10,10,10,0.5) 55%, rgba(10,10,10,0.2) 80%, rgba(10,10,10,0.15) 100%)" }} />
+      <div className="absolute inset-0 z-[3]" style={{ background: "linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(10,10,10,0.7) 85%, #0a0a0a 100%)" }} />
+      <div className="absolute inset-0 z-[3]" style={{ background: "radial-gradient(ellipse at 70% 40%, transparent 30%, rgba(10,10,10,0.4) 100%)" }} />
+
+      {/* Content — slight parallax up on scroll */}
+      <div className="relative z-[4] max-w-[1200px] w-full mx-auto px-6 md:px-16" style={{ transform: `translateY(${contentY}px)` }}>
+        <div className="max-w-[580px]">
+          <div className="animate-fade-up">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#E86A2A]/15 border border-[#E86A2A]/30 rounded-full text-[11px] font-semibold text-[#E86A2A] tracking-widest uppercase mb-7 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-[#E86A2A] inline-block animate-live-pulse" />
+              AI Appointment Setter
+            </div>
+          </div>
+          <h1 className="font-display text-[clamp(38px,8vw,80px)] leading-[0.92] mb-7 tracking-wide animate-fade-up animate-fade-up-d1" style={{ textShadow: "0 4px 60px rgba(0,0,0,0.8)" }}>
+            <ScrambleText text="STOP CHASING LEADS." delay={600} />
+            <br />
+            <span className="text-[#E86A2A]"><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
+          </h1>
+          <p className="text-[17px] text-white/85 leading-relaxed max-w-[500px] mb-5 animate-fade-up animate-fade-up-d3" style={{ textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
+            Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
+          </p>
+          <p className="text-base text-[#e8eaf0] max-w-[500px] mb-10 leading-relaxed font-semibold animate-fade-up animate-fade-up-d4">
+            <span className="inline-flex items-center gap-1.5 bg-[#007AFF]/15 border border-[#007AFF]/30 rounded-full px-3.5 py-1 text-sm font-bold text-[#007AFF] mr-1.5 align-middle backdrop-blur-sm">
+              <Circle className="w-2.5 h-2.5 fill-[#007AFF] text-[#007AFF]" /> iMessage
+            </span>
+            texts. No A2P registration. No carrier filtering. <span className="text-white/90">Your leads actually hear from you first.</span>
+          </p>
+          <div className="flex gap-3.5 flex-wrap animate-fade-up animate-fade-up-d5">
+            <button onClick={() => setDemoOpen(true)} className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(232,106,42,0.35)] transition-all duration-300 animate-cta-pulse">
+              See It Work On You →
+            </button>
+            <Link href="/book-demo" className="inline-flex items-center gap-2 px-7 py-4 bg-transparent border border-white/30 text-white rounded-xl text-sm font-medium no-underline backdrop-blur-sm hover:border-white/50 transition-all duration-300 cursor-pointer">
+              Book a Demo
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -558,49 +691,7 @@ export default function Home() {
       </nav>
 
       {/* ── Hero ── */}
-      <div className="relative h-[92vh] min-h-[600px] max-h-[900px] flex items-center overflow-hidden">
-        {/* Wolf image */}
-        <div className="absolute inset-0 z-0 opacity-70" style={{ backgroundImage: "url(/images/hero-wolf.png)", backgroundSize: "cover", backgroundPosition: "70% 35%", filter: "contrast(1.3) brightness(0.9)", animation: "fade-up 2s ease both" }} />
-        {/* Orange smoke particles */}
-        <HeroSmoke />
-        {/* Gradients */}
-        <div className="absolute inset-0 z-[3]" style={{ background: "linear-gradient(to right, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.85) 25%, rgba(10,10,10,0.5) 55%, rgba(10,10,10,0.2) 80%, rgba(10,10,10,0.15) 100%)" }} />
-        <div className="absolute inset-0 z-[3]" style={{ background: "linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(10,10,10,0.7) 85%, #0a0a0a 100%)" }} />
-        <div className="absolute inset-0 z-[3]" style={{ background: "radial-gradient(ellipse at 70% 40%, transparent 30%, rgba(10,10,10,0.4) 100%)" }} />
-
-        <div className="relative z-[4] max-w-[1200px] w-full mx-auto px-6 md:px-16">
-          <div className="max-w-[580px]">
-            <div className="animate-fade-up">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#E86A2A]/15 border border-[#E86A2A]/30 rounded-full text-[11px] font-semibold text-[#E86A2A] tracking-widest uppercase mb-7 backdrop-blur-sm">
-                <span className="w-2 h-2 rounded-full bg-[#E86A2A] inline-block animate-live-pulse" />
-                AI Appointment Setter
-              </div>
-            </div>
-            <h1 className="font-display text-[clamp(38px,8vw,80px)] leading-[0.92] mb-7 tracking-wide animate-fade-up animate-fade-up-d1" style={{ textShadow: "0 4px 60px rgba(0,0,0,0.8)" }}>
-              <ScrambleText text="STOP CHASING LEADS." delay={600} />
-              <br />
-              <span className="text-[#E86A2A]"><ScrambleText text="START CLOSING THEM." delay={1400} /></span>
-            </h1>
-            <p className="text-[17px] text-white/85 leading-relaxed max-w-[500px] mb-5 animate-fade-up animate-fade-up-d3" style={{ textShadow: "0 1px 20px rgba(0,0,0,0.6)" }}>
-              Your AI appointment setter texts leads in 3 seconds, qualifies them, and books on your calendar. 24/7. No staff. No missed leads.
-            </p>
-            <p className="text-base text-[#e8eaf0] max-w-[500px] mb-10 leading-relaxed font-semibold animate-fade-up animate-fade-up-d4">
-              <span className="inline-flex items-center gap-1.5 bg-[#007AFF]/15 border border-[#007AFF]/30 rounded-full px-3.5 py-1 text-sm font-bold text-[#007AFF] mr-1.5 align-middle backdrop-blur-sm">
-                <Circle className="w-2.5 h-2.5 fill-[#007AFF] text-[#007AFF]" /> iMessage
-              </span>
-              texts. No A2P registration. No carrier filtering. <span className="text-white/90">Your leads actually hear from you first.</span>
-            </p>
-            <div className="flex gap-3.5 flex-wrap animate-fade-up animate-fade-up-d5">
-              <button onClick={() => setDemoOpen(true)} className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(232,106,42,0.35)] transition-all duration-300 animate-cta-pulse">
-                See It Work On You →
-              </button>
-              <Link href="/book-demo" className="inline-flex items-center gap-2 px-7 py-4 bg-transparent border border-white/30 text-white rounded-xl text-sm font-medium no-underline backdrop-blur-sm hover:border-white/50 transition-all duration-300 cursor-pointer">
-                Book a Demo
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <HeroSection setDemoOpen={setDemoOpen} />
 
       {/* ── Stats Bar ── */}
       <ScrollReveal>
