@@ -104,7 +104,8 @@ export default function OutreachPage() {
   const [creatingCampaign, setCreatingCampaign] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingTemplates, setEditingTemplates] = useState<string | null>(null);
-  const [templateDrafts, setTemplateDrafts] = useState<Record<number, { subject: string; body: string }>>({});
+  const [templateDrafts, setTemplateDrafts] = useState<Record<string, Record<number, { subject: string; body: string }>>>({});
+  const [activeVariant, setActiveVariant] = useState<string>("A");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [emailSearch, setEmailSearch] = useState("");
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
@@ -396,14 +397,35 @@ export default function OutreachPage() {
   }
 
   async function saveCampaignTemplates(campaignId: string) {
-    const templates = Object.entries(templateDrafts).map(([step, t]) => ({ step: parseInt(step), ...t }));
+    // Flatten all variants into a single array of templates
+    const templates: { step: number; subject: string; body: string; variant: string }[] = [];
+    for (const [variant, steps] of Object.entries(templateDrafts)) {
+      for (const [step, t] of Object.entries(steps)) {
+        // Only include variants that have content (A is always required)
+        if (variant === "A" || (t.subject.trim() && t.body.trim())) {
+          templates.push({ step: parseInt(step), subject: t.subject, body: t.body, variant });
+        }
+      }
+    }
     await fetch("/api/outreach/campaigns", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "set-templates", campaignId, templates }),
     });
+    // Delete variants that were cleared (had content before but now empty)
+    for (const variant of ["B", "C"]) {
+      const hasContent = templates.some(t => t.variant === variant);
+      if (!hasContent && templateDrafts[variant]) {
+        await fetch("/api/outreach/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "delete-variant", campaignId, variant }),
+        });
+      }
+    }
     setEditingTemplates(null);
     setTemplateDrafts({});
+    setActiveVariant("A");
     refreshStats();
   }
 
@@ -1431,7 +1453,7 @@ export default function OutreachPage() {
                   return 0;
                 }).map((c: Record<string, unknown>) => {
                   const senders = (c.senders || []) as { id: string; email: string; display_name: string }[];
-                  const templates = (c.templates || []) as { step: number; subject: string; body: string }[];
+                  const templates = (c.templates || []) as { step: number; subject: string; body: string; variant?: string }[];
                   const cStats = (c.stats || {}) as Record<string, string>;
                   const isEditing = editingTemplates === c.id;
 
@@ -1477,6 +1499,35 @@ export default function OutreachPage() {
                           </div>
                         ))}
                       </div>
+
+                      {/* A/B variant stats */}
+                      {(() => {
+                        const vs = (c as Record<string, unknown>).variantStats as Record<string, { sent: number; replied: number; bounced: number; replyRate: number }> | undefined;
+                        if (!vs || Object.keys(vs).length <= 1) return null;
+                        const entries = Object.entries(vs).sort(([a], [b]) => a.localeCompare(b));
+                        const bestVariant = entries.reduce((best, curr) => curr[1].replyRate > best[1].replyRate ? curr : best);
+                        return (
+                          <div style={{ marginTop: 10, padding: 12, background: "rgba(255,255,255,0.02)", borderRadius: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, letterSpacing: 1, marginBottom: 8 }}>A/B SPLIT TEST</div>
+                            <div style={{ display: "grid", gridTemplateColumns: `80px repeat(${entries.length}, 1fr)`, gap: 4, fontSize: 11 }}>
+                              <div style={{ color: T.muted, fontWeight: 600 }}></div>
+                              {entries.map(([v]) => (
+                                <div key={v} style={{ color: v === bestVariant[0] ? T.green : T.text, fontWeight: 700, textAlign: "center" }}>
+                                  Variant {v} {v === bestVariant[0] && entries.length > 1 ? " *" : ""}
+                                </div>
+                              ))}
+                              <div style={{ color: T.muted }}>Sent</div>
+                              {entries.map(([v, s]) => <div key={v} style={{ textAlign: "center", color: T.text }}>{s.sent}</div>)}
+                              <div style={{ color: T.muted }}>Replies</div>
+                              {entries.map(([v, s]) => <div key={v} style={{ textAlign: "center", color: T.green }}>{s.replied}</div>)}
+                              <div style={{ color: T.muted }}>Reply Rate</div>
+                              {entries.map(([v, s]) => <div key={v} style={{ textAlign: "center", color: v === bestVariant[0] ? T.green : T.text, fontWeight: v === bestVariant[0] ? 700 : 400 }}>{s.replyRate}%</div>)}
+                              <div style={{ color: T.muted }}>Bounced</div>
+                              {entries.map(([v, s]) => <div key={v} style={{ textAlign: "center", color: s.bounced > 0 ? T.red : T.muted }}>{s.bounced}</div>)}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Activity summary */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
@@ -1590,12 +1641,21 @@ export default function OutreachPage() {
                               if (isEditing) {
                                 saveCampaignTemplates(c.id as string);
                               } else {
-                                const drafts: Record<number, { subject: string; body: string }> = {};
-                                for (let i = 1; i <= 4; i++) {
-                                  const existing = templates.find(t => t.step === i);
-                                  drafts[i] = existing ? { subject: existing.subject, body: existing.body } : { ...DEFAULT_TEMPLATES[i] };
+                                const allDrafts: Record<string, Record<number, { subject: string; body: string }>> = {};
+                                for (const variant of ["A", "B", "C"]) {
+                                  const varDrafts: Record<number, { subject: string; body: string }> = {};
+                                  for (let i = 1; i <= 4; i++) {
+                                    const existing = templates.find((t: { step: number; variant?: string }) => t.step === i && (t.variant || "A") === variant);
+                                    if (variant === "A") {
+                                      varDrafts[i] = existing ? { subject: existing.subject, body: existing.body } : { ...DEFAULT_TEMPLATES[i] };
+                                    } else {
+                                      varDrafts[i] = existing ? { subject: existing.subject, body: existing.body } : { subject: "", body: "" };
+                                    }
+                                  }
+                                  allDrafts[variant] = varDrafts;
                                 }
-                                setTemplateDrafts(drafts);
+                                setTemplateDrafts(allDrafts);
+                                setActiveVariant("A");
                                 setEditingTemplates(c.id as string);
                               }
                             }}
@@ -1606,9 +1666,41 @@ export default function OutreachPage() {
                         </div>
                         {(expandedSections[`templates-${c.id}`] || isEditing) && (
                           <>
+                            {/* Variant tabs */}
+                            {(() => {
+                              const existingVariants = [...new Set(templates.map((t: { variant?: string }) => t.variant || "A"))].sort();
+                              const displayVariants = isEditing ? ["A", "B", "C"] : (existingVariants.length > 0 ? existingVariants : ["A"]);
+                              const currentVariant = isEditing ? activeVariant : (displayVariants.includes(activeVariant) ? activeVariant : "A");
+                              return displayVariants.length > 1 || isEditing ? (
+                                <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+                                  {displayVariants.map(v => {
+                                    const hasContent = isEditing
+                                      ? (v === "A" || Object.values(templateDrafts[v] || {}).some(t => t.subject.trim() || t.body.trim()))
+                                      : templates.some((t: { variant?: string }) => (t.variant || "A") === v);
+                                    return (
+                                      <button
+                                        key={v}
+                                        onClick={() => setActiveVariant(v)}
+                                        style={{
+                                          padding: "4px 14px", fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: "pointer",
+                                          background: currentVariant === v ? `${T.orange}20` : "rgba(255,255,255,0.04)",
+                                          color: currentVariant === v ? T.orange : (hasContent ? T.text : T.muted),
+                                          border: `1px solid ${currentVariant === v ? T.orange + "40" : T.border}`,
+                                          transition: "all 0.2s",
+                                        }}
+                                      >
+                                        Variant {v} {!hasContent && v !== "A" ? "(empty)" : ""}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : null;
+                            })()}
                             {!isEditing && [1, 2, 3, 4].map(step => {
-                              const t = templates.find(t => t.step === step) || DEFAULT_TEMPLATES[step];
-                              const isDefault = !templates.find(t => t.step === step);
+                              const t = templates.find((t: { step: number; variant?: string }) => t.step === step && (t.variant || "A") === activeVariant)
+                                || (activeVariant === "A" ? DEFAULT_TEMPLATES[step] : null);
+                              if (!t) return null;
+                              const isDefault = !templates.find((t: { step: number; variant?: string }) => t.step === step && (t.variant || "A") === activeVariant);
                               return (
                                 <div key={step} style={{ marginBottom: 8, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
                                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1620,23 +1712,44 @@ export default function OutreachPage() {
                                 </div>
                               );
                             })}
-                            {isEditing && [1, 2, 3, 4].map(step => (
-                              <div key={step} style={{ marginBottom: 12, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
-                                <div style={{ fontSize: 11, color: T.orange, fontWeight: 700, marginBottom: 6 }}>STEP {step}</div>
-                                <input
-                                  style={{ ...inputStyle, marginBottom: 6 }}
-                                  placeholder={`Step ${step} subject (use {{firstName}}, {{company}})`}
-                                  value={templateDrafts[step]?.subject || ""}
-                                  onChange={e => setTemplateDrafts({ ...templateDrafts, [step]: { ...templateDrafts[step], subject: e.target.value } })}
-                                />
-                                <textarea
-                                  style={{ ...inputStyle, minHeight: 80, resize: "vertical", fontFamily: "inherit" }}
-                                  placeholder={`Step ${step} body (use {{firstName}}, {{company}}, {{state}})`}
-                                  value={templateDrafts[step]?.body || ""}
-                                  onChange={e => setTemplateDrafts({ ...templateDrafts, [step]: { ...templateDrafts[step], body: e.target.value } })}
-                                />
-                              </div>
-                            ))}
+                            {isEditing && (
+                              <>
+                                {activeVariant !== "A" && (
+                                  <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, padding: "6px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
+                                    Variant {activeVariant} is optional. Leave empty to only use Variant A.
+                                  </div>
+                                )}
+                                {[1, 2, 3, 4].map(step => (
+                                  <div key={step} style={{ marginBottom: 12, padding: 10, background: "rgba(255,255,255,0.02)", borderRadius: 6 }}>
+                                    <div style={{ fontSize: 11, color: T.orange, fontWeight: 700, marginBottom: 6 }}>STEP {step}</div>
+                                    <input
+                                      style={{ ...inputStyle, marginBottom: 6 }}
+                                      placeholder={`Step ${step} subject (use {{firstName}}, {{company}})`}
+                                      value={templateDrafts[activeVariant]?.[step]?.subject || ""}
+                                      onChange={e => setTemplateDrafts({
+                                        ...templateDrafts,
+                                        [activeVariant]: {
+                                          ...templateDrafts[activeVariant],
+                                          [step]: { ...templateDrafts[activeVariant]?.[step], subject: e.target.value },
+                                        },
+                                      })}
+                                    />
+                                    <textarea
+                                      style={{ ...inputStyle, minHeight: 80, resize: "vertical", fontFamily: "inherit" }}
+                                      placeholder={`Step ${step} body (use {{firstName}}, {{company}}, {{state}})`}
+                                      value={templateDrafts[activeVariant]?.[step]?.body || ""}
+                                      onChange={e => setTemplateDrafts({
+                                        ...templateDrafts,
+                                        [activeVariant]: {
+                                          ...templateDrafts[activeVariant],
+                                          [step]: { ...templateDrafts[activeVariant]?.[step], body: e.target.value },
+                                        },
+                                      })}
+                                    />
+                                  </div>
+                                ))}
+                              </>
+                            )}
                           </>
                         )}
                       </div>

@@ -28,6 +28,7 @@ export async function sendColdEmail(
   step: number,
   inReplyTo?: string,
   references?: string,
+  variant?: string,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const nodemailer = await import("nodemailer");
@@ -65,8 +66,8 @@ export async function sendColdEmail(
 
     // Log the sent email
     await sql`
-      INSERT INTO outreach_emails (from_email, contact_id, step, subject, body, ses_message_id, status, email_type, message_id_header)
-      VALUES (${fromAddress.email}, ${contactId}, ${step}, ${subject}, ${body}, ${messageId}, 'sent', 'cold', ${messageId})
+      INSERT INTO outreach_emails (from_email, contact_id, step, subject, body, ses_message_id, status, email_type, message_id_header, variant)
+      VALUES (${fromAddress.email}, ${contactId}, ${step}, ${subject}, ${body}, ${messageId}, 'sent', 'cold', ${messageId}, ${variant || 'A'})
     `;
 
     return { success: true, messageId: messageId || undefined };
@@ -76,8 +77,8 @@ export async function sendColdEmail(
 
     // Log the failure
     await sql`
-      INSERT INTO outreach_emails (from_email, contact_id, step, subject, body, status, email_type)
-      VALUES (${fromAddress.email}, ${contactId}, ${step}, ${subject}, ${body}, 'failed', 'cold')
+      INSERT INTO outreach_emails (from_email, contact_id, step, subject, body, status, email_type, variant)
+      VALUES (${fromAddress.email}, ${contactId}, ${step}, ${subject}, ${body}, 'failed', 'cold', ${variant || 'A'})
     `;
 
     return { success: false, error: msg };

@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
           WHERE cs.campaign_id = ${c.id}
         `;
         const templates = await sql`
-          SELECT step, subject, body FROM campaign_templates WHERE campaign_id = ${c.id} ORDER BY step
+          SELECT step, subject, body, COALESCE(variant, 'A') as variant FROM campaign_templates WHERE campaign_id = ${c.id} ORDER BY step, variant
         `;
         const cStats = await sql`
           SELECT COUNT(*) as total,
@@ -94,7 +94,35 @@ export async function GET(req: NextRequest) {
           coldToday = parseInt(todaySends[0].cold as string || "0");
           warmupToday = parseInt(todaySends[0].warmup as string || "0");
         }
-        campaigns.push({ ...c, senders, templates, stats: cStats[0], coldToday, warmupToday });
+        // Per-variant stats
+        let variantStats: Record<string, { sent: number; replied: number; bounced: number; replyRate: number }> = {};
+        try {
+          const vRows = await sql`
+            SELECT
+              COALESCE(oc.variant, 'A') as variant,
+              COUNT(*) as total,
+              COUNT(*) FILTER (WHERE sequence_status = 'replied') as replied,
+              COUNT(*) FILTER (WHERE sequence_status = 'bounced') as bounced,
+              COUNT(*) FILTER (WHERE sequence_status = 'completed') as completed
+            FROM outreach_contacts oc
+            WHERE oc.campaign_id = ${c.id} AND oc.variant IS NOT NULL
+            GROUP BY COALESCE(oc.variant, 'A')
+            ORDER BY variant
+          `;
+          for (const v of vRows) {
+            const sent = parseInt(v.total as string || "0");
+            const replied = parseInt(v.replied as string || "0");
+            const bounced = parseInt(v.bounced as string || "0");
+            variantStats[v.variant as string] = {
+              sent,
+              replied,
+              bounced,
+              replyRate: sent > 0 ? Math.round((replied / sent) * 1000) / 10 : 0,
+            };
+          }
+        } catch { /* variant column may not exist yet */ }
+
+        campaigns.push({ ...c, senders, templates, stats: cStats[0], coldToday, warmupToday, variantStats });
       }
     } catch { /* tables may not exist */ }
 

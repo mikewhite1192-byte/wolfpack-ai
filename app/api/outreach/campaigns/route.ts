@@ -152,16 +152,25 @@ export async function POST(req: NextRequest) {
 
     // ── Set a single template step ──
     if (action === "set-template") {
-      await setCampaignTemplate(body.campaignId, body.step, body.subject, body.body);
+      await setCampaignTemplate(body.campaignId, body.step, body.subject, body.body, body.variant || "A");
       const campaign = await getCampaignWithDetails(body.campaignId);
-      return NextResponse.json({ campaign, message: `Step ${body.step} template set` });
+      return NextResponse.json({ campaign, message: `Step ${body.step} variant ${body.variant || "A"} template set` });
     }
 
-    // ── Set all 4 templates at once ──
+    // ── Set all 4 templates at once (supports variants) ──
     if (action === "set-templates") {
       await setCampaignTemplates(body.campaignId, body.templates);
       const campaign = await getCampaignWithDetails(body.campaignId);
       return NextResponse.json({ campaign, message: "All templates set" });
+    }
+
+    // ── Delete variant templates for a campaign ──
+    if (action === "delete-variant") {
+      const { neon } = await import("@neondatabase/serverless");
+      const sql = neon(process.env.DATABASE_URL!);
+      await sql`DELETE FROM campaign_templates WHERE campaign_id = ${body.campaignId} AND variant = ${body.variant}`;
+      const campaign = await getCampaignWithDetails(body.campaignId);
+      return NextResponse.json({ campaign, message: `Variant ${body.variant} deleted` });
     }
 
     // ── Link a scraper config to this campaign ──

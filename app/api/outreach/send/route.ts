@@ -80,6 +80,7 @@ async function handleColdSend() {
           // Try campaign-specific template first, fall back to default
           const campaignTemplate = await getCampaignTemplate(campaign.id, step, contact);
           const template = campaignTemplate || await getTemplate(step, contact);
+          const emailVariant = campaignTemplate?.variant || "A";
 
           // Thread follow-ups
           let inReplyTo: string | undefined;
@@ -95,7 +96,7 @@ async function handleColdSend() {
             }
           }
 
-          const result = await sendColdEmail(addr, email, subject, template.body, contactId, step, inReplyTo, references);
+          const result = await sendColdEmail(addr, email, subject, template.body, contactId, step, inReplyTo, references, emailVariant);
 
           if (result.success) {
             await advanceContact(contactId, step);

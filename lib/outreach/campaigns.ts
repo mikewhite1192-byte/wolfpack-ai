@@ -13,7 +13,7 @@ export interface Campaign {
 
 export interface CampaignWithDetails extends Campaign {
   senders: { id: string; email: string; display_name: string }[];
-  templates: { step: number; subject: string; body: string }[];
+  templates: { step: number; subject: string; body: string; variant: string }[];
   contactCount: number;
   activeCount: number;
 }
@@ -22,6 +22,7 @@ export interface CampaignTemplate {
   step: number;
   subject: string;
   body: string;
+  variant?: string;
 }
 
 // ─── CAMPAIGN CRUD ───────────────────────────────────────────────────────────
@@ -160,11 +161,11 @@ export async function getCampaignSenderEmails(campaignId: string): Promise<strin
 
 // ─── CAMPAIGN TEMPLATES ─────────────────────────────────────────────────────
 
-export async function setCampaignTemplate(campaignId: string, step: number, subject: string, body: string) {
+export async function setCampaignTemplate(campaignId: string, step: number, subject: string, body: string, variant: string = "A") {
   await sql`
-    INSERT INTO campaign_templates (campaign_id, step, subject, body)
-    VALUES (${campaignId}, ${step}, ${subject}, ${body})
-    ON CONFLICT (campaign_id, step) DO UPDATE SET
+    INSERT INTO campaign_templates (campaign_id, step, subject, body, variant)
+    VALUES (${campaignId}, ${step}, ${subject}, ${body}, ${variant})
+    ON CONFLICT (campaign_id, step, variant) DO UPDATE SET
       subject = ${subject},
       body = ${body}
   `;
@@ -172,29 +173,74 @@ export async function setCampaignTemplate(campaignId: string, step: number, subj
 
 export async function setCampaignTemplates(campaignId: string, templates: CampaignTemplate[]) {
   for (const t of templates) {
-    await setCampaignTemplate(campaignId, t.step, t.subject, t.body);
+    await setCampaignTemplate(campaignId, t.step, t.subject, t.body, t.variant || "A");
   }
 }
 
-export async function getCampaignTemplates(campaignId: string): Promise<CampaignTemplate[]> {
+export async function getCampaignTemplates(campaignId: string): Promise<(CampaignTemplate & { variant: string })[]> {
   return await sql`
-    SELECT step, subject, body FROM campaign_templates
+    SELECT step, subject, body, variant FROM campaign_templates
     WHERE campaign_id = ${campaignId}
-    ORDER BY step ASC
-  ` as unknown as CampaignTemplate[];
+    ORDER BY step ASC, variant ASC
+  ` as unknown as (CampaignTemplate & { variant: string })[];
+}
+
+// Get list of variants that have templates for a campaign
+export async function getAvailableVariants(campaignId: string): Promise<string[]> {
+  const rows = await sql`
+    SELECT DISTINCT variant FROM campaign_templates
+    WHERE campaign_id = ${campaignId}
+    ORDER BY variant ASC
+  `;
+  if (rows.length === 0) return ["A"];
+  return rows.map(r => r.variant as string);
+}
+
+// Assign a variant to a contact (sticky across all steps)
+export async function assignContactVariant(contactId: string, variant: string) {
+  await sql`UPDATE outreach_contacts SET variant = ${variant} WHERE id = ${contactId}`;
+}
+
+// Get a contact's assigned variant
+export async function getContactVariant(contactId: string): Promise<string | null> {
+  const rows = await sql`SELECT variant FROM outreach_contacts WHERE id = ${contactId} LIMIT 1`;
+  return rows.length > 0 ? (rows[0].variant as string | null) : null;
 }
 
 // Get template for a specific step in a campaign (with variable substitution)
+// Uses the contact's assigned variant, or randomly assigns one if not set
 export async function getCampaignTemplate(
   campaignId: string,
   step: number,
   contact: Record<string, unknown>,
-): Promise<{ subject: string; body: string } | null> {
-  const rows = await sql`
-    SELECT subject, body FROM campaign_templates
-    WHERE campaign_id = ${campaignId} AND step = ${step}
+): Promise<{ subject: string; body: string; variant: string } | null> {
+  // Determine variant for this contact
+  const contactId = (contact.id as string) || "";
+  let variant = (contact.variant as string) || null;
+
+  if (!variant) {
+    // Get available variants and randomly assign one
+    const variants = await getAvailableVariants(campaignId);
+    variant = variants[Math.floor(Math.random() * variants.length)];
+    if (contactId) {
+      await assignContactVariant(contactId, variant);
+    }
+  }
+
+  let rows = await sql`
+    SELECT subject, body, variant FROM campaign_templates
+    WHERE campaign_id = ${campaignId} AND step = ${step} AND variant = ${variant}
     LIMIT 1
   `;
+
+  // Fallback to variant A if the assigned variant doesn't have a template for this step
+  if (rows.length === 0 && variant !== "A") {
+    rows = await sql`
+      SELECT subject, body, variant FROM campaign_templates
+      WHERE campaign_id = ${campaignId} AND step = ${step} AND variant = 'A'
+      LIMIT 1
+    `;
+  }
 
   if (rows.length === 0) return null;
 
@@ -202,7 +248,6 @@ export async function getCampaignTemplate(
 
   // Variable substitution — rotate intros when no real first name
   const INTROS = ["Hey there", "Hi", "Hey", "Quick question"];
-  const contactId = (contact.id as string) || "";
   let hash = 0;
   for (let i = 0; i < contactId.length; i++) { hash = ((hash << 5) - hash) + contactId.charCodeAt(i); hash |= 0; }
   const firstName = (contact.first_name as string) || INTROS[Math.abs(hash) % INTROS.length];
@@ -232,7 +277,7 @@ export async function getCampaignTemplate(
     body = body.replaceAll(key, val);
   }
 
-  return { subject, body };
+  return { subject, body, variant };
 }
 
 // ─── LINK SCRAPER TO CAMPAIGN ───────────────────────────────────────────────
