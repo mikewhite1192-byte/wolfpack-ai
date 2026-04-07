@@ -71,7 +71,7 @@ export default function AnalyticsPage() {
       <div className="font-display text-[28px] text-[#e8eaf0] tracking-wide mb-6">ANALYTICS</div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#111] border border-white/[0.07] rounded-xl p-1 mb-6 w-fit">
+      <div className="flex gap-1 bg-[#111] border border-white/[0.07] rounded-xl p-1 mb-6 w-full sm:w-fit overflow-x-auto">
         {[
           { id: "pipeline" as const, label: "Pipeline" },
           { id: "traffic" as const, label: "Site Traffic" },
@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
           ) : data.funnel.map((stage, i) => (
             <div key={stage.name}>
               <div className="flex items-center gap-3 mb-2.5">
-                <div className="w-[120px] text-sm text-[#e8eaf0] font-medium flex-shrink-0">{stage.name}</div>
+                <div className="w-[80px] sm:w-[120px] text-xs sm:text-sm text-[#e8eaf0] font-medium flex-shrink-0 truncate">{stage.name}</div>
                 <div className="flex-1 h-8 bg-white/[0.03] rounded-md overflow-hidden relative">
                   <div className="h-full rounded-md flex items-center justify-end pr-2.5 transition-all duration-500 min-w-[40px]" style={{ width: `${Math.max((stage.count / maxFunnelCount) * 100, 8)}%`, background: stage.color }}>
                     <span className="text-xs font-bold text-white">{stage.count}</span>
@@ -142,7 +142,8 @@ export default function AnalyticsPage() {
           {/* Stage Breakdown */}
           <Card>
             <SectionLabel>Stage Breakdown</SectionLabel>
-            <table className="w-full border-collapse">
+            <div className="overflow-x-auto -mx-5 px-5">
+            <table className="w-full border-collapse min-w-[400px]">
               <thead><tr>{["Stage", "Deals", "Value", "Avg Time"].map((h, i) => <th key={h} className={`text-left text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider py-2 px-3 border-b border-white/[0.07] ${i > 0 ? "text-right" : ""}`}>{h}</th>)}</tr></thead>
               <tbody>{data.stageBreakdown.map(s => (
                 <tr key={s.name} className="border-b border-white/[0.07] last:border-b-0">
@@ -153,13 +154,15 @@ export default function AnalyticsPage() {
                 </tr>
               ))}</tbody>
             </table>
+            </div>
           </Card>
 
           {/* Lead Sources */}
           <Card>
             <SectionLabel>Lead Sources</SectionLabel>
             {data.leadSources.length === 0 ? <div className="text-[#b0b4c8] text-sm text-center py-5">No lead source data yet.</div> : (
-              <table className="w-full border-collapse">
+              <div className="overflow-x-auto -mx-5 px-5">
+              <table className="w-full border-collapse min-w-[400px]">
                 <thead><tr>{["Source", "Leads", "Won", "Value"].map((h, i) => <th key={h} className={`text-left text-[11px] font-bold text-[#b0b4c8] uppercase tracking-wider py-2 px-3 border-b border-white/[0.07] ${i > 0 ? "text-right" : ""}`}>{h}</th>)}</tr></thead>
                 <tbody>{data.leadSources.map(src => {
                   const maxCount = Math.max(...data.leadSources.map(s => s.count), 1);
@@ -173,6 +176,7 @@ export default function AnalyticsPage() {
                   );
                 })}</tbody>
               </table>
+              </div>
             )}
           </Card>
         </div>

@@ -51,9 +51,9 @@ export default function EmailPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-60px)] -m-6 overflow-hidden">
+    <div className="flex h-[calc(100vh-60px)] -m-6 overflow-hidden relative">
       {/* Left — Thread List */}
-      <div className="w-[340px] border-r border-white/[0.07] flex flex-col bg-[#0a0a0a] flex-shrink-0 overflow-hidden">
+      <div className={`w-full md:w-[340px] border-r border-white/[0.07] flex flex-col bg-[#0a0a0a] flex-shrink-0 overflow-hidden ${activeThread ? "max-md:hidden" : ""}`}>
         <div className="p-3 border-b border-white/[0.07] flex gap-1.5">
           <input placeholder="Search emails..." value={search} onChange={e => setSearch(e.target.value)}
             className="flex-1 px-3 py-2 bg-white/[0.04] border border-white/[0.07] rounded-lg text-sm text-[#e8eaf0] outline-none focus:border-[#E86A2A]/40 transition-colors" />
@@ -83,7 +83,7 @@ export default function EmailPage() {
       </div>
 
       {/* Right — Thread or Compose */}
-      <div className="flex-1 flex flex-col bg-[#0a0a0a] min-w-0 overflow-hidden">
+      <div className={`flex-1 flex flex-col bg-[#0a0a0a] min-w-0 overflow-hidden ${!activeThread && !showCompose ? "max-md:hidden" : ""}`}>
         {showCompose ? (
           <>
             <div className="px-5 py-4 border-b border-white/[0.07] flex-shrink-0 flex justify-between items-center">
@@ -113,8 +113,8 @@ export default function EmailPage() {
           <div className="flex-1 flex items-center justify-center text-[#b0b4c8] text-sm">Select an email to read</div>
         ) : (
           <>
-            <div className="px-5 py-4 border-b border-white/[0.07] flex items-center gap-3 flex-shrink-0">
-              <button onClick={() => { setActiveThread(null); setReplyTo(null); }} className="bg-transparent border-none text-[#b0b4c8] cursor-pointer p-1 rounded hover:bg-white/[0.04] transition-colors flex-shrink-0">
+            <div className="px-4 sm:px-5 py-4 border-b border-white/[0.07] flex items-center gap-3 flex-shrink-0">
+              <button onClick={() => { setActiveThread(null); setReplyTo(null); }} className="bg-transparent border-none text-[#b0b4c8] cursor-pointer p-2 rounded hover:bg-white/[0.04] transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center">
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <div className="font-display text-lg text-[#e8eaf0] tracking-wider overflow-hidden text-ellipsis whitespace-nowrap">

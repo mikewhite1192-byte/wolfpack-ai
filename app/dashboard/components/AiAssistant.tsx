@@ -50,17 +50,15 @@ export default function AiAssistant() {
       <button
         onClick={() => setOpen(!open)}
         title="AI Assistant"
-        className={`fixed bottom-6 right-6 rounded-full bg-[#E86A2A] border-none cursor-pointer z-[400] flex items-center justify-center text-white transition-transform hover:scale-110 ${
-          open ? "w-10 h-10" : "w-5 h-5"
-        }`}
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-[#E86A2A] border-none cursor-pointer z-[400] flex items-center justify-center text-white transition-transform hover:scale-110"
         style={!open ? { animation: "ai-pulse 2s infinite", padding: 0 } : { padding: 0 }}
       >
-        {open ? <X className="w-5 h-5" /> : <Bot className="w-0 h-0" />}
+        {open ? <X className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
       </button>
 
       {/* Chat Panel */}
       {open && (
-        <div className="fixed bottom-[90px] right-6 w-[400px] max-w-[calc(100vw-48px)] h-[520px] max-h-[calc(100vh-120px)] bg-[#0a0a0a] border border-white/[0.07] rounded-2xl z-[400] flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+        <div className="fixed bottom-[90px] right-4 sm:right-6 w-[400px] max-w-[calc(100vw-32px)] sm:max-w-[calc(100vw-48px)] h-[520px] max-h-[calc(100vh-120px)] bg-[#0a0a0a] border border-white/[0.07] rounded-2xl z-[400] flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
           {/* Header */}
           <div className="px-5 py-3.5 border-b border-white/[0.07] flex items-center justify-between flex-shrink-0">
             <div className="text-[15px] font-bold text-[#e8eaf0] font-display tracking-wider flex items-center gap-2">

@@ -69,14 +69,14 @@ export default function ContactsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
         <div className="font-display text-[28px] text-[#e8eaf0] tracking-wide">CONTACTS</div>
         <div className="flex gap-2">
-          <button onClick={() => setShowImport(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-[#111] text-[#e8eaf0] text-sm font-semibold border border-white/[0.07] rounded-lg cursor-pointer hover:bg-white/[0.06] transition-colors">
-            <Upload className="w-3.5 h-3.5" /> Import CSV
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-[#111] text-[#e8eaf0] text-xs sm:text-sm font-semibold border border-white/[0.07] rounded-lg cursor-pointer hover:bg-white/[0.06] transition-colors">
+            <Upload className="w-3.5 h-3.5" /> Import
           </button>
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-5 py-2.5 bg-[#E86A2A] text-white text-sm font-bold border-none rounded-lg cursor-pointer hover:bg-[#ff7b3a] transition-colors">
-            <Plus className="w-3.5 h-3.5" /> Add Contact
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-3 sm:px-5 py-2.5 bg-[#E86A2A] text-white text-xs sm:text-sm font-bold border-none rounded-lg cursor-pointer hover:bg-[#ff7b3a] transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add
           </button>
         </div>
       </div>

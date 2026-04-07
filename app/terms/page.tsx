@@ -15,7 +15,7 @@ export default function TermsOfService() {
   return (
     <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif", color: T.text }}>
       <main style={{ maxWidth: 760, margin: "0 auto", padding: "80px 24px" }}>
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, letterSpacing: 2, marginBottom: 6 }}>Terms of Service</h1>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(28px, 6vw, 42px)", letterSpacing: 2, marginBottom: 6 }}>Terms of Service</h1>
         <p style={{ color: T.muted, marginBottom: 40 }}>Last updated: March 2026</p>
 
         <p style={{ color: T.muted, lineHeight: 1.8, marginBottom: 28 }}>These Terms of Service ("Terms") govern your use of the services provided by The Wolf Pack Co ("we," "us," or "our"), including our website at thewolfpackco.com and all related services. By using our services, you agree to these Terms.</p>

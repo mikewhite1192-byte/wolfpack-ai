@@ -54,7 +54,7 @@ export default function GbpPage() {
           </div>
         )}
 
-        <div className="flex gap-1 bg-[#111] border border-white/[0.07] rounded-xl p-1 mb-6 w-fit">
+        <div className="flex gap-1 bg-[#111] border border-white/[0.07] rounded-xl p-1 mb-6 w-full sm:w-fit overflow-x-auto">
           {(["overview", "posts", "reviews", "insights"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all ${tab === t ? "bg-[#E86A2A] text-white" : "bg-transparent text-[#b0b4c8] hover:text-[#e8eaf0]"}`}>

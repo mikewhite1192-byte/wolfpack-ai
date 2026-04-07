@@ -78,7 +78,7 @@ export default function CalendarPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
         <div className="font-display text-[28px] text-[#e8eaf0] tracking-wide">CALENDAR</div>
         <div className="flex items-center gap-3">
           <button onClick={() => { setCurrentMonth(new Date(year, month - 1, 1)); setSelectedDate(null); }}

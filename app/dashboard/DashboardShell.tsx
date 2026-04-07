@@ -297,7 +297,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {dialOpen && isAdmin && <DialPad onClose={() => { setDialOpen(false); setDialNumber(""); }} initialNumber={dialNumber} />}
 
       {/* Content */}
-      <main className="max-w-[1400px] mx-auto px-6 pt-[72px] pb-7">{children}</main>
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pt-[72px] pb-7">{children}</main>
 
       <AiAssistant />
     </div>

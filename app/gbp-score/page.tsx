@@ -136,11 +136,11 @@ export default function GbpScorePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#e8eaf0] font-sans">
-      <nav className="fixed top-4 left-4 right-4 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl px-8 h-14 flex items-center justify-between">
-        <Link href="/" className="font-display text-xl tracking-[2px] text-[#e8eaf0] no-underline">THE <span className="text-[#E86A2A]">WOLF</span> PACK</Link>
-        <div className="flex gap-4">
-          <Link href="/score" className="text-sm text-[#b0b4c8] no-underline hover:text-white transition-colors">Website Scorer</Link>
-          <Link href="/" className="text-sm text-[#b0b4c8] no-underline hover:text-white transition-colors">← Home</Link>
+      <nav className="fixed top-4 left-4 right-4 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl px-4 sm:px-8 h-14 flex items-center justify-between">
+        <Link href="/" className="font-display text-lg sm:text-xl tracking-[2px] text-[#e8eaf0] no-underline">THE <span className="text-[#E86A2A]">WOLF</span> PACK</Link>
+        <div className="flex gap-2 sm:gap-4">
+          <Link href="/score" className="text-xs sm:text-sm text-[#b0b4c8] no-underline hover:text-white transition-colors">Website Scorer</Link>
+          <Link href="/" className="text-xs sm:text-sm text-[#b0b4c8] no-underline hover:text-white transition-colors">← Home</Link>
         </div>
       </nav>
 
@@ -164,7 +164,7 @@ export default function GbpScorePage() {
               <input value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g., Summit Roofing" className={inputClass} />
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               <div>
                 <label className="text-xs font-bold text-[#b0b4c8] uppercase tracking-wider mb-1.5 block">Reviews</label>
                 <input type="number" value={reviewCount} onChange={e => setReviewCount(e.target.value)} placeholder="0" className={inputClass} />

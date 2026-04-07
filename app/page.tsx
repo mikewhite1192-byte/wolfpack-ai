@@ -250,7 +250,7 @@ function HeroSection({ setDemoOpen }: { setDemoOpen: (v: boolean) => void }) {
       }} />
 
       {/* Content — slight parallax up on scroll, above smoke */}
-      <div className="relative z-[5] max-w-[1200px] w-full mx-auto px-6 md:px-16" style={{ transform: `translateY(${contentY}px)` }}>
+      <div className="relative z-[5] max-w-[1200px] w-full mx-auto px-5 sm:px-6 md:px-16" style={{ transform: `translateY(${contentY}px)` }}>
         <div className="max-w-[580px]">
           <div className="animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#E86A2A]/15 border border-[#E86A2A]/30 rounded-full text-[11px] font-semibold text-[#E86A2A] tracking-widest uppercase mb-7 backdrop-blur-sm">
@@ -537,7 +537,7 @@ function AnimatedDashboard() {
   ];
 
   return (
-    <div ref={dashRef} className="max-w-[1000px] mx-auto px-10 pt-16 pb-5 relative" style={{ perspective: 1200 }}>
+    <div ref={dashRef} className="max-w-[1000px] mx-auto px-4 sm:px-10 pt-16 pb-5 relative" style={{ perspective: 1200 }}>
       <div style={{ transform: "rotateX(4deg) rotateY(-1deg)", transformOrigin: "center center" }} className="relative">
         <div className="absolute -inset-10 rounded-[40px] blur-[40px] pointer-events-none" style={{ background: "radial-gradient(ellipse at center, rgba(232,106,42,0.08) 0%, transparent 70%)" }} />
         <div className="relative z-[1] bg-[#111]/85 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_40px_80px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05),inset_0_1px_0_rgba(255,255,255,0.06)]">
@@ -668,7 +668,7 @@ export default function Home() {
       <div className="relative z-[1]">
 
       {/* ── Nav ── */}
-      <nav className={`fixed top-4 left-4 right-4 z-50 flex justify-between items-center px-8 h-14 rounded-2xl transition-all duration-300 ${
+      <nav className={`fixed top-4 left-4 right-4 z-50 flex justify-between items-center px-4 sm:px-8 h-14 rounded-2xl transition-all duration-300 ${
         scrolled ? "bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/[0.06]" : "bg-transparent border border-transparent"
       }`}>
         <Link href="/" className="font-display text-xl tracking-[2px] text-[#e8eaf0] no-underline">
@@ -695,7 +695,7 @@ export default function Home() {
 
       {/* ── Stats Bar ── */}
       <ScrollReveal>
-        <div className="flex flex-col md:flex-row justify-center max-w-[1000px] mx-auto py-20 px-10">
+        <div className="flex flex-col md:flex-row justify-center max-w-[1000px] mx-auto py-20 px-5 sm:px-10">
           {[
             { num: "3 SEC", label: "Response time" },
             { num: "24/7", label: "Never misses a lead" },
@@ -730,7 +730,7 @@ export default function Home() {
       <ScrollReveal>
         <div className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 30%, #111 70%, #0e0e0e 100%)" }}>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-full rounded-full pointer-events-none blur-[60px]" style={{ background: "radial-gradient(ellipse, rgba(232,106,42,0.04) 0%, transparent 60%)" }} />
-          <div className="max-w-[900px] mx-auto px-10 py-20 text-center relative">
+          <div className="max-w-[900px] mx-auto px-5 sm:px-10 py-20 text-center relative">
             <h2 className="font-display text-[clamp(36px,5vw,48px)] mb-3 tracking-wide leading-none">
               EVERY MINUTE YOU WAIT <span className="text-[#E86A2A]">YOUR LEAD IS TEXTING SOMEONE ELSE</span>
             </h2>
@@ -754,7 +754,7 @@ export default function Home() {
       {/* ── The Difference ── */}
       <ScrollReveal>
         <div className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0e0e0e 0%, #0a0a0a 50%, #0a0a0a 100%)" }}>
-          <div className="max-w-[1000px] mx-auto px-10 py-20 relative">
+          <div className="max-w-[1000px] mx-auto px-5 sm:px-10 py-20 relative">
             <div className="text-center mb-14">
               <div className="text-[11px] font-bold text-[#E86A2A] tracking-[3px] uppercase mb-4">The Difference</div>
               <h2 className="font-display text-[clamp(36px,5vw,52px)] mb-3.5 tracking-wide leading-tight">
@@ -790,7 +790,7 @@ export default function Home() {
 
       {/* ── Before / After ── */}
       <ScrollReveal>
-        <div className="max-w-[1000px] mx-auto px-10 py-20">
+        <div className="max-w-[1000px] mx-auto px-5 sm:px-10 py-20">
           <div className="text-center mb-12">
             <div className="text-[11px] font-bold text-[#E86A2A] tracking-[3px] uppercase mb-4">The Reality</div>
             <h2 className="font-display text-[clamp(36px,5vw,48px)] tracking-wide leading-tight">
@@ -826,7 +826,7 @@ export default function Home() {
 
       {/* ── Proof Bar ── */}
       <div className="border-y border-white/[0.06]" style={{ background: "linear-gradient(180deg, #0c0c0c, #0f0f0f, #0c0c0c)" }}>
-        <div className="max-w-[900px] mx-auto py-12 px-10 flex flex-wrap justify-center gap-12">
+        <div className="max-w-[900px] mx-auto py-12 px-5 sm:px-10 flex flex-wrap justify-center gap-6 sm:gap-12">
           {[
             { num: "47", label: "Appointments booked in 30 days" },
             { num: "3 SEC", label: "Average response time" },
@@ -846,7 +846,7 @@ export default function Home() {
 
       {/* ── How It Works ── */}
       <ScrollReveal>
-        <div id="how" className="max-w-[960px] mx-auto px-10 pt-20 pb-10 relative">
+        <div id="how" className="max-w-[960px] mx-auto px-5 sm:px-10 pt-20 pb-10 relative">
           <div className="text-center mb-14">
             <div className="text-[11px] font-bold text-[#E86A2A] tracking-[3px] uppercase mb-4">How It Works</div>
             <h2 className="font-display text-[clamp(36px,5vw,52px)] mb-3 tracking-wide leading-tight">
@@ -875,7 +875,7 @@ export default function Home() {
 
       {/* ── Demo CTA ── */}
       <ScrollReveal>
-        <div className="py-20 px-10" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 40%, #0d0b09 60%, #0a0a0a 100%)" }}>
+        <div className="py-20 px-5 sm:px-10" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 40%, #0d0b09 60%, #0a0a0a 100%)" }}>
           <div className="max-w-[640px] mx-auto text-center p-14 rounded-2xl border border-[#E86A2A]/25 shadow-[0_0_60px_rgba(232,106,42,0.06)]" style={{ background: "linear-gradient(180deg, rgba(232,106,42,0.04), rgba(232,106,42,0.01))" }}>
             <h2 className="font-display text-4xl mb-3">SEE IT <span className="text-[#E86A2A]">WORK ON YOU</span></h2>
             <p className="text-[15px] text-white/40 mb-7 leading-relaxed">Enter your number. Wolf Pack AI texts you back in 3 seconds, qualifies you, and books an appointment on your calendar.</p>
@@ -889,7 +889,7 @@ export default function Home() {
       {/* ── Pricing ── */}
       <ScrollReveal>
         <div className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 20%, #111 50%, #0e0e0e 80%, #0a0a0a 100%)" }}>
-          <div id="pricing" className="max-w-[1000px] mx-auto px-10 py-16 relative">
+          <div id="pricing" className="max-w-[1000px] mx-auto px-5 sm:px-10 py-16 relative">
             <div className="text-center mb-14">
               <div className="text-[11px] font-bold text-[#E86A2A] tracking-[3px] uppercase mb-4">Pricing</div>
               <h2 className="font-display text-[clamp(32px,5vw,48px)] mb-3 tracking-wide leading-tight">ONE MISSED APPOINTMENT COSTS MORE THAN THIS.</h2>
@@ -901,7 +901,7 @@ export default function Home() {
               <div className="relative bg-[#E86A2A]/[0.03] border-2 border-[#E86A2A] rounded-2xl p-9 hover:border-[#ff7b3a] transition-all duration-300">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#E86A2A] text-white text-[10px] font-bold px-3.5 py-1 rounded-full tracking-wider">ALL-IN-ONE</div>
                 <div className="flex flex-col md:flex-row justify-between gap-6">
-                  <div className="flex-1 min-w-[240px]">
+                  <div className="flex-1 min-w-0 md:min-w-[240px]">
                     <div className="text-xs font-bold text-white/30 uppercase tracking-[1.5px] mb-2">WOLF PACK AI</div>
                     <div className="font-display text-[56px] text-[#e8eaf0] leading-none">$97<span className="text-[15px] text-white/30 font-sans">/mo</span></div>
                     <p className="text-sm text-white/40 mt-3 mb-5">Everything you need. Blue texts, AI agent, CRM. One price.</p>
@@ -910,7 +910,7 @@ export default function Home() {
                       Get Started
                     </button>
                   </div>
-                  <div className="flex-1 min-w-[240px] grid grid-cols-2 gap-x-4 gap-y-0.5 content-start">
+                  <div className="flex-1 min-w-0 md:min-w-[240px] grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 content-start">
                     {["AI Appointment Setter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Self-Learning AI", "CSV Import", "Analytics"].map(f => (
                       <div key={f} className="text-[13px] text-white/50 py-1.5 flex items-center gap-2">
                         <span className="text-emerald-400 text-[11px] font-bold">✓</span>{f}
@@ -958,7 +958,7 @@ export default function Home() {
       </ScrollReveal>
 
       {/* ── FAQ ── */}
-      <div id="faq" className="max-w-[640px] mx-auto px-10 py-16">
+      <div id="faq" className="max-w-[640px] mx-auto px-5 sm:px-10 py-16">
         <div className="text-center mb-10">
           <h2 className="font-display text-[44px] tracking-wide">Questions? We Got You.</h2>
         </div>
@@ -966,7 +966,7 @@ export default function Home() {
       </div>
 
       {/* ── Final CTA ── */}
-      <div className="py-16 px-10 text-center relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 50%, #0f0c0a 100%)" }}>
+      <div className="py-16 px-5 sm:px-10 text-center relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 50%, #0f0c0a 100%)" }}>
         <h2 className="font-display text-[44px] mb-4 tracking-wide leading-tight relative z-[1]">
           STOP LOSING APPOINTMENTS TO<br /><span className="text-[#E86A2A]">WHOEVER RESPONDED FASTER</span>
         </h2>
@@ -985,7 +985,7 @@ export default function Home() {
       <ChatWidget />
 
       {/* ── Footer ── */}
-      <footer className="border-t border-white/[0.04] px-10 pt-20 pb-10">
+      <footer className="border-t border-white/[0.04] px-5 sm:px-10 pt-20 pb-10">
         <div className="text-center mb-16">
           <div className="font-display text-[42px] tracking-wide text-white/60 mb-4">YOUR COMPETITION ISN&apos;T WAITING.</div>
           <button onClick={() => setDemoOpen(true)} className="px-10 py-4 bg-[#E86A2A] text-white rounded-xl text-base font-bold border-none cursor-pointer hover:bg-[#ff7b3a] transition-all duration-200 shadow-[0_4px_20px_rgba(232,106,42,0.3)]">

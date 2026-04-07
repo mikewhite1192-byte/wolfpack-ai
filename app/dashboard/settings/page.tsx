@@ -106,10 +106,10 @@ export default function SettingsPage() {
     <div>
       <div className="font-display text-[28px] text-[#e8eaf0] tracking-wide mb-6">SETTINGS</div>
 
-      <div className="flex gap-1 bg-[#111] border border-white/[0.07] rounded-xl p-1 mb-6 w-fit flex-wrap">
+      <div className="flex gap-1 bg-[#111] border border-white/[0.07] rounded-xl p-1 mb-6 w-full sm:w-fit flex-wrap overflow-x-auto">
         {TABS.map(([key, label]) => (
           <button key={key} onClick={() => setSettingsTab(key)}
-            className={`px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all ${settingsTab === key ? "bg-[#E86A2A] text-white" : "bg-transparent text-[#b0b4c8] hover:text-[#e8eaf0]"}`}>{label}</button>
+            className={`px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold cursor-pointer border-none transition-all whitespace-nowrap ${settingsTab === key ? "bg-[#E86A2A] text-white" : "bg-transparent text-[#b0b4c8] hover:text-[#e8eaf0]"}`}>{label}</button>
         ))}
       </div>
 

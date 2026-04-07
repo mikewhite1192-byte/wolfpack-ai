@@ -16,7 +16,7 @@ export default function PrivacyPolicy() {
   return (
     <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif", color: T.text }}>
       <main style={{ maxWidth: 760, margin: "0 auto", padding: "80px 24px" }}>
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, letterSpacing: 2, marginBottom: 6 }}>Privacy Policy</h1>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(28px, 6vw, 42px)", letterSpacing: 2, marginBottom: 6 }}>Privacy Policy</h1>
         <p style={{ color: T.muted, marginBottom: 40 }}>Last updated: March 2026</p>
 
         <p style={{ color: T.muted, lineHeight: 1.8, marginBottom: 28 }}>The Wolf Pack Co ("we," "us," or "our") operates the website thewolfpackco.com and provides digital marketing, lead generation, and CRM services (the "Service"). This Privacy Policy explains how we collect, use, and protect your information.</p>

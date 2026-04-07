@@ -138,12 +138,12 @@ export default function WebsiteScorePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#e8eaf0] font-sans">
       {/* Nav */}
-      <nav className="fixed top-4 left-4 right-4 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl px-8 h-14 flex items-center justify-between">
-        <Link href="/" className="font-display text-xl tracking-[2px] text-[#e8eaf0] no-underline">
+      <nav className="fixed top-4 left-4 right-4 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl px-4 sm:px-8 h-14 flex items-center justify-between">
+        <Link href="/" className="font-display text-lg sm:text-xl tracking-[2px] text-[#e8eaf0] no-underline">
           THE <span className="text-[#E86A2A]">WOLF</span> PACK
         </Link>
-        <Link href="/" className="text-sm text-[#b0b4c8] no-underline hover:text-white transition-colors">
-          ← Back to home
+        <Link href="/" className="text-xs sm:text-sm text-[#b0b4c8] no-underline hover:text-white transition-colors">
+          ← Back
         </Link>
       </nav>
 
@@ -162,7 +162,7 @@ export default function WebsiteScorePage() {
         </div>
 
         {/* Input */}
-        <div className="flex gap-3 mb-8 max-w-xl mx-auto">
+        <div className="flex flex-col sm:flex-row gap-3 mb-8 max-w-xl mx-auto">
           <input
             value={url}
             onChange={e => setUrl(e.target.value)}
@@ -173,7 +173,7 @@ export default function WebsiteScorePage() {
           <button
             onClick={handleScore}
             disabled={loading || !url.trim()}
-            className={`px-8 py-4 rounded-xl text-base font-bold border-none cursor-pointer whitespace-nowrap transition-all flex items-center gap-2 ${
+            className={`px-8 py-4 rounded-xl text-base font-bold border-none cursor-pointer whitespace-nowrap transition-all flex items-center justify-center gap-2 ${
               loading || !url.trim()
                 ? "bg-white/5 text-[#b0b4c8] cursor-not-allowed"
                 : "bg-[#E86A2A] text-white hover:bg-[#ff7b3a] shadow-[0_4px_20px_rgba(232,106,42,0.3)]"

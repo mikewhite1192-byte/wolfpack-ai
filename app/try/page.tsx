@@ -108,7 +108,7 @@ export default function TryPage() {
           {error && <p style={{ color: "#e74c3c", fontSize: 13, marginTop: 12 }}>{error}</p>}
 
           {/* Stats */}
-          <div style={{ display: "flex", gap: 40, justifyContent: "center", marginTop: 48 }}>
+          <div style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 48, flexWrap: "wrap" as const }}>
             {[
               { num: "3 SEC", label: "Response time" },
               { num: "24/7", label: "Never sleeps" },

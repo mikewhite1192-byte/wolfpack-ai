@@ -202,9 +202,9 @@ export default function DemoPage() {
 
         {/* Live View — Full CRM experience */}
         {step === "live" && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#0a0a0a", zIndex: 1000, display: "flex" }}>
-            {/* Sidebar */}
-            <div style={{ width: 220, background: "#080f1e", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#0a0a0a", zIndex: 1000, display: "flex", overflow: "hidden" }}>
+            {/* Sidebar — hidden on mobile */}
+            <div className="hidden lg:flex" style={{ width: 220, background: "#080f1e", borderRight: "1px solid rgba(255,255,255,0.07)", flexDirection: "column", flexShrink: 0 }}>
               <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "#e8eaf0", letterSpacing: 1.5 }}>THE <span style={{ color: "#E86A2A" }}>WOLF</span> PACK AI</div>
                 <div style={{ fontSize: 10, color: "#b0b4c8", marginTop: 2 }}>Live Demo</div>
@@ -227,8 +227,8 @@ export default function DemoPage() {
               </div>
             </div>
 
-            {/* Conversation List */}
-            <div style={{ width: 280, borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+            {/* Conversation List — hidden on mobile */}
+            <div className="hidden md:flex" style={{ width: 280, borderRight: "1px solid rgba(255,255,255,0.07)", flexDirection: "column", flexShrink: 0 }}>
               <div style={{ padding: 12, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 <input placeholder="Search..." style={{ width: "100%", padding: "8px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8, fontSize: 13, color: "#e8eaf0", outline: "none", boxSizing: "border-box" }} readOnly />
               </div>
@@ -266,7 +266,7 @@ export default function DemoPage() {
             </div>
 
             {/* Message Thread */}
-            <div style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", borderRight: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="flex-1 md:w-[380px] md:flex-none" style={{ display: "flex", flexDirection: "column", borderRight: "1px solid rgba(255,255,255,0.07)", minWidth: 0, flexShrink: 0 }}>
               <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#e8eaf0", fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 }}>{name}</div>
@@ -338,8 +338,8 @@ export default function DemoPage() {
               </div>
             </div>
 
-            {/* Contact Card */}
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            {/* Contact Card — hidden on mobile */}
+            <div className="hidden md:flex" style={{ flex: 1, overflowY: "auto", flexDirection: "column" }}>
               <div style={{ padding: "20px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>
                 <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(232,106,42,0.2)", color: "#E86A2A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", margin: "0 auto 10px" }}>
                   {name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()}
