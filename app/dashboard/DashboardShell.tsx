@@ -134,6 +134,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [subChecked, setSubChecked] = useState(false);
   const [hasSubscription, setHasSubscription] = useState(false);
 
+  async function handleSignOut() {
+    setSigningOut(true);
+    await signOut({ redirectUrl: "/" });
+  }
+
   async function handleDemoSignOut() {
     setSigningOut(true);
     try { await fetch("/api/demo/reset", { method: "POST" }); } catch {}
@@ -267,7 +272,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <Phone className="w-3 h-3" /> Dial
               </button>
             )}
-            <button onClick={handleDemoSignOut} disabled={signingOut}
+            <button onClick={isAdmin || hasSubscription ? handleSignOut : handleDemoSignOut} disabled={signingOut}
               className="hidden sm:block text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:text-red-400 transition-colors px-2 py-1.5">
               {signingOut ? "..." : "Sign Out"}
             </button>
@@ -305,7 +310,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <Phone className="w-3 h-3" /> Dial
               </button>
             )}
-            <button onClick={handleDemoSignOut} disabled={signingOut}
+            <button onClick={isAdmin || hasSubscription ? handleSignOut : handleDemoSignOut} disabled={signingOut}
               className="text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:text-red-400 px-3 py-2">
               {signingOut ? "..." : "Sign Out"}
             </button>
