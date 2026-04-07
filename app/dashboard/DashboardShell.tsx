@@ -151,7 +151,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   // Check subscription + link Stripe session if coming from checkout
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
+    if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) return;
 
     async function checkSub() {
       // If URL has session_id from Stripe checkout, link it to this user
@@ -168,7 +168,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       }
 
       // Check admin first — skip Stripe check entirely for admin users
-      const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
+      const email = user!.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
       const isAdminUser = ADMIN_EMAILS.includes(email);
 
       if (isAdminUser) {
