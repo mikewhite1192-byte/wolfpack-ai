@@ -23,6 +23,7 @@ const ADMIN_NAV = [
 ];
 
 const ADMIN_EMAILS = ["info@thewolfpackco.com"];
+const DEMO_EMAILS = ["mikewhite1192@gmail.com"];
 
 function DialPad({ onClose, initialNumber }: { onClose: () => void; initialNumber?: string }) {
   const [number, setNumber] = useState(initialNumber || "");
@@ -218,7 +219,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   if (!isSignedIn) return <div className="min-h-screen bg-[#0a0a0a]" />;
   if (!subChecked) return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-[#b0b4c8]">Verifying account...</div>;
 
-  const isAdmin = isSignedIn && user?.primaryEmailAddress?.emailAddress && ADMIN_EMAILS.includes(user.primaryEmailAddress.emailAddress.toLowerCase());
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
+  const isAdmin = isSignedIn && ADMIN_EMAILS.includes(userEmail);
+  const isDemoUser = isSignedIn && DEMO_EMAILS.includes(userEmail);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -272,7 +275,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <Phone className="w-3 h-3" /> Dial
               </button>
             )}
-            <button onClick={isAdmin || hasSubscription ? handleSignOut : handleDemoSignOut} disabled={signingOut}
+            <button onClick={isDemoUser ? handleDemoSignOut : handleSignOut} disabled={signingOut}
               className="hidden sm:block text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:text-red-400 transition-colors px-2 py-1.5">
               {signingOut ? "..." : "Sign Out"}
             </button>
@@ -310,7 +313,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <Phone className="w-3 h-3" /> Dial
               </button>
             )}
-            <button onClick={isAdmin || hasSubscription ? handleSignOut : handleDemoSignOut} disabled={signingOut}
+            <button onClick={isDemoUser ? handleDemoSignOut : handleSignOut} disabled={signingOut}
               className="text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:text-red-400 px-3 py-2">
               {signingOut ? "..." : "Sign Out"}
             </button>
