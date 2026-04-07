@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { GripVertical, X, Mail, MapPin, Check } from "lucide-react";
+import { GripVertical, X, Mail, MapPin, Check, Copy, ChevronDown, ChevronRight } from "lucide-react";
 
 interface Stage { id?: string; name: string; color: string; isWon: boolean; isLost: boolean; }
 interface Pipeline { id: string; name: string; }
@@ -34,7 +34,7 @@ const textareaClass = `${inputClass} resize-y min-h-[100px]`;
 const labelClass = "text-xs text-[#b0b4c8] font-semibold mb-1.5 block";
 
 export default function SettingsPage() {
-  const [settingsTab, setSettingsTab] = useState<"pipeline" | "sms" | "email" | "account" | "aiAgent">("aiAgent");
+  const [settingsTab, setSettingsTab] = useState<"pipeline" | "sms" | "email" | "account" | "aiAgent" | "leadSources">("aiAgent");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState("");
@@ -52,6 +52,9 @@ export default function SettingsPage() {
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailEmail, setGmailEmail] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [workspaceId, setWorkspaceId] = useState<string>("");
+  const [fbManualOpen, setFbManualOpen] = useState(false);
+  const [copied, setCopied] = useState<string>("");
   const [reports, setReports] = useState<{ id: string; type: string; content: string; created_at: string }[]>([]);
   const [generatingReport, setGeneratingReport] = useState(false);
   const [aiConfig, setAiConfig] = useState({
@@ -77,6 +80,7 @@ export default function SettingsPage() {
       const b = data.workspace.branding || {};
       setAccount({ name: data.workspace.name || "", ownerName: b.ownerName || "", phone: b.phone || "", email: b.email || "" });
       setGmailConnected(!!data.workspace.gmail_connected); setGmailEmail(data.workspace.gmail_email || null);
+      if (data.workspace.id) setWorkspaceId(data.workspace.id);
       if (data.workspace.ai_config) setAiConfig(prev => ({ ...prev, ...data.workspace.ai_config }));
     }
     try { const rRes = await fetch("/api/ai-agent/daily-report"); const rData = await rRes.json(); if (rData.reports) setReports(rData.reports); } catch {}
@@ -90,6 +94,27 @@ export default function SettingsPage() {
   async function disconnectGmail() { setDisconnecting(true); await fetch("/api/email/disconnect", { method: "POST" }); setGmailConnected(false); setGmailEmail(null); setDisconnecting(false); }
   async function generateReport(type: "morning" | "eod") { setGeneratingReport(true); try { const res = await fetch("/api/ai-agent/daily-report", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type }) }); const data = await res.json(); if (data.report) setReports(prev => [{ id: Date.now().toString(), type, content: data.report, created_at: new Date().toISOString() }, ...prev]); } catch {} setGeneratingReport(false); }
 
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(""), 2000);
+  }
+
+  function CopyField({ label, value }: { label: string; value: string }) {
+    return (
+      <div className="mb-3">
+        <label className={labelClass}>{label}</label>
+        <div className="flex items-center gap-2">
+          <input className={`${inputClass} flex-1 !bg-black/30 font-mono !text-xs`} readOnly value={value} />
+          <button onClick={() => copyToClipboard(value, label)}
+            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${copied === label ? "bg-emerald-400/15 border-emerald-400/30 text-emerald-400" : "bg-white/[0.05] border-white/[0.07] text-[#b0b4c8] hover:text-[#e8eaf0] hover:border-white/[0.15]"}`}>
+            {copied === label ? <><Check className="w-3 h-3" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy</>}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
     return (
       <div onClick={onClick} className={`w-10 h-[22px] rounded-full cursor-pointer transition-colors relative flex-shrink-0 ${on ? "bg-emerald-400" : "bg-white/10"}`}>
@@ -100,7 +125,7 @@ export default function SettingsPage() {
 
   if (loading) return <div className="text-[#b0b4c8] py-10 text-center">Loading settings...</div>;
 
-  const TABS = [["aiAgent", "AI Sales Agent"], ["pipeline", "Pipeline Stages"], ["sms", "SMS Templates"], ["email", "Email Templates"], ["account", "Account"]] as const;
+  const TABS = [["aiAgent", "AI Sales Agent"], ["leadSources", "\u{1F4E1} Lead Sources"], ["pipeline", "Pipeline Stages"], ["sms", "SMS Templates"], ["email", "Email Templates"], ["account", "Account"]] as const;
 
   return (
     <div>
@@ -298,6 +323,100 @@ export default function SettingsPage() {
         </Card>
 
         <SaveBar section="aiAgent" saved={saved} saving={saving} onClick={() => saveSection("aiAgent", { aiConfig })} />
+      </>)}
+
+      {/* ── Lead Sources ── */}
+      {settingsTab === "leadSources" && (<>
+        {/* Facebook Lead Ads */}
+        <Card>
+          <SectionTitle>Facebook Lead Ads</SectionTitle>
+          <p className="text-xs text-[#b0b4c8] leading-relaxed mb-4">Connect your Facebook page to automatically receive leads from Facebook Lead Ads directly into your CRM.</p>
+
+          <div className="flex items-center justify-between py-3 border-b border-white/[0.07] mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#1877F2]/15 flex items-center justify-center text-[#1877F2] text-sm font-bold">f</div>
+              <div>
+                <div className="text-sm font-semibold text-[#e8eaf0]">Facebook Page Connection</div>
+                <div className="text-xs text-[#b0b4c8]">Not connected</div>
+              </div>
+            </div>
+            <a href="/api/meta/connect"
+              className="px-4 py-2 bg-[#1877F2]/15 border border-[#1877F2]/30 rounded-lg text-[#1877F2] text-xs font-bold no-underline hover:bg-[#1877F2]/25 transition-colors cursor-pointer">
+              Connect Facebook
+            </a>
+          </div>
+
+          <button onClick={() => setFbManualOpen(!fbManualOpen)}
+            className="flex items-center gap-2 bg-transparent border-none text-[#b0b4c8] text-xs font-semibold cursor-pointer hover:text-[#e8eaf0] transition-colors mb-2 p-0">
+            {fbManualOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            Manual Setup (Webhook)
+          </button>
+
+          {fbManualOpen && (
+            <div className="mt-3 pl-5 border-l-2 border-white/[0.07]">
+              <CopyField label="Webhook URL" value={`https://thewolfpack.ai/api/webhooks/facebook?ws=${workspaceId}`} />
+              <CopyField label="Verify Token" value="wolfpack_verify" />
+
+              <div className="mt-4">
+                <label className={labelClass}>Setup Instructions</label>
+                <div className="bg-black/30 rounded-lg p-4 text-xs text-[#b0b4c8] leading-relaxed space-y-2">
+                  <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">1.</span><span>Go to <strong className="text-[#e8eaf0]">Meta Business Suite</strong> &rarr; All Tools &rarr; Leads Center &rarr; CRM Integration</span></div>
+                  <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">2.</span><span>Select your Facebook page</span></div>
+                  <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">3.</span><span>Choose <strong className="text-[#e8eaf0]">&quot;Connect CRM&quot;</strong> &rarr; <strong className="text-[#e8eaf0]">&quot;Connect through webhooks&quot;</strong></span></div>
+                  <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">4.</span><span>Paste the <strong className="text-[#e8eaf0]">Webhook URL</strong> and <strong className="text-[#e8eaf0]">Verify Token</strong> from above</span></div>
+                  <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">5.</span><span>Click <strong className="text-[#e8eaf0]">&quot;Test the connection&quot;</strong> to verify it works</span></div>
+                  <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">6.</span><span>Done — leads from Facebook Lead Ads will appear in your CRM automatically</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Google Ads Lead Forms */}
+        <Card>
+          <SectionTitle>Google Ads Lead Forms</SectionTitle>
+          <p className="text-xs text-[#b0b4c8] leading-relaxed mb-4">Connect Google Ads lead form extensions to automatically send leads into your CRM.</p>
+
+          <CopyField label="Webhook URL" value={`https://thewolfpack.ai/api/webhooks/google?ws=${workspaceId}`} />
+
+          <div className="mt-4">
+            <label className={labelClass}>Setup Instructions</label>
+            <div className="bg-black/30 rounded-lg p-4 text-xs text-[#b0b4c8] leading-relaxed space-y-2">
+              <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">1.</span><span>Go to <strong className="text-[#e8eaf0]">Google Ads</strong> &rarr; Assets &rarr; Lead Form Extensions</span></div>
+              <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">2.</span><span>Edit your lead form &rarr; <strong className="text-[#e8eaf0]">Webhook integration</strong></span></div>
+              <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">3.</span><span>Paste the <strong className="text-[#e8eaf0]">Webhook URL</strong> from above</span></div>
+              <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">4.</span><span>Add a Google key (optional) for extra security</span></div>
+              <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">5.</span><span>Click <strong className="text-[#e8eaf0]">&quot;Test and save&quot;</strong></span></div>
+              <div className="flex gap-2"><span className="text-[#E86A2A] font-bold flex-shrink-0">6.</span><span>Done — leads from Google Ads will appear in your CRM automatically</span></div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Generic Webhook / Zapier */}
+        <Card>
+          <SectionTitle>Generic Webhook / Zapier</SectionTitle>
+          <p className="text-xs text-[#b0b4c8] leading-relaxed mb-4">Use this for Zapier, Make, or any other lead source. Send a POST request with the JSON payload below.</p>
+
+          <CopyField label="Webhook URL" value="https://thewolfpack.ai/api/leads" />
+
+          <div className="mt-4">
+            <label className={labelClass}>JSON Payload Format</label>
+            <div className="bg-black/30 rounded-lg p-4 font-mono text-xs text-[#e8eaf0] leading-relaxed">
+              <div>{"{"}</div>
+              <div className="pl-4"><span className="text-[#E86A2A]">&quot;firstName&quot;</span>: <span className="text-emerald-400">&quot;John&quot;</span>,</div>
+              <div className="pl-4"><span className="text-[#E86A2A]">&quot;lastName&quot;</span>: <span className="text-emerald-400">&quot;Doe&quot;</span>,</div>
+              <div className="pl-4"><span className="text-[#E86A2A]">&quot;email&quot;</span>: <span className="text-emerald-400">&quot;john@example.com&quot;</span>,</div>
+              <div className="pl-4"><span className="text-[#E86A2A]">&quot;phone&quot;</span>: <span className="text-emerald-400">&quot;(555) 123-4567&quot;</span>,</div>
+              <div className="pl-4"><span className="text-[#E86A2A]">&quot;source&quot;</span>: <span className="text-emerald-400">&quot;zapier&quot;</span>,</div>
+              <div className="pl-4"><span className="text-[#E86A2A]">&quot;sourceDetail&quot;</span>: <span className="text-emerald-400">&quot;Contact Form&quot;</span></div>
+              <div>{"}"}</div>
+            </div>
+          </div>
+
+          <div className="mt-3 text-[11px] text-[#b0b4c8] bg-[#E86A2A]/5 border border-[#E86A2A]/15 rounded-lg px-3 py-2">
+            Send a <strong className="text-[#e8eaf0]">POST</strong> request with <strong className="text-[#e8eaf0]">Content-Type: application/json</strong> and include your workspace header or query param <strong className="text-[#e8eaf0]">?ws={workspaceId}</strong>
+          </div>
+        </Card>
       </>)}
 
       {/* ── Account ── */}

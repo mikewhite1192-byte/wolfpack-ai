@@ -51,9 +51,26 @@ export async function POST(req: Request) {
           console.log(`[fb-webhook] New lead! leadgen_id=${leadgenId} page=${pageId} form=${formId} ad=${adId}`);
 
           // Fetch the actual lead data from Facebook Graph API
-          const accessToken = process.env.FB_PAGE_ACCESS_TOKEN;
+          // Try workspace-specific OAuth token first, fall back to env var
+          let accessToken: string | undefined;
+          try {
+            const wsRow = await sql`
+              SELECT meta_page_access_token FROM workspaces
+              WHERE id = ${workspaceId} AND meta_connected = TRUE
+              LIMIT 1
+            `;
+            if (wsRow.length > 0 && wsRow[0].meta_page_access_token) {
+              accessToken = wsRow[0].meta_page_access_token;
+              console.log("[fb-webhook] Using workspace OAuth token");
+            }
+          } catch (tokenErr) {
+            console.warn("[fb-webhook] Failed to look up workspace token:", tokenErr);
+          }
           if (!accessToken) {
-            console.error("[fb-webhook] No FB_PAGE_ACCESS_TOKEN set — can't fetch lead data");
+            accessToken = process.env.FB_PAGE_ACCESS_TOKEN;
+          }
+          if (!accessToken) {
+            console.error("[fb-webhook] No access token available — can't fetch lead data");
             // Still store what we have
             await createLeadFromWebhook(workspaceId, {
               source: "facebook",

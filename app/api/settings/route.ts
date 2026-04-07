@@ -38,6 +38,12 @@ export async function GET() {
       gbpConnections,
       smsTemplates: templates.filter(t => t.type === "sms"),
       emailTemplates: templates.filter(t => t.type === "email"),
+      metaConnection: {
+        connected: workspace.meta_connected || false,
+        pageName: workspace.meta_page_name || null,
+        pageId: workspace.meta_page_id || null,
+        connectedAt: workspace.meta_connected_at || null,
+      },
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";

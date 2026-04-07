@@ -27,6 +27,13 @@ export const workspaces = pgTable("workspaces", {
   googleGbpId: text("google_gbp_id"),
   timezone: text("timezone").default("America/New_York"),
   status: text("status").default("active"),
+  // Meta/Facebook OAuth
+  metaPageId: text("meta_page_id"),
+  metaPageName: text("meta_page_name"),
+  metaPageAccessToken: text("meta_page_access_token"),
+  metaUserAccessToken: text("meta_user_access_token"),
+  metaConnected: boolean("meta_connected").default(false),
+  metaConnectedAt: timestamp("meta_connected_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
