@@ -50,9 +50,13 @@ async function callVercel(path, method, timeoutMs, body) {
   timeoutMs = timeoutMs || 120000; // 2 min default (no Vercel timeout applies from droplet)
   var url = VERCEL_URL + path;
   try {
-    var opts = { method: method, signal: AbortSignal.timeout(timeoutMs) };
+    var headers = {};
+    if (process.env.CRON_SECRET) {
+      headers["Authorization"] = "Bearer " + process.env.CRON_SECRET;
+    }
+    var opts = { method: method, headers: headers, signal: AbortSignal.timeout(timeoutMs) };
     if (body) {
-      opts.headers = { "Content-Type": "application/json" };
+      headers["Content-Type"] = "application/json";
       opts.body = JSON.stringify(body);
     }
     var r = await fetch(url, opts);
