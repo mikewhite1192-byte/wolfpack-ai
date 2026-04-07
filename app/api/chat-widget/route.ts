@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { neon } from "@neondatabase/serverless";
 import { getBusyTimes, getAvailableSlots, createCalendarEvent, getTzOffset } from "@/lib/calendar";
 import { refreshAccessToken } from "@/lib/gmail";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const sql = neon(process.env.DATABASE_URL!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -192,6 +193,13 @@ async function handleBookAppointment(name: string, email: string, startTime: str
 // POST /api/chat-widget — public chat widget for website visitors
 export async function POST(req: Request) {
   try {
+    // Rate limit: 60 requests per minute per IP
+    const ip = getClientIp(req.headers);
+    const { success } = rateLimit(`chat:${ip}`, 60, 60_000);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { message, history } = await req.json();
 
     if (!message?.trim()) {

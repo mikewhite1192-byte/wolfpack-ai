@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { sendLinqSMS } from "@/lib/loop";
+import { sendSMS } from "@/lib/loop";
 import { generateSMSReply } from "@/lib/ai";
 import { checkUpgradeEvent } from "@/lib/outreach/upgrade-sequence";
 import twilio from "twilio";
@@ -166,8 +166,8 @@ export async function POST(req: Request) {
         messages: aiMessages,
       });
 
-      // Send AI reply via Linq
-      const twilioSid = await sendLinqSMS(from, reply);
+      // Send AI reply via Loop
+      const twilioSid = await sendSMS(from, reply);
 
       // Save outbound AI message
       await sql`

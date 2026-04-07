@@ -3,7 +3,6 @@ import { neon } from "@neondatabase/serverless";
 import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
-const FROM_NUMBER = process.env.LINQ_PHONE_NUMBER || "";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

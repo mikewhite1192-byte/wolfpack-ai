@@ -140,7 +140,7 @@ export async function POST(req: Request) {
         const firstMessage = await generateFirstTouch(config, contactName, source || "manual");
 
         // Send via messaging provider
-        const fromNumber = workspace.twilio_phone || process.env.LINQ_PHONE_NUMBER || "";
+        const fromNumber = workspace.twilio_phone || process.env.LOOP_SENDER_ID || "";
         const chatResult = await sendMessage(phone, firstMessage);
 
         // Create conversation + store the message

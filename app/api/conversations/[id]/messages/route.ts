@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { getOrCreateWorkspace } from "@/lib/workspace";
-import { sendLinqSMS } from "@/lib/loop";
-import { sendMessage as sendLinqReply } from "@/lib/loop/client";
+import { sendMessage as sendLoopMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -62,11 +61,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const effectiveChannel = channel || conv[0].channel || "sms";
     let msgId: string | null = null;
 
-    // Send via Linq — use existing chat_id if available (stored in assigned_to), otherwise create new
+    // Send via Loop
     if ((effectiveChannel === "sms" || effectiveChannel === "imessage") && conv[0].phone) {
-      // Send via Loop using phone number directly
       try {
-        const result = await sendLinqReply(conv[0].phone, body);
+        const result = await sendLoopMessage(conv[0].phone, body);
         msgId = result.message_id || "sent";
       } catch {
         msgId = null;
@@ -76,7 +74,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Save message
     const message = await sql`
       INSERT INTO messages (conversation_id, workspace_id, direction, channel, sender, recipient, body, status, sent_by, twilio_sid)
-      VALUES (${id}, ${workspace.id}, 'outbound', ${effectiveChannel}, ${process.env.LINQ_PHONE_NUMBER || process.env.TWILIO_PHONE_NUMBER || ''}, ${conv[0].phone || conv[0].email || ''}, ${body}, ${msgId ? 'sent' : 'failed'}, 'user', ${msgId})
+      VALUES (${id}, ${workspace.id}, 'outbound', ${effectiveChannel}, ${process.env.LOOP_SENDER_ID || process.env.TWILIO_PHONE_NUMBER || ''}, ${conv[0].phone || conv[0].email || ''}, ${body}, ${msgId ? 'sent' : 'failed'}, 'user', ${msgId})
       RETURNING *
     `;
 

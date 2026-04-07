@@ -3,7 +3,6 @@ import { neon } from "@neondatabase/serverless";
 import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
-const FROM_NUMBER = process.env.LINQ_PHONE_NUMBER || "";
 
 // Maya demo conversation state stored in DB
 // POST /api/try — start the Maya demo sequence

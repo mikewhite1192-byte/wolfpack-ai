@@ -1,28 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const sql = neon(process.env.DATABASE_URL!);
 
 // POST /api/leads — public endpoint for website contact forms
 // Creates a contact + deal in the CRM pipeline
-// Simple in-memory rate limiter (per IP, 5 requests per minute)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60000 });
-    return false;
-  }
-  entry.count++;
-  return entry.count > 5;
-}
-
 export async function POST(req: NextRequest) {
   try {
-    // Rate limit by IP
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-    if (isRateLimited(ip)) {
+    // Rate limit: 30 requests per minute per IP
+    const ip = getClientIp(req.headers);
+    const { success } = rateLimit(`leads:${ip}`, 30, 60_000);
+    if (!success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 

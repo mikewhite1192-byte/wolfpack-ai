@@ -6,6 +6,7 @@ import { runSalesAgent, DEFAULT_CONFIG, type AgentConfig, type LeadQualification
 import { getLearnings } from "@/lib/ai-learner";
 import { getGmailToken } from "@/lib/gmail";
 import { createCalendarEvent } from "@/lib/calendar";
+import { notifyOwner } from "@/lib/notify-owner";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -244,7 +245,9 @@ export async function POST(req: Request) {
     let contact = await sql`
       SELECT * FROM contacts WHERE workspace_id = ${ws.id} AND (phone = ${from} OR phone = ${fromE164}) LIMIT 1
     `;
+    let isNewContact = false;
     if (contact.length === 0) {
+      isNewContact = true;
       contact = await sql`
         INSERT INTO contacts (workspace_id, phone, source)
         VALUES (${ws.id}, ${fromE164}, ${channel.toLowerCase()})
@@ -284,6 +287,15 @@ export async function POST(req: Request) {
     `;
     await sql`UPDATE conversations SET last_message_at = NOW(), status = 'open' WHERE id = ${convId}`;
     await sql`UPDATE contacts SET last_contacted = NOW() WHERE id = ${contactId}`;
+
+    // Notify owner: new lead or inbound message
+    const leadName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || from;
+    if (isNewContact) {
+      notifyOwner(ws.id, `New lead: ${leadName} (${fromE164}) — ${channel.toLowerCase()}`).catch(() => {});
+    } else {
+      const preview = text.length > 80 ? text.substring(0, 80) + "…" : text;
+      notifyOwner(ws.id, `New message from ${leadName}: ${preview}`).catch(() => {});
+    }
 
     // Check opt-out before AI reply
     if (contact[0].opted_out === true) {
@@ -417,6 +429,11 @@ export async function POST(req: Request) {
             } catch (calErr) {
               console.error("[loop-webhook] Calendar booking failed:", calErr);
             }
+
+            // Notify owner about the appointment
+            const apptTimeStr = apptDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" })
+              + " at " + apptDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+            notifyOwner(ws.id, `Appointment booked: ${apptLeadName} on ${apptTimeStr} ET`).catch(() => {});
           }
         } catch { /* invalid date */ }
       }

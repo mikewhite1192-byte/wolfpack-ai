@@ -164,12 +164,39 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       }).catch(() => {});
       window.history.replaceState({}, "", pathname);
     }
+  }, [isLoaded, isSignedIn, pathname]);
 
-    // TODO: Re-enable subscription gate when going to production with paying customers
-    // For now, all authenticated users can access the dashboard
-    setHasSubscription(true);
-    setSubChecked(true);
-  }, [isLoaded, isSignedIn, router, pathname]);
+  // Subscription gate
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+
+    const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
+    if (!email) return; // wait for Clerk to populate email
+
+    // Admin and demo users bypass Stripe entirely
+    if (ADMIN_EMAILS.includes(email) || DEMO_EMAILS.includes(email)) {
+      setHasSubscription(true);
+      setSubChecked(true);
+      return;
+    }
+
+    // Everyone else: verify active Stripe subscription
+    fetch("/api/stripe/link")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.active) {
+          setHasSubscription(true);
+        } else {
+          router.push("/#pricing");
+        }
+        setSubChecked(true);
+      })
+      .catch(() => {
+        // Stripe check failed — redirect to pricing
+        router.push("/#pricing");
+        setSubChecked(true);
+      });
+  }, [isLoaded, isSignedIn, user, router]);
 
   useEffect(() => {
     function handleOpenDialer(e: Event) {

@@ -1,97 +1,50 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import {
-  WebhookEvent,
-  isMessageReceivedEvent,
-} from "@/lib/linq/types";
-import { sendMessage, markAsRead, startTyping, stopTyping } from "@/lib/linq/client";
+import { sendMessage, showTyping, type LoopWebhookPayload } from "@/lib/loop/client";
 import { runSalesAgent, DEFAULT_CONFIG, type AgentConfig, type LeadQualification, type ConversationStage } from "@/lib/ai-agent";
 import { getLearnings } from "@/lib/ai-learner";
 import { getGmailToken } from "@/lib/gmail";
 import { createCalendarEvent } from "@/lib/calendar";
+import { notifyOwner } from "@/lib/notify-owner";
 
 const sql = neon(process.env.DATABASE_URL!);
 
-// POST /api/webhooks/linq — Linq Blue V3 webhook receiver
+// POST /api/webhooks/linq — Loop webhook receiver
+// NOTE: Route path kept as /linq because Loop dashboard is configured to send here.
+// Update the Loop webhook URL and rename this route to /api/webhooks/loop when ready.
 export async function POST(req: Request) {
   try {
-    const event = (await req.json()) as WebhookEvent;
+    const payload = (await req.json()) as LoopWebhookPayload;
 
-    console.log(`[webhook] ${event.event_type} (${event.event_id})`);
+    console.log(`[webhook] ${payload.event} (${payload.message_id})`);
 
-    // Only process message.received events
-    if (!isMessageReceivedEvent(event)) {
+    // Only process inbound messages
+    if (payload.event !== "message_inbound") {
       return NextResponse.json({ received: true });
     }
 
-    // Log FULL payload first before touching anything
-    console.log(`[webhook] Full payload:`, JSON.stringify(event, null, 2));
+    // Log payload for debugging
+    console.log(`[webhook] Full payload:`, JSON.stringify(payload, null, 2));
 
-    // Extract data from ACTUAL Linq V3 payload structure
-    const data = event.data as unknown as Record<string, unknown>;
-    if (!data) {
-      console.log(`[webhook] No data in event`);
+    const from = payload.contact;
+    const text = (payload.text || "").trim();
+    const msgId = payload.message_id;
+    const service = payload.channel || "SMS";
+    const chat_id = payload.message_id; // Loop uses message_id as conversation reference
+
+    console.log(`[webhook] from=${from} service=${service} message_id=${msgId}`);
+
+    if (!from) {
+      console.log(`[webhook] Missing contact/from`);
       return NextResponse.json({ received: true });
     }
 
-    // Real payload structure (from actual webhook):
-    // data.chat.id = chat ID
-    // data.sender_handle.handle = sender phone number
-    // data.sender_handle.is_me = boolean
-    // data.chat.owner_handle.handle = our phone number
-    // data.parts[] = message parts (NOT data.message.parts)
-    // data.id = message ID
-    // data.service = "iMessage" | "SMS" | "RCS"
-    // data.direction = "inbound" | "outbound"
-
-    const chat = data.chat as Record<string, unknown> | undefined;
-    const senderHandle = data.sender_handle as Record<string, unknown> | undefined;
-    const ownerHandle = chat?.owner_handle as Record<string, unknown> | undefined;
-
-    const chat_id = chat?.id as string;
-    const from = senderHandle?.handle as string;
-    const is_from_me = senderHandle?.is_me as boolean;
-    const recipient_phone = ownerHandle?.handle as string;
-    const service = (data.service || "SMS") as string;
-    const msgId = data.id as string;
-    const direction = data.direction as string;
-
-    console.log(`[webhook] chat_id=${chat_id} from=${from} is_from_me=${is_from_me} direction=${direction} service=${service}`);
-
-    if (!chat_id || !from) {
-      console.log(`[webhook] Missing chat_id or from`);
-      return NextResponse.json({ received: true });
-    }
-
-    // Skip messages from ourselves
-    if (is_from_me || direction === "outbound") {
-      console.log(`[webhook] Skipping own message`);
-      return NextResponse.json({ received: true });
-    }
-
-    // Extract text from parts (parts are directly on data, NOT data.message.parts)
-    const parts = data.parts as Array<{ type: string; value?: string }> | undefined;
-    let text = "";
-    if (parts && Array.isArray(parts)) {
-      text = parts
-        .filter(p => p.type === "text")
-        .map(p => p.value || "")
-        .join("\n")
-        .trim();
-    }
-
-    console.log(`[webhook] Extracted text: "${text.substring(0, 100)}"`);
-
-
-    if (!text.trim()) {
+    if (!text) {
       console.log(`[webhook] Skipping empty message`);
       return NextResponse.json({ received: true });
     }
 
     console.log(`[webhook] ${service} from ${from}: "${text.substring(0, 80)}"`);
-
-    // Mark as read immediately
-    markAsRead(chat_id).catch(() => {});
 
     // --- Check if this is a Maya demo conversation ---
     // Normalize phone for lookup (try multiple formats)
@@ -141,7 +94,9 @@ export async function POST(req: Request) {
     let contact = await sql`
       SELECT * FROM contacts WHERE workspace_id = ${ws.id} AND phone = ${from} LIMIT 1
     `;
+    let isNewContact = false;
     if (contact.length === 0) {
+      isNewContact = true;
       contact = await sql`
         INSERT INTO contacts (workspace_id, phone, source)
         VALUES (${ws.id}, ${from}, ${service.toLowerCase()})
@@ -161,7 +116,7 @@ export async function POST(req: Request) {
     }
     const contactId = contact[0].id;
 
-    // Find or create conversation — store Linq chat_id in assigned_to field
+    // Find or create conversation
     let conversation = await sql`
       SELECT * FROM conversations
       WHERE workspace_id = ${ws.id} AND contact_id = ${contactId} AND channel = 'sms'
@@ -182,22 +137,30 @@ export async function POST(req: Request) {
     // Save inbound message
     await sql`
       INSERT INTO messages (conversation_id, workspace_id, direction, channel, sender, recipient, body, status, sent_by, twilio_sid)
-      VALUES (${convId}, ${ws.id}, 'inbound', ${service.toLowerCase()}, ${from}, ${recipient_phone || ''}, ${text}, 'received', 'contact', ${msgId || null})
+      VALUES (${convId}, ${ws.id}, 'inbound', ${service.toLowerCase()}, ${from}, ${payload.sender || ''}, ${text}, 'received', 'contact', ${msgId || null})
     `;
     await sql`UPDATE conversations SET last_message_at = NOW(), status = 'open' WHERE id = ${convId}`;
     await sql`UPDATE contacts SET last_contacted = NOW() WHERE id = ${contactId}`;
+
+    // Notify owner: new lead or inbound message
+    const leadName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || from;
+    if (isNewContact) {
+      notifyOwner(ws.id, `New lead: ${leadName} (${from}) — ${service.toLowerCase()}`).catch(() => {});
+    } else {
+      const preview = text.length > 80 ? text.substring(0, 80) + "…" : text;
+      notifyOwner(ws.id, `New message from ${leadName}: ${preview}`).catch(() => {});
+    }
 
     console.log(`[webhook] Message saved to CRM`);
 
     // AI Sales Agent reply if enabled
     if (conversation[0].ai_enabled !== false) {
-      startTyping(chat_id).catch(() => {});
+      showTyping(from).catch(() => {});
 
       // Load agent config from workspace
       const agentConfig: AgentConfig = { ...DEFAULT_CONFIG, ...(ws.ai_config || {}), businessName: ws.name || "our business" };
 
       if (!agentConfig.enabled) {
-        stopTyping(chat_id).catch(() => {});
         return NextResponse.json({ received: true });
       }
 
@@ -214,7 +177,7 @@ export async function POST(req: Request) {
         content: m.body || "",
       }));
 
-      const leadName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || "there";
+      const contactDisplayName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || "there";
       const qualification: LeadQualification = contact[0].ai_qualification || {};
       const convStage: ConversationStage = conversation[0].ai_stage || "new";
 
@@ -233,7 +196,7 @@ export async function POST(req: Request) {
       // Run the AI Sales Agent
       const result = await runSalesAgent({
         config: agentConfig,
-        contactName: leadName,
+        contactName: contactDisplayName,
         contactPhone: from,
         source: contact[0].source || "unknown",
         qualification,
@@ -245,14 +208,12 @@ export async function POST(req: Request) {
         learnings,
       });
 
-      stopTyping(chat_id).catch(() => {});
-
-      // Send the reply
+      // Send the reply via Loop
       let replyMsgId: string | null = null;
       let replyError = false;
       try {
-        const sendResult = await sendMessage(chat_id, result.reply);
-        replyMsgId = sendResult.message.id;
+        const sendResult = await sendMessage(from, result.reply);
+        replyMsgId = sendResult.message_id;
       } catch (err) {
         console.error("[webhook] Failed to send AI reply:", err);
         replyError = true;
@@ -261,7 +222,7 @@ export async function POST(req: Request) {
       // Save outbound AI message
       await sql`
         INSERT INTO messages (conversation_id, workspace_id, direction, channel, sender, recipient, body, status, sent_by, twilio_sid, credits_used)
-        VALUES (${convId}, ${ws.id}, 'outbound', ${service.toLowerCase()}, ${recipient_phone || ''}, ${from}, ${result.reply}, ${replyError ? 'failed' : 'sent'}, 'ai', ${replyMsgId}, 1)
+        VALUES (${convId}, ${ws.id}, 'outbound', ${service.toLowerCase()}, ${payload.sender || ''}, ${from}, ${result.reply}, ${replyError ? 'failed' : 'sent'}, 'ai', ${replyMsgId}, 1)
       `;
       await sql`UPDATE conversations SET last_message_at = NOW(), ai_stage = ${result.updatedStage} WHERE id = ${convId}`;
 
@@ -284,11 +245,7 @@ export async function POST(req: Request) {
         const ownerPhone = process.env.OWNER_PHONE;
         if (ownerPhone) {
           const handoffName = [contact[0].first_name, contact[0].last_name].filter(Boolean).join(" ") || from;
-          sendMessage(chat_id, "").catch(() => {}); // noop, owner notification below uses Loop
-          try {
-            const { sendMessage: sendLoop } = await import("@/lib/loop/client");
-            sendLoop(ownerPhone, `Lead needs human attention: ${handoffName} (${from}). AI has been disabled on this conversation. Check your dashboard.`).catch(() => {});
-          } catch {}
+          sendMessage(ownerPhone, `Lead needs human attention: ${handoffName} (${from}). AI has been disabled on this conversation. Check your dashboard.`).catch(() => {});
         }
         console.log(`[webhook] Handed off ${from} to human — AI disabled`);
       }
@@ -343,6 +300,11 @@ export async function POST(req: Request) {
             } catch (calErr) {
               console.error("[webhook] Calendar booking failed:", calErr);
             }
+
+            // Notify owner about the appointment
+            const apptTimeStr = apptDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" })
+              + " at " + apptDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+            notifyOwner(ws.id, `Appointment booked: ${leadName} on ${apptTimeStr} ET`).catch(() => {});
 
             console.log(`[webhook] Appointment booked: ${apptDate.toISOString()} for ${leadName}${apptEmail ? ` (${apptEmail})` : ""}`);
           }

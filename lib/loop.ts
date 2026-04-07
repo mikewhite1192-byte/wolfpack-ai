@@ -1,20 +1,22 @@
-// Loop Message wrapper — drop-in replacement for Linq
-// All existing code that calls sendLinqSMS will now route through Loop
+// Loop Message convenience wrappers
 
 import { sendMessage, showTyping } from "./loop/client";
 
-// Drop-in replacement for the old sendLinqSMS interface
-export async function sendLinqSMS(to: string, body: string, _from?: string): Promise<string | null> {
+// Send SMS via Loop — returns message ID or null on failure
+export async function sendSMS(to: string, body: string, _from?: string): Promise<string | null> {
   try {
     const result = await sendMessage(to, body);
     return result.message_id || "sent";
   } catch (err) {
-    console.error("[loop] sendLinqSMS error:", err);
+    console.error("[loop] sendSMS error:", err);
     return null;
   }
 }
 
-// Re-export Loop functions with Linq-compatible names
+// Legacy alias — kept for callers that still reference the old name
+export const sendLinqSMS = sendSMS;
+
+// Re-export Loop functions
 export { sendMessage as sendMessageToChat } from "./loop/client";
 export { sendMessage as sendMessageToNumber } from "./loop/client";
 

@@ -1,10 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import twilio from "twilio";
 import { getOrCreateWorkspace } from "@/lib/workspace";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 // GET /api/calls/token — generate Twilio Voice capability token for browser
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // Rate limit: 10 requests per minute per IP (strictest — generates Twilio tokens)
+    const ip = getClientIp(req.headers);
+    const { success } = rateLimit(`calltoken:${ip}`, 10, 60_000);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     // Require authenticated workspace (Clerk auth via middleware)
     const workspace = await getOrCreateWorkspace();
     const userId = workspace.id;
