@@ -114,6 +114,16 @@ async function verifySmtp(email: string, mxHost: string): Promise<{ valid: boole
 export async function validateEmail(email: string): Promise<ValidationResult> {
   const trimmed = email.trim().toLowerCase();
 
+  // Reject emails with URL-encoded characters (%20, %40, etc.)
+  if (/%[0-9a-fA-F]{2}/.test(trimmed)) {
+    return { valid: false, syntax: false, mxExists: false, smtpValid: false, details: "Email contains URL-encoded characters" };
+  }
+
+  // Reject emails with any whitespace (spaces, tabs, newlines)
+  if (/\s/.test(trimmed)) {
+    return { valid: false, syntax: false, mxExists: false, smtpValid: false, details: "Email contains whitespace" };
+  }
+
   // Syntax check
   if (!isValidSyntax(trimmed)) {
     return { valid: false, syntax: false, mxExists: false, smtpValid: false, details: "Invalid email format" };
@@ -151,6 +161,18 @@ export async function validateEmails(emails: string[]): Promise<Map<string, Vali
 
   for (const email of emails) {
     const trimmed = email.trim().toLowerCase();
+
+    // Reject URL-encoded characters
+    if (/%[0-9a-fA-F]{2}/.test(trimmed)) {
+      results.set(trimmed, { valid: false, syntax: false, mxExists: false, smtpValid: false, details: "Email contains URL-encoded characters" });
+      continue;
+    }
+
+    // Reject whitespace
+    if (/\s/.test(trimmed)) {
+      results.set(trimmed, { valid: false, syntax: false, mxExists: false, smtpValid: false, details: "Email contains whitespace" });
+      continue;
+    }
 
     if (!isValidSyntax(trimmed)) {
       results.set(trimmed, { valid: false, syntax: false, mxExists: false, smtpValid: false, details: "Invalid format" });

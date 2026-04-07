@@ -59,7 +59,9 @@ export async function sendColdEmail(
     }
 
     const result = await transporter.sendMail(mailOptions);
-    const messageId = result.messageId || null;
+    // Normalize: strip angle brackets so SES webhook can match by bare ID
+    const rawMessageId = result.messageId || null;
+    const messageId = rawMessageId ? rawMessageId.replace(/^<|>$/g, "") : null;
 
     // Log the sent email
     await sql`
