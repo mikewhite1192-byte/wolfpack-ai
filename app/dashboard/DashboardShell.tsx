@@ -150,53 +150,26 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     if (isLoaded && !isSignedIn) router.push("/sign-in");
   }, [isLoaded, isSignedIn, router]);
 
-  // Check subscription + link Stripe session if coming from checkout
+  // Link Stripe session if coming from checkout
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !user?.primaryEmailAddress?.emailAddress) return;
+    if (!isLoaded || !isSignedIn) return;
 
-    async function checkSub() {
-      // If URL has session_id from Stripe checkout, link it to this user
-      const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("session_id");
-      if (sessionId) {
-        await fetch("/api/stripe/link", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId }),
-        }).catch(() => {});
-        // Clean URL
-        window.history.replaceState({}, "", pathname);
-      }
-
-      // Check admin first — skip Stripe check entirely for admin users
-      const email = user!.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
-      const isAdminUser = ADMIN_EMAILS.includes(email);
-
-      if (isAdminUser) {
-        setHasSubscription(true);
-      } else {
-        // Check if user has active subscription
-        try {
-          const res = await fetch("/api/stripe/link");
-          const data = await res.json();
-          if (data.active) {
-            setHasSubscription(true);
-          } else {
-            router.push("/#pricing");
-            return;
-          }
-        } catch {
-          // Stripe check failed — redirect to pricing for non-admins
-          router.push("/#pricing");
-          return;
-        }
-      }
-
-      setSubChecked(true);
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (sessionId) {
+      fetch("/api/stripe/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      }).catch(() => {});
+      window.history.replaceState({}, "", pathname);
     }
 
-    checkSub();
-  }, [isLoaded, isSignedIn, user, router, pathname]);
+    // TODO: Re-enable subscription gate when going to production with paying customers
+    // For now, all authenticated users can access the dashboard
+    setHasSubscription(true);
+    setSubChecked(true);
+  }, [isLoaded, isSignedIn, router, pathname]);
 
   useEffect(() => {
     function handleOpenDialer(e: Event) {
