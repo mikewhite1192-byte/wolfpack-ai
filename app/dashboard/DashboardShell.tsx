@@ -162,19 +162,28 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         window.history.replaceState({}, "", pathname);
       }
 
-      // Check if user has active subscription
-      const res = await fetch("/api/stripe/link");
-      const data = await res.json();
-
+      // Check admin first — skip Stripe check entirely for admin users
       const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
       const isAdminUser = ADMIN_EMAILS.includes(email);
 
-      if (data.active || isAdminUser) {
+      if (isAdminUser) {
         setHasSubscription(true);
       } else {
-        // No subscription — redirect to pricing
-        router.push("/#pricing");
-        return;
+        // Check if user has active subscription
+        try {
+          const res = await fetch("/api/stripe/link");
+          const data = await res.json();
+          if (data.active) {
+            setHasSubscription(true);
+          } else {
+            router.push("/#pricing");
+            return;
+          }
+        } catch {
+          // Stripe check failed — redirect to pricing for non-admins
+          router.push("/#pricing");
+          return;
+        }
       }
 
       setSubChecked(true);
