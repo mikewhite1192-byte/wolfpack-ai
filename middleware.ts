@@ -54,7 +54,10 @@ export default clerkMiddleware(async (authFn, req) => {
     !path.startsWith("/api/email-assistant") &&
     !path.startsWith("/api/gbp") &&
     !path.startsWith("/api/leads") &&
-    !path.startsWith("/api/owner")
+    !path.startsWith("/api/owner") &&
+    !path.startsWith("/api/upwork/webhook") &&
+    !path.startsWith("/api/upwork/poll") &&
+    !path.startsWith("/api/caller/")
   );
 
   if (isProtected) {
