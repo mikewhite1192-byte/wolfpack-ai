@@ -133,6 +133,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [dialNumber, setDialNumber] = useState("");
   const [signingOut, setSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
   const [subChecked, setSubChecked] = useState(false);
   const [hasSubscription, setHasSubscription] = useState(false);
 
@@ -209,6 +211,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     return () => window.removeEventListener("open-dialer", handleOpenDialer);
   }, []);
 
+  // Close account dropdown on outside click
+  useEffect(() => {
+    if (!accountOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) setAccountOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [accountOpen]);
+
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
@@ -270,18 +282,24 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           {/* Right side */}
           <div className="flex items-center gap-2.5">
-            {isAdmin && (
-              <button onClick={() => setDialOpen(d => !d)}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/18 transition-all">
-                <Phone className="w-3 h-3" /> Dial
+            {/* Account dropdown */}
+            <div ref={accountRef} className="relative">
+              <button onClick={() => setAccountOpen(v => !v)}
+                className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-[#E86A2A] flex items-center justify-center text-[11px] font-extrabold text-white cursor-pointer border-none">
+                {user?.firstName?.charAt(0) || "M"}
               </button>
-            )}
-            <button onClick={isDemoUser ? handleDemoSignOut : handleSignOut} disabled={signingOut}
-              className="hidden sm:block text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:text-red-400 transition-colors px-2 py-1.5">
-              {signingOut ? "..." : "Sign Out"}
-            </button>
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-[#E86A2A] flex items-center justify-center text-[11px] font-extrabold text-white">
-              {user?.firstName?.charAt(0) || "M"}
+              {accountOpen && (
+                <div className="absolute right-0 top-9 w-48 bg-[#161820] border border-white/[0.07] rounded-lg shadow-xl z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/[0.07]">
+                    <div className="text-xs font-semibold text-[#e8eaf0] truncate">{user?.firstName} {user?.lastName}</div>
+                    <div className="text-[10px] text-[#8b8fa8] truncate">{userEmail}</div>
+                  </div>
+                  <button onClick={() => { setAccountOpen(false); isDemoUser ? handleDemoSignOut() : handleSignOut(); }} disabled={signingOut}
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:bg-white/[0.04] hover:text-red-400 transition-colors">
+                    {signingOut ? "Signing out..." : "Sign Out"}
+                  </button>
+                </div>
+              )}
             </div>
             {/* Hamburger */}
             <button onClick={() => setMenuOpen(v => !v)} className="lg:hidden bg-transparent border-none cursor-pointer p-1 text-[#e8eaf0]" aria-label="Toggle menu">
@@ -308,13 +326,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             );
           })}
           <div className="w-full flex gap-2 mt-2 pt-2 border-t border-white/[0.06]">
-            {isAdmin && (
-              <button onClick={() => { setDialOpen(true); setMenuOpen(false); }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer">
-                <Phone className="w-3 h-3" /> Dial
-              </button>
-            )}
-            <button onClick={isDemoUser ? handleDemoSignOut : handleSignOut} disabled={signingOut}
+            <button onClick={() => { setMenuOpen(false); isDemoUser ? handleDemoSignOut() : handleSignOut(); }} disabled={signingOut}
               className="text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:text-red-400 px-3 py-2">
               {signingOut ? "..." : "Sign Out"}
             </button>
