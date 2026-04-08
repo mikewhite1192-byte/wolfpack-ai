@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       const skills = Array.isArray(job.skills)
         ? job.skills.map((s: unknown) => typeof s === "string" ? s : (s as Record<string, string>)?.name || "").filter(Boolean)
         : [];
+      const proposalCount = job.proposals_count || job.proposal_count || job.proposals || job.bids || null;
       const clientCountry = job.client_country || job.country || (job.client as Record<string, unknown>)?.country || null;
       const clientRating = job.client_rating || (job.client as Record<string, unknown>)?.rating || null;
       const clientHireRate = job.client_hire_rate || (job.client as Record<string, unknown>)?.hireRate || null;
@@ -52,14 +53,15 @@ export async function POST(req: Request) {
           INSERT INTO upwork_jobs (
             upwork_id, title, description, budget, job_type, skills,
             client_country, client_rating, client_hire_rate, client_payment_verified,
-            job_url, posted_at, status
+            job_url, posted_at, proposal_count, status
           ) VALUES (
             ${upworkId}, ${title}, ${description}, ${typeof budget === "object" ? JSON.stringify(budget) : String(budget || "")},
             ${jobType}, ${skills}, ${clientCountry as string},
             ${clientRating ? parseFloat(String(clientRating)) : null},
             ${clientHireRate ? parseFloat(String(clientHireRate)) : null},
             ${!!paymentVerified},
-            ${jobUrl}, ${postedAt ? new Date(postedAt as string).toISOString() : null}, 'new'
+            ${jobUrl}, ${postedAt ? new Date(postedAt as string).toISOString() : null},
+            ${proposalCount ? parseInt(String(proposalCount)) : null}, 'new'
           )
           ON CONFLICT (upwork_id) DO NOTHING
           RETURNING id

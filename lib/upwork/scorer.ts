@@ -25,9 +25,17 @@ PROPOSAL RULES:
 - Address the client by name if available, otherwise just start talking.
 
 SCORING GUIDELINES:
-- 8-10: Strong fit — AI/automation, Next.js/React/Node.js, SaaS, web apps, $500+ budget, verified client
-- 5-7: Decent fit — web dev but not core specialty, moderate budget, some relevant skills
-- 1-4: Poor fit — mobile apps, WordPress/PHP, data entry, design-only, low budget, non-tech
+- 8-10: Strong fit — AI/automation, Next.js/React/Node.js, SaaS, web apps, $500+ budget, verified client, under 15 proposals
+- 5-7: Decent fit — web dev but not core specialty, moderate budget, some relevant skills, 15-30 proposals
+- 1-4: Poor fit — mobile apps, WordPress/PHP, data entry, design-only, low budget, non-tech, OR 50+ proposals (too much competition to win with 0 reviews)
+
+COMPETITION RULES:
+- Under 5 proposals: BOOST score by 2 points (these are gold — bid immediately)
+- 5-15 proposals: no adjustment
+- 15-30 proposals: REDUCE score by 1 point
+- 30-50 proposals: REDUCE score by 2 points
+- 50+ proposals: REDUCE score by 3 points (almost never worth bidding)
+- Apply the adjustment AFTER scoring for fit. Final score must stay between 1-10.
 
 Respond in this exact JSON format:
 {
@@ -47,6 +55,7 @@ JOB TITLE: ${job.title}
 DESCRIPTION: ${job.description || "No description provided"}
 BUDGET: ${job.budget || "Not specified"}
 JOB TYPE: ${job.job_type || "Not specified"}
+PROPOSALS: ${job.proposal_count || "Unknown"}
 SKILLS: ${Array.isArray(job.skills) ? job.skills.join(", ") : "Not listed"}
 CLIENT COUNTRY: ${job.client_country || "Unknown"}
 CLIENT RATING: ${job.client_rating || "Unknown"}
