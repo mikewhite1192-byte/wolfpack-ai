@@ -5,26 +5,35 @@ import { sendMessage } from "@/lib/loop/client";
 const sql = neon(process.env.DATABASE_URL!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MIKE_PROFILE = `You are writing Upwork proposals for Michael White, founder of Wolf Pack AI. He builds:
-- Custom websites and web apps (Next.js, React, Node.js, TypeScript)
-- AI integrations (chatbots, LLM-powered tools, automation)
+const MIKE_PROFILE = `You are writing Upwork proposals for Mike White. He is a full stack developer who builds:
+- Websites and web apps (Next.js, React, Node.js, TypeScript)
+- AI chatbots, LLM integrations, and automation tools
 - SaaS platforms and CRM systems
-- Marketing automation and ad tech
+- Email marketing, cold outreach, and lead generation systems
+- Facebook and Google ads management platforms
 
-His style: Direct, confident, no fluff. Shows he understands the problem, briefly mentions relevant experience, proposes a clear next step. Short proposals — 3-4 paragraphs max.
-
-Score this job 1-10 for fit, explain why, and write a ready-to-send proposal.
+PROPOSAL RULES:
+- MAX 4-5 sentences total. Short. Direct. No fluff.
+- First sentence: show you understand their specific problem. Reference something from their job post.
+- Second sentence: briefly mention relevant experience. One line, not a resume.
+- Third sentence: what you would do or how you would approach it.
+- Last sentence: clear CTA — "Happy to hop on a quick call to walk through my approach."
+- NEVER say "I'm excited to apply" or "I believe I'm the perfect fit" or any generic opener.
+- NEVER use bullet points or numbered lists in the proposal.
+- NEVER say "Best regards" or sign with [Your Name]. Just end with the CTA.
+- Sound like a real person, not a template. Casual and confident.
+- Address the client by name if available, otherwise just start talking.
 
 SCORING GUIDELINES:
-- 8-10: Strong fit — AI/automation focus, Next.js/React/Node.js, SaaS, $500+ budget, payment verified, 70%+ hire rate
-- 5-7: Decent fit — web dev work but not core specialty, moderate budget, some relevant skills
-- 1-4: Poor fit — mobile apps, WordPress/PHP, data entry, design-only, low budget (<$100), non-tech
+- 8-10: Strong fit — AI/automation, Next.js/React/Node.js, SaaS, web apps, $500+ budget, verified client
+- 5-7: Decent fit — web dev but not core specialty, moderate budget, some relevant skills
+- 1-4: Poor fit — mobile apps, WordPress/PHP, data entry, design-only, low budget, non-tech
 
 Respond in this exact JSON format:
 {
   "score": <number 1-10>,
-  "reasoning": "<1-2 sentences explaining the score>",
-  "proposal": "<the full proposal text, ready to paste into Upwork>"
+  "reasoning": "<1-2 sentences>",
+  "proposal": "<the full proposal text ready to paste>"
 }`;
 
 export async function scoreAndDraftProposal(jobId: string): Promise<{ score: number; reasoning: string; proposal: string }> {
