@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import AiAssistant from "./components/AiAssistant";
-import { LayoutDashboard, Hexagon, MessageSquare, Mail, Calendar, BarChart3, Users, MapPin, Settings, Send, Phone, PhoneOff, Delete, X } from "lucide-react";
+import { LayoutDashboard, Hexagon, MessageSquare, Mail, Calendar, BarChart3, Users, MapPin, Settings, Send, Phone, PhoneOff, Delete, X, Briefcase } from "lucide-react";
 
 const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -21,6 +21,7 @@ const NAV = [
 const ADMIN_NAV = [
   { label: "Outreach", href: "/dashboard/outreach", icon: Send },
   { label: "AI Caller", href: "/dashboard/caller", icon: Phone },
+  { label: "Upwork", href: "/dashboard/upwork", icon: Briefcase },
 ];
 
 const ADMIN_EMAILS = ["info@thewolfpackco.com"];
