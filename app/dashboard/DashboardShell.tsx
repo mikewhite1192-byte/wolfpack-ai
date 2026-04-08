@@ -20,6 +20,7 @@ const NAV = [
 
 const ADMIN_NAV = [
   { label: "Outreach", href: "/dashboard/outreach", icon: Send },
+  { label: "AI Caller", href: "/dashboard/caller", icon: Phone },
 ];
 
 const ADMIN_EMAILS = ["info@thewolfpackco.com"];
