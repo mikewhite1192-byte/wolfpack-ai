@@ -2,6 +2,7 @@
 // Sends different messages based on call outcome
 import { sendMessage as sendLoop } from "@/lib/loop/client";
 import type { CallerLead } from "./retell-tools";
+import { syncCallerLeadToCRM } from "./sync-to-crm";
 
 const MIKE_PHONE = process.env.OWNER_PHONE || "";
 const TRY_LINK = "https://thewolfpack.ai/try";
@@ -54,5 +55,17 @@ export async function sendPostCallFollowup(lead: CallerLead): Promise<void> {
     console.log(`[caller-followup] Sent ${lead.status} follow-up to ${lead.phone}`);
   } catch (err) {
     console.error(`[caller-followup] Failed to send follow-up to ${lead.phone}:`, err);
+  }
+
+  // Sync lead into CRM so when they text back, the reply lands in Conversations
+  if (lead.id) {
+    try {
+      const result = await syncCallerLeadToCRM(lead.id);
+      if (result) {
+        console.log(`[caller-followup] Synced to CRM — contact=${result.contactId}`);
+      }
+    } catch (err) {
+      console.error("[caller-followup] Failed to sync to CRM:", err);
+    }
   }
 }

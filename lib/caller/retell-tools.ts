@@ -40,6 +40,7 @@ export interface CallerLead {
   followup_sent: boolean;
   source: string | null;
   outreach_contact_id: string | null;
+  crm_contact_id: string | null;
 }
 
 // ── Calendar Token Helper ───────────────────────────────────────────

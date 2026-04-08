@@ -2,6 +2,7 @@
 import { neon } from "@neondatabase/serverless";
 import { sendMessage as sendLoop } from "@/lib/loop/client";
 import type { CallerLead } from "./retell-tools";
+import { syncCallerLeadToCRM } from "./sync-to-crm";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -53,6 +54,18 @@ export async function sendDemoConfirmations(
       console.log("[caller-confirm] Sent Mike iMessage");
     } catch (err) {
       console.error("[caller-confirm] Failed to send Mike iMessage:", err);
+    }
+  }
+
+  // 5. Sync lead into CRM (contact + deal + conversation)
+  if (lead.id) {
+    try {
+      const result = await syncCallerLeadToCRM(lead.id);
+      if (result) {
+        console.log(`[caller-confirm] Synced to CRM — contact=${result.contactId}, deal=${result.dealId}`);
+      }
+    } catch (err) {
+      console.error("[caller-confirm] Failed to sync to CRM:", err);
     }
   }
 }
