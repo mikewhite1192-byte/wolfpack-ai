@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { neon } from "@neondatabase/serverless";
+import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -84,6 +85,20 @@ PAYMENT VERIFIED: ${job.client_payment_verified ? "Yes" : "No"}
     SET ai_score = ${score}, ai_reasoning = ${reasoning}, ai_proposal = ${proposal}
     WHERE id = ${jobId}
   `;
+
+  // Text notification for good matches (score 7+)
+  const minNotifyScore = 7;
+  if (score >= minNotifyScore && process.env.OWNER_PHONE) {
+    try {
+      const budget = job.budget || "not listed";
+      await sendMessage(
+        process.env.OWNER_PHONE,
+        `Upwork match (${score}/10): ${job.title}\nBudget: ${budget}\n${job.job_url}`
+      );
+    } catch (err) {
+      console.error("[upwork-scorer] Failed to send notification:", err);
+    }
+  }
 
   return { score, reasoning, proposal };
 }
