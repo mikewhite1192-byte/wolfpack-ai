@@ -87,7 +87,7 @@ PAYMENT VERIFIED: ${job.client_payment_verified ? "Yes" : "No"}
   `;
 
   // Text notification for good matches (score 7+)
-  const minNotifyScore = 7;
+  const minNotifyScore = 6;
   if (score >= minNotifyScore && process.env.OWNER_PHONE) {
     try {
       const budget = job.budget || "not listed";
