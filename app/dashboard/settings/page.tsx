@@ -57,6 +57,10 @@ export default function SettingsPage() {
   const [copied, setCopied] = useState<string>("");
   const [reports, setReports] = useState<{ id: string; type: string; content: string; created_at: string }[]>([]);
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingMsg, setBillingMsg] = useState("");
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [aiConfig, setAiConfig] = useState({
     enabled: true, businessName: "", businessType: "", services: "", serviceArea: "", uniqueValue: "",
     pricing: "Contact us for a free estimate", bookingLink: "", bookingInstructions: "",
@@ -513,6 +517,81 @@ export default function SettingsPage() {
               ))}
             </div>
           )}
+        </Card>
+
+        <Card>
+          <SectionTitle>Billing & Subscription</SectionTitle>
+          <p className="text-xs text-[#b0b4c8] mb-4">Manage your subscription, update payment methods, or cancel.</p>
+
+          {billingMsg && (
+            <div className="text-xs text-[#E86A2A] bg-[#E86A2A]/10 px-3 py-2 rounded-lg mb-3">{billingMsg}</div>
+          )}
+
+          <div className="flex gap-2.5 mb-4">
+            <button
+              onClick={async () => {
+                setBillingLoading(true);
+                setBillingMsg("");
+                try {
+                  const res = await fetch("/api/stripe/portal", { method: "POST" });
+                  const data = await res.json();
+                  if (data.url) window.location.href = data.url;
+                  else setBillingMsg(data.error || "Could not open billing portal.");
+                } catch { setBillingMsg("Something went wrong."); }
+                setBillingLoading(false);
+              }}
+              disabled={billingLoading}
+              className={`px-5 py-2.5 bg-[#E86A2A] text-white text-sm font-bold border-none rounded-lg cursor-pointer transition-colors ${billingLoading ? "opacity-50" : "hover:bg-[#ff7b3a]"}`}
+            >
+              {billingLoading ? "Opening..." : "Manage Billing →"}
+            </button>
+          </div>
+
+          <div className="border-t border-white/[0.07] pt-4">
+            {!cancelConfirm ? (
+              <button
+                onClick={() => setCancelConfirm(true)}
+                className="text-xs text-red-400 bg-transparent border-none cursor-pointer underline p-0"
+              >
+                Cancel subscription
+              </button>
+            ) : (
+              <div className="bg-red-400/[0.08] border border-red-400/20 rounded-lg p-3.5">
+                <p className="text-sm text-[#e8eaf0] mb-3 leading-normal">
+                  Are you sure? Your subscription stays active until the end of your current billing period, then cancels automatically.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    disabled={cancelLoading}
+                    onClick={async () => {
+                      setCancelLoading(true);
+                      setBillingMsg("");
+                      try {
+                        const res = await fetch("/api/stripe/cancel", { method: "POST" });
+                        const data = await res.json();
+                        if (res.ok) {
+                          setBillingMsg(`Subscription will cancel on ${new Date(data.current_period_end).toLocaleDateString()}. You have access until then.`);
+                          setCancelConfirm(false);
+                        } else {
+                          setBillingMsg(data.error || "Failed to cancel. Try Manage Billing above.");
+                        }
+                      } catch { setBillingMsg("Something went wrong."); }
+                      setCancelLoading(false);
+                    }}
+                    className={`px-4 py-2 bg-red-500 text-white text-xs font-bold border-none rounded-md cursor-pointer ${cancelLoading ? "opacity-50" : ""}`}
+                  >
+                    {cancelLoading ? "Canceling..." : "Yes, cancel"}
+                  </button>
+                  <button
+                    onClick={() => setCancelConfirm(false)}
+                    className="px-4 py-2 bg-white/[0.06] border border-white/[0.07] text-[#b0b4c8] text-xs rounded-md cursor-pointer"
+                  >
+                    Never mind
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </Card>
       </>)}
     </div>
