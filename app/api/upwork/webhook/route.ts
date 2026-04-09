@@ -75,17 +75,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // Score new jobs in background
-    for (const jobId of newJobIds) {
-      try {
-        await scoreAndDraftProposal(jobId);
-      } catch (err) {
-        console.error(`[upwork-webhook] Scoring error for ${jobId}:`, err);
-      }
-    }
-
-    console.log(`[upwork-webhook] Processed ${jobs.length} jobs, ${newCount} new, ${newJobIds.length} scored`);
-    return NextResponse.json({ success: true, received: jobs.length, new: newCount, scored: newJobIds.length });
+    // Jobs are saved but NOT auto-scored — user clicks "Write Proposal" per job
+    console.log(`[upwork-webhook] Processed ${jobs.length} jobs, ${newCount} new (proposals on-demand only)`);
+    return NextResponse.json({ success: true, received: jobs.length, new: newCount });
   } catch (err) {
     console.error("[upwork-webhook] Error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

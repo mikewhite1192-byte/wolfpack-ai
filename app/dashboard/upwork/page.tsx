@@ -112,6 +112,7 @@ export default function UpworkPage() {
   const [editingProposal, setEditingProposal] = useState<string | null>(null);
   const [proposalText, setProposalText] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -681,6 +682,35 @@ export default function UpworkPage() {
 
                     {/* Action buttons */}
                     <div className="flex items-center gap-2 flex-wrap">
+                      {!job.ai_proposal && (
+                        <button
+                          disabled={generatingId === job.id}
+                          onClick={async () => {
+                            setGeneratingId(job.id);
+                            try {
+                              const res = await fetch("/api/upwork/score", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ jobId: job.id }),
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                setJobs(prev => prev.map(j => j.id === job.id ? { ...j, ai_score: data.score ?? j.ai_score, ai_reasoning: data.reasoning ?? j.ai_reasoning, ai_proposal: data.proposal ?? j.ai_proposal } : j));
+                              }
+                            } catch {}
+                            setGeneratingId(null);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                          style={{
+                            background: generatingId === job.id ? `${T.orange}10` : `${T.orange}20`,
+                            border: `1px solid ${T.orange}40`,
+                            color: T.orange,
+                            opacity: generatingId === job.id ? 0.6 : 1,
+                          }}
+                        >
+                          {generatingId === job.id ? "Writing..." : "Write Proposal"}
+                        </button>
+                      )}
                       {job.ai_proposal && (
                         <button
                           onClick={() =>

@@ -48,9 +48,8 @@ export async function GET(req: NextRequest) {
     }
 
     const newJobs = await pollUpworkRSS(feedUrls);
-    const scored = await scoreAllUnscored();
-
-    return NextResponse.json({ newJobs, scored });
+    // Don't auto-score — proposals are generated on-demand via button click
+    return NextResponse.json({ newJobs, scored: 0 });
   } catch (err) {
     console.error("[upwork-poll] Error:", err);
     return NextResponse.json({ error: "Poll failed" }, { status: 500 });
