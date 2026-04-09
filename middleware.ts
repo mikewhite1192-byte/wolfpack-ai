@@ -90,6 +90,25 @@ export default clerkMiddleware(async (authFn, req) => {
     }
   }
 
+  // If a ?ref= param is present, set a 90-day affiliate cookie and track the click
+  const ref = req.nextUrl.searchParams.get("ref");
+  if (ref && /^[a-z0-9-]{3,30}$/.test(ref)) {
+    fetch(`${req.nextUrl.origin}/api/affiliates/click`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: ref }),
+    }).catch(() => {});
+
+    const res = NextResponse.next();
+    res.cookies.set("wp_ref", ref, {
+      maxAge: 60 * 60 * 24 * 90,
+      path: "/",
+      sameSite: "lax",
+      httpOnly: false,
+    });
+    return res;
+  }
+
   return NextResponse.next();
 });
 

@@ -88,9 +88,14 @@ export async function POST(req: Request) {
 
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
-        await sql`
-          UPDATE subscriptions SET status = 'canceled' WHERE stripe_subscription_id = ${sub.id}
+        // Get the org_id before marking canceled so we can deactivate referrals
+        const canceledRows = await sql`
+          UPDATE subscriptions SET status = 'canceled' WHERE stripe_subscription_id = ${sub.id} RETURNING org_id
         `;
+        if (canceledRows.length > 0) {
+          const orgId = canceledRows[0].org_id;
+          await sql`UPDATE referrals SET status = 'churned' WHERE org_id = ${orgId} AND status = 'active'`;
+        }
         console.log(`[stripe webhook] Subscription canceled: ${sub.id}`);
         break;
       }
