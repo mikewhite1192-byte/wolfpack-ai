@@ -2596,7 +2596,7 @@ export default function OutreachPage() {
 
       {/* ============= GROUP POSTING TAB ============= */}
       {tab === "groupposting" && (() => {
-        const WOLFPACK_GROUPS: { id: string; name: string; platform: "facebook" | "reddit"; niche: string; size: string; rules: string }[] = [
+        const WOLFPACK_GROUPS: { id: string; name: string; platform: "facebook" | "reddit"; niche: string; size: string; rules: string; defaultUrl?: string }[] = [
           { id: "wp1", name: "Roofing Contractors Network", platform: "facebook", niche: "Contractors", size: "Large", rules: "Business tools OK" },
           { id: "wp2", name: "HVAC Business Owners", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Check rules" },
           { id: "wp3", name: "Plumbing Business Owners", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
@@ -2657,49 +2657,49 @@ export default function OutreachPage() {
           { id: "wp58", name: "Auto Detailing Business Owners", platform: "facebook", niche: "SMB Owners", size: "Small", rules: "Value posts OK" },
           { id: "wp59", name: "Real Estate Investor Network", platform: "facebook", niche: "SMB Owners", size: "Large", rules: "Check rules" },
           { id: "wp60", name: "Contractor Websites & Marketing", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Tools welcome" },
-          { id: "wp61", name: "r/sweatystartup", platform: "reddit", niche: "Contractors", size: "Large", rules: "Value posts OK" },
-          { id: "wp62", name: "r/smallbusiness", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Helpful posts OK" },
-          { id: "wp63", name: "r/Entrepreneur", platform: "reddit", niche: "Entrepreneurs", size: "Very Large", rules: "No direct promo" },
-          { id: "wp64", name: "r/HomeImprovement", platform: "reddit", niche: "Contractors", size: "Very Large", rules: "Value posts OK" },
-          { id: "wp65", name: "r/Roofing", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check rules" },
-          { id: "wp66", name: "r/HVAC", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
-          { id: "wp67", name: "r/Plumbing", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Helpful posts OK" },
-          { id: "wp68", name: "r/electricians", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check sidebar" },
-          { id: "wp69", name: "r/Landscaping", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
-          { id: "wp70", name: "r/PressureWashing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
-          { id: "wp71", name: "r/solar", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check rules" },
-          { id: "wp72", name: "r/cleaning", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
-          { id: "wp73", name: "r/PaintingandDecoration", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check sidebar" },
-          { id: "wp74", name: "r/pools", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
-          { id: "wp75", name: "r/lawncare", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Helpful posts OK" },
-          { id: "wp76", name: "r/pestcontrol", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
-          { id: "wp77", name: "r/realestateinvesting", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Value posts OK" },
-          { id: "wp78", name: "r/PropertyManagement", platform: "reddit", niche: "SMB Owners", size: "Medium", rules: "Check rules" },
-          { id: "wp79", name: "r/Handyman", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
-          { id: "wp80", name: "r/construction", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
-          { id: "wp81", name: "r/generalcontractor", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
-          { id: "wp82", name: "r/Concrete", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
-          { id: "wp83", name: "r/HomeOwners", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Value posts OK" },
-          { id: "wp84", name: "r/SideProject", platform: "reddit", niche: "Entrepreneurs", size: "Medium", rules: "Build-in-public OK" },
-          { id: "wp85", name: "r/agency", platform: "reddit", niche: "Agency Owners", size: "Medium", rules: "Value-first" },
-          { id: "wp86", name: "r/Flooring", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
-          { id: "wp87", name: "r/HomeRenovation", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
-          { id: "wp88", name: "r/fencing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
-          { id: "wp89", name: "r/treecare", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
-          { id: "wp90", name: "r/gutters", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
-          { id: "wp91", name: "r/junkremoval", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
-          { id: "wp92", name: "r/paving", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
-          { id: "wp93", name: "r/Insulation", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
-          { id: "wp94", name: "r/msp", platform: "reddit", niche: "SMB Owners", size: "Medium", rules: "Check rules" },
-          { id: "wp95", name: "r/marketing", platform: "reddit", niche: "Marketing", size: "Large", rules: "No self-promo" },
-          { id: "wp96", name: "r/digital_marketing", platform: "reddit", niche: "Marketing", size: "Large", rules: "Self-promo limited" },
-          { id: "wp97", name: "r/ApplianceRepair", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
-          { id: "wp98", name: "r/framing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
-          { id: "wp99", name: "r/chimney", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
-          { id: "wp100", name: "r/hvacadvice", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp61", name: "r/sweatystartup", platform: "reddit", niche: "Contractors", size: "Large", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/sweatystartup/" },
+          { id: "wp62", name: "r/smallbusiness", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/smallbusiness/" },
+          { id: "wp63", name: "r/Entrepreneur", platform: "reddit", niche: "Entrepreneurs", size: "Very Large", rules: "No direct promo", defaultUrl: "https://www.reddit.com/r/Entrepreneur/" },
+          { id: "wp64", name: "r/HomeImprovement", platform: "reddit", niche: "Contractors", size: "Very Large", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/HomeImprovement/" },
+          { id: "wp65", name: "r/Roofing", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/Roofing/" },
+          { id: "wp66", name: "r/HVAC", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/HVAC/" },
+          { id: "wp67", name: "r/Plumbing", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/Plumbing/" },
+          { id: "wp68", name: "r/electricians", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check sidebar", defaultUrl: "https://www.reddit.com/r/electricians/" },
+          { id: "wp69", name: "r/Landscaping", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/Landscaping/" },
+          { id: "wp70", name: "r/PressureWashing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/PressureWashing/" },
+          { id: "wp71", name: "r/solar", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/solar/" },
+          { id: "wp72", name: "r/cleaning", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/cleaning/" },
+          { id: "wp73", name: "r/PaintingandDecoration", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check sidebar", defaultUrl: "https://www.reddit.com/r/PaintingandDecoration/" },
+          { id: "wp74", name: "r/pools", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/pools/" },
+          { id: "wp75", name: "r/lawncare", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/lawncare/" },
+          { id: "wp76", name: "r/pestcontrol", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/pestcontrol/" },
+          { id: "wp77", name: "r/realestateinvesting", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/realestateinvesting/" },
+          { id: "wp78", name: "r/PropertyManagement", platform: "reddit", niche: "SMB Owners", size: "Medium", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/PropertyManagement/" },
+          { id: "wp79", name: "r/Handyman", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/Handyman/" },
+          { id: "wp80", name: "r/construction", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/construction/" },
+          { id: "wp81", name: "r/generalcontractor", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/generalcontractor/" },
+          { id: "wp82", name: "r/Concrete", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/Concrete/" },
+          { id: "wp83", name: "r/HomeOwners", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/HomeOwners/" },
+          { id: "wp84", name: "r/SideProject", platform: "reddit", niche: "Entrepreneurs", size: "Medium", rules: "Build-in-public OK", defaultUrl: "https://www.reddit.com/r/SideProject/" },
+          { id: "wp85", name: "r/agency", platform: "reddit", niche: "Agency Owners", size: "Medium", rules: "Value-first", defaultUrl: "https://www.reddit.com/r/agency/" },
+          { id: "wp86", name: "r/Flooring", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/Flooring/" },
+          { id: "wp87", name: "r/HomeRenovation", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/HomeRenovation/" },
+          { id: "wp88", name: "r/fencing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/fencing/" },
+          { id: "wp89", name: "r/treecare", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/treecare/" },
+          { id: "wp90", name: "r/gutters", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/gutters/" },
+          { id: "wp91", name: "r/junkremoval", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/junkremoval/" },
+          { id: "wp92", name: "r/paving", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/paving/" },
+          { id: "wp93", name: "r/Insulation", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/Insulation/" },
+          { id: "wp94", name: "r/msp", platform: "reddit", niche: "SMB Owners", size: "Medium", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/msp/" },
+          { id: "wp95", name: "r/marketing", platform: "reddit", niche: "Marketing", size: "Large", rules: "No self-promo", defaultUrl: "https://www.reddit.com/r/marketing/" },
+          { id: "wp96", name: "r/digital_marketing", platform: "reddit", niche: "Marketing", size: "Large", rules: "Self-promo limited", defaultUrl: "https://www.reddit.com/r/digital_marketing/" },
+          { id: "wp97", name: "r/ApplianceRepair", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/ApplianceRepair/" },
+          { id: "wp98", name: "r/framing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/framing/" },
+          { id: "wp99", name: "r/chimney", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/chimney/" },
+          { id: "wp100", name: "r/hvacadvice", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/hvacadvice/" },
         ];
 
-        const BUENAONDA_GROUPS: { id: string; name: string; platform: "facebook" | "reddit"; niche: string; size: string; rules: string }[] = [
+        const BUENAONDA_GROUPS: { id: string; name: string; platform: "facebook" | "reddit"; niche: string; size: string; rules: string; defaultUrl?: string }[] = [
           { id: "bo1", name: "Affiliate Marketing Mastermind", platform: "facebook", niche: "Affiliate Marketers", size: "Large", rules: "Promo OK Fridays" },
           { id: "bo2", name: "Affiliate Marketing Group", platform: "facebook", niche: "Affiliate Marketers", size: "Large", rules: "Check pinned rules" },
           { id: "bo3", name: "SaaS Affiliate Programs", platform: "facebook", niche: "Affiliate Marketers", size: "Medium", rules: "Programs welcome" },
@@ -2768,43 +2768,43 @@ export default function OutreachPage() {
           { id: "bo66", name: "Remote Work & Side Hustles", platform: "facebook", niche: "Entrepreneurs", size: "Large", rules: "Check rules" },
           { id: "bo67", name: "Marketing Funnel Builders", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Tools OK" },
           { id: "bo68", name: "Webflow & No-Code Builders", platform: "facebook", niche: "SaaS / Tech", size: "Medium", rules: "Value posts OK" },
-          { id: "bo69", name: "r/affiliatemarketing", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Self-promo Sat only" },
-          { id: "bo70", name: "r/juststart", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Value-first, no spam" },
-          { id: "bo71", name: "r/passive_income", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Check sidebar rules" },
-          { id: "bo72", name: "r/Entrepreneur", platform: "reddit", niche: "Entrepreneurs", size: "Very Large", rules: "No direct promo" },
-          { id: "bo73", name: "r/SaaS", platform: "reddit", niche: "SaaS / Tech", size: "Medium", rules: "Value posts OK" },
-          { id: "bo74", name: "r/digital_marketing", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "Self-promo limited" },
-          { id: "bo75", name: "r/PPC", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Helpful posts OK" },
-          { id: "bo76", name: "r/FacebookAds", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "No blatant ads" },
-          { id: "bo77", name: "r/GoogleAds", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check rules" },
-          { id: "bo78", name: "r/agency", platform: "reddit", niche: "Agency Owners", size: "Medium", rules: "Value-first" },
-          { id: "bo79", name: "r/marketing", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "No self-promo" },
-          { id: "bo80", name: "r/startups", platform: "reddit", niche: "SaaS / Founders", size: "Large", rules: "No spam" },
-          { id: "bo81", name: "r/ecommerce", platform: "reddit", niche: "eCommerce", size: "Large", rules: "Check rules" },
-          { id: "bo82", name: "r/dropshipping", platform: "reddit", niche: "eCommerce", size: "Large", rules: "No spam" },
-          { id: "bo83", name: "r/indiehackers", platform: "reddit", niche: "SaaS / Founders", size: "Medium", rules: "Build-in-public OK" },
-          { id: "bo84", name: "r/EntrepreneurRideAlong", platform: "reddit", niche: "Entrepreneurs", size: "Medium", rules: "Build-in-public OK" },
-          { id: "bo85", name: "r/SEO", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "No self-promo" },
-          { id: "bo86", name: "r/socialmedia", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check sidebar" },
-          { id: "bo87", name: "r/EmailMarketing", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Value posts OK" },
-          { id: "bo88", name: "r/chatgpt", platform: "reddit", niche: "AI / Automation", size: "Very Large", rules: "Value posts OK" },
-          { id: "bo89", name: "r/ArtificialIntelligence", platform: "reddit", niche: "AI / Automation", size: "Large", rules: "Value posts OK" },
-          { id: "bo90", name: "r/AutomateYourLife", platform: "reddit", niche: "AI / Automation", size: "Medium", rules: "Tools OK" },
-          { id: "bo91", name: "r/smallbusiness", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Helpful posts OK" },
-          { id: "bo92", name: "r/Blogging", platform: "reddit", niche: "Content Creators", size: "Medium", rules: "Value posts OK" },
-          { id: "bo93", name: "r/content_marketing", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check rules" },
-          { id: "bo94", name: "r/ycombinator", platform: "reddit", niche: "SaaS / Founders", size: "Medium", rules: "Value posts OK" },
-          { id: "bo95", name: "r/Affiliatemarketing", platform: "reddit", niche: "Affiliate Marketers", size: "Medium", rules: "Check rules" },
-          { id: "bo96", name: "r/sweatystartup", platform: "reddit", niche: "Entrepreneurs", size: "Large", rules: "Value posts OK" },
-          { id: "bo97", name: "r/learnprogramming", platform: "reddit", niche: "Tech", size: "Very Large", rules: "No promo" },
-          { id: "bo98", name: "r/webdev", platform: "reddit", niche: "Tech", size: "Very Large", rules: "No promo" },
+          { id: "bo69", name: "r/affiliatemarketing", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Self-promo Sat only", defaultUrl: "https://www.reddit.com/r/affiliatemarketing/" },
+          { id: "bo70", name: "r/juststart", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Value-first, no spam", defaultUrl: "https://www.reddit.com/r/juststart/" },
+          { id: "bo71", name: "r/passive_income", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Check sidebar rules", defaultUrl: "https://www.reddit.com/r/passive_income/" },
+          { id: "bo72", name: "r/Entrepreneur", platform: "reddit", niche: "Entrepreneurs", size: "Very Large", rules: "No direct promo", defaultUrl: "https://www.reddit.com/r/Entrepreneur/" },
+          { id: "bo73", name: "r/SaaS", platform: "reddit", niche: "SaaS / Tech", size: "Medium", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/SaaS/" },
+          { id: "bo74", name: "r/digital_marketing", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "Self-promo limited", defaultUrl: "https://www.reddit.com/r/digital_marketing/" },
+          { id: "bo75", name: "r/PPC", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/PPC/" },
+          { id: "bo76", name: "r/FacebookAds", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "No blatant ads", defaultUrl: "https://www.reddit.com/r/FacebookAds/" },
+          { id: "bo77", name: "r/GoogleAds", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/GoogleAds/" },
+          { id: "bo78", name: "r/agency", platform: "reddit", niche: "Agency Owners", size: "Medium", rules: "Value-first", defaultUrl: "https://www.reddit.com/r/agency/" },
+          { id: "bo79", name: "r/marketing", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "No self-promo", defaultUrl: "https://www.reddit.com/r/marketing/" },
+          { id: "bo80", name: "r/startups", platform: "reddit", niche: "SaaS / Founders", size: "Large", rules: "No spam", defaultUrl: "https://www.reddit.com/r/startups/" },
+          { id: "bo81", name: "r/ecommerce", platform: "reddit", niche: "eCommerce", size: "Large", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/ecommerce/" },
+          { id: "bo82", name: "r/dropshipping", platform: "reddit", niche: "eCommerce", size: "Large", rules: "No spam", defaultUrl: "https://www.reddit.com/r/dropshipping/" },
+          { id: "bo83", name: "r/indiehackers", platform: "reddit", niche: "SaaS / Founders", size: "Medium", rules: "Build-in-public OK", defaultUrl: "https://www.reddit.com/r/indiehackers/" },
+          { id: "bo84", name: "r/EntrepreneurRideAlong", platform: "reddit", niche: "Entrepreneurs", size: "Medium", rules: "Build-in-public OK", defaultUrl: "https://www.reddit.com/r/EntrepreneurRideAlong/" },
+          { id: "bo85", name: "r/SEO", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "No self-promo", defaultUrl: "https://www.reddit.com/r/SEO/" },
+          { id: "bo86", name: "r/socialmedia", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check sidebar", defaultUrl: "https://www.reddit.com/r/socialmedia/" },
+          { id: "bo87", name: "r/EmailMarketing", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/EmailMarketing/" },
+          { id: "bo88", name: "r/chatgpt", platform: "reddit", niche: "AI / Automation", size: "Very Large", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/chatgpt/" },
+          { id: "bo89", name: "r/ArtificialIntelligence", platform: "reddit", niche: "AI / Automation", size: "Large", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/ArtificialIntelligence/" },
+          { id: "bo90", name: "r/AutomateYourLife", platform: "reddit", niche: "AI / Automation", size: "Medium", rules: "Tools OK", defaultUrl: "https://www.reddit.com/r/AutomateYourLife/" },
+          { id: "bo91", name: "r/smallbusiness", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Helpful posts OK", defaultUrl: "https://www.reddit.com/r/smallbusiness/" },
+          { id: "bo92", name: "r/Blogging", platform: "reddit", niche: "Content Creators", size: "Medium", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/Blogging/" },
+          { id: "bo93", name: "r/content_marketing", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/content_marketing/" },
+          { id: "bo94", name: "r/ycombinator", platform: "reddit", niche: "SaaS / Founders", size: "Medium", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/ycombinator/" },
+          { id: "bo95", name: "r/Affiliatemarketing", platform: "reddit", niche: "Affiliate Marketers", size: "Medium", rules: "Check rules", defaultUrl: "https://www.reddit.com/r/Affiliatemarketing/" },
+          { id: "bo96", name: "r/sweatystartup", platform: "reddit", niche: "Entrepreneurs", size: "Large", rules: "Value posts OK", defaultUrl: "https://www.reddit.com/r/sweatystartup/" },
+          { id: "bo97", name: "r/learnprogramming", platform: "reddit", niche: "Tech", size: "Very Large", rules: "No promo", defaultUrl: "https://www.reddit.com/r/learnprogramming/" },
+          { id: "bo98", name: "r/webdev", platform: "reddit", niche: "Tech", size: "Very Large", rules: "No promo", defaultUrl: "https://www.reddit.com/r/webdev/" },
         ];
 
         const WOLFPACK_SYSTEM = `You write Facebook and Reddit posts for Mike, the owner of thewolfpack.ai. He sells websites and CRM tools to home service contractors — roofers, HVAC, plumbers, electricians, landscapers, and other tradespeople.\n\nHis offers:\n- Contractor website: $500 flat, one-time. No monthly fees. Professional, mobile-ready.\n- CRM retainer: $97/month. Manages leads, follow-ups, pipelines.\n- Google Business Profile management: $49/month. Gets them ranking locally.\n\nReferral program (mention occasionally, not every post):\n- $100 cash when a referred contractor buys a website\n- $20/month recurring as long as the referral stays on CRM\n- The referred contractor gets their first month of CRM free\n\nMike's voice: casual, plain English, outcome-first, real numbers, no corporate fluff, never sounds salesy or desperate. He speaks like a contractor himself — direct and no-BS. Uses short punchy sentences. Never uses the word "leverage" or "synergy" or any buzzwords.\n\nEach post must feel completely different from the last. Rotate through angles: pain-point hook, results/numbers hook, curiosity hook, direct offer, question, contrarian take, story-based. Never start two posts the same way.\n\nOutput ONLY the post text. No intro, no "Here's a post:", no hashtags unless they feel natural, no quotation marks around the post.`;
 
         const BUENAONDA_SYSTEM = `You write Facebook and Reddit posts for Mike, the owner of buenaonda.ai.\n\nBuenaOnda is an autonomous AI ad management platform for Meta, Google, and TikTok. It manages campaigns on full autopilot — budget optimization, audience testing, performance reporting — without human babysitting.\n\nHis affiliate program:\n- 40% recurring commission on every referral\n- Monthly Stripe payouts\n- Affiliate signup page: buenaonda.ai/affiliates\n- Plans: Starter $97/mo ($38.80/mo commission), Pro $179/mo ($71.60/mo), Agency $1,499/mo ($599.60/mo)\n\nTarget audience for posts: affiliate marketers looking for recurring SaaS programs, agency owners who could use the tool AND refer it, media buyers, marketing freelancers.\n\nThe posts have two goals:\n1. Get affiliates to sign up at buenaonda.ai/affiliates (primary goal right now)\n2. Generate awareness of what the product does so affiliates can speak to it authentically\n\nMike's voice: casual, plain English, outcome-first, real dollar amounts not just percentages, no hype or get-rich-quick tone. Confident but not arrogant.\n\nEach post must feel completely different from the last. Rotate through angles: commission math hook, product capability hook, agency pain-point, affiliate income angle, behind-the-scenes build, curiosity hook, direct offer. Never start two posts the same way.\n\nAlways include buenaonda.ai/affiliates somewhere in the post naturally.\n\nOutput ONLY the post text. No intro, no "Here's a post:", no quotation marks around the post.`;
 
-        const gpAccent = gpTab === "wolfpack" ? "#E94560" : "#00B894";
+        const gpAccent = gpTab === "wolfpack" ? T.orange : "#D4A017";
         const groups = gpTab === "wolfpack" ? WOLFPACK_GROUPS : BUENAONDA_GROUPS;
         const data = gpTab === "wolfpack" ? gpWolfpackData : gpBuenaondaData;
         const setData = gpTab === "wolfpack" ? setGpWolfpackData : setGpBuenaondaData;
@@ -2875,8 +2875,8 @@ export default function OutreachPage() {
           <div>
             {/* Product tabs */}
             <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-              <button onClick={() => { setGpTab("wolfpack"); setGpGeneratedPost(""); }} style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, background: gpTab === "wolfpack" ? "#E94560" : "transparent", color: gpTab === "wolfpack" ? "#fff" : T.muted, border: `1px solid ${gpTab === "wolfpack" ? "#E94560" : T.border}`, borderRadius: 6, cursor: "pointer" }}>THE WOLFPACK</button>
-              <button onClick={() => { setGpTab("buenaonda"); setGpGeneratedPost(""); }} style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, background: gpTab === "buenaonda" ? "#00B894" : "transparent", color: gpTab === "buenaonda" ? "#fff" : T.muted, border: `1px solid ${gpTab === "buenaonda" ? "#00B894" : T.border}`, borderRadius: 6, cursor: "pointer" }}>BUENA ONDA</button>
+              <button onClick={() => { setGpTab("wolfpack"); setGpGeneratedPost(""); }} style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, background: gpTab === "wolfpack" ? T.orange : "transparent", color: gpTab === "wolfpack" ? "#fff" : T.muted, border: `1px solid ${gpTab === "wolfpack" ? T.orange : T.border}`, borderRadius: 6, cursor: "pointer" }}>THE WOLFPACK</button>
+              <button onClick={() => { setGpTab("buenaonda"); setGpGeneratedPost(""); }} style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, background: gpTab === "buenaonda" ? "#D4A017" : "transparent", color: gpTab === "buenaonda" ? "#fff" : T.muted, border: `1px solid ${gpTab === "buenaonda" ? "#D4A017" : T.border}`, borderRadius: 6, cursor: "pointer" }}>BUENA ONDA</button>
             </div>
 
             {/* Stats bar */}
@@ -2967,7 +2967,7 @@ export default function OutreachPage() {
                 const d = daysSince(data[g.id]?.lastPosted);
                 const statusColor = d === null ? T.red : d <= 2 ? T.green : d <= 6 ? T.yellow : T.red;
                 const statusText = d === null ? "Never" : d === 0 ? "Today" : d === 1 ? "Yesterday" : `${d}d ago`;
-                const url = data[g.id]?.url;
+                const url = data[g.id]?.url || g.defaultUrl;
                 const isFlashing = gpFlashId === g.id;
 
                 return (
