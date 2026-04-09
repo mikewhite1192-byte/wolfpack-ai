@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
-import { scoreAndDraftProposal } from "@/lib/upwork/scorer";
+import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -75,7 +75,25 @@ export async function POST(req: Request) {
       }
     }
 
-    // Jobs are saved but NOT auto-scored — user clicks "Write Proposal" per job
+    // Text notification for new jobs
+    if (newCount > 0 && process.env.OWNER_PHONE) {
+      for (const job of jobs) {
+        const title = job.title || job.name || "";
+        const jobUrl = job.url || job.link || job.job_url || "";
+        const budget = job.budget || job.amount || job.price || "not listed";
+        if (title) {
+          try {
+            await sendMessage(
+              process.env.OWNER_PHONE,
+              `New Upwork job: ${title}\nBudget: ${typeof budget === "object" ? JSON.stringify(budget) : budget}\n${jobUrl}`
+            );
+          } catch (err) {
+            console.error("[upwork-webhook] Text notification error:", err);
+          }
+        }
+      }
+    }
+
     console.log(`[upwork-webhook] Processed ${jobs.length} jobs, ${newCount} new (proposals on-demand only)`);
     return NextResponse.json({ success: true, received: jobs.length, new: newCount });
   } catch (err) {
