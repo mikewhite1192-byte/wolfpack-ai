@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { X, Phone, MessageSquare, Mail, Send } from "lucide-react";
+import { X, Phone, MessageSquare, Mail, Send, Pencil, Check } from "lucide-react";
 
 const T = {
   orange: "#E86A2A",
@@ -123,6 +123,11 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
   const [composeSending, setComposeSending] = useState(false);
+
+  // Contact edit state
+  const [editingContact, setEditingContact] = useState(false);
+  const [editFields, setEditFields] = useState({ firstName: "", lastName: "", email: "", phone: "", company: "" });
+  const [savingContact, setSavingContact] = useState(false);
 
   // AI toggle state
   const [chatAiEnabled, setChatAiEnabled] = useState(true);
@@ -564,16 +569,104 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
             <div className="dp-header">
               <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 10 }}>
                 <div className="dp-avatar">{initials || "?"}</div>
-                <div>
-                  <div className="dp-name">{fullName}</div>
-                  {deal.company && <div className="dp-company">{deal.company}</div>}
+                <div style={{ flex: 1 }}>
+                  {editingContact ? (
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <input
+                        value={editFields.firstName}
+                        onChange={e => setEditFields({ ...editFields, firstName: e.target.value })}
+                        placeholder="First"
+                        style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, padding: "4px 8px", color: T.text, fontSize: 14, fontWeight: 700, width: "45%" }}
+                      />
+                      <input
+                        value={editFields.lastName}
+                        onChange={e => setEditFields({ ...editFields, lastName: e.target.value })}
+                        placeholder="Last"
+                        style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, padding: "4px 8px", color: T.text, fontSize: 14, fontWeight: 700, width: "45%" }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="dp-name">{fullName}</div>
+                  )}
+                  {editingContact ? (
+                    <input
+                      value={editFields.company}
+                      onChange={e => setEditFields({ ...editFields, company: e.target.value })}
+                      placeholder="Company"
+                      style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, padding: "3px 8px", color: T.muted, fontSize: 12, width: "92%", marginTop: 4 }}
+                    />
+                  ) : (
+                    deal.company && <div className="dp-company">{deal.company}</div>
+                  )}
                 </div>
+                {!editingContact ? (
+                  <button
+                    onClick={() => {
+                      setEditFields({
+                        firstName: deal.first_name || "",
+                        lastName: deal.last_name || "",
+                        email: deal.email || "",
+                        phone: deal.phone || "",
+                        company: deal.company || "",
+                      });
+                      setEditingContact(true);
+                    }}
+                    style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 6, padding: "6px 8px", cursor: "pointer", color: T.muted, display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}
+                    title="Edit contact"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                ) : (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                      disabled={savingContact}
+                      onClick={async () => {
+                        setSavingContact(true);
+                        try {
+                          const res = await fetch(`/api/contacts/${deal.contact_id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              firstName: editFields.firstName || null,
+                              lastName: editFields.lastName || null,
+                              email: editFields.email || null,
+                              phone: editFields.phone || null,
+                              company: editFields.company || null,
+                            }),
+                          });
+                          if (res.ok) {
+                            setEditingContact(false);
+                            fetchDeal();
+                            onUpdate?.();
+                          }
+                        } catch {}
+                        setSavingContact(false);
+                      }}
+                      style={{ background: T.green, border: "none", borderRadius: 6, padding: "6px 8px", cursor: savingContact ? "wait" : "pointer", color: "#fff", display: "flex", alignItems: "center", gap: 4, fontSize: 11, opacity: savingContact ? 0.6 : 1 }}
+                    >
+                      <Check className="w-3 h-3" /> Save
+                    </button>
+                    <button
+                      onClick={() => setEditingContact(false)}
+                      style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 6, padding: "6px 8px", cursor: "pointer", color: T.muted, fontSize: 11 }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="dp-info-grid">
                 <div className="dp-info-item">
                   <div className="dp-info-label">Phone</div>
-                  {deal.phone ? (
+                  {editingContact ? (
+                    <input
+                      value={editFields.phone}
+                      onChange={e => setEditFields({ ...editFields, phone: e.target.value })}
+                      placeholder="Phone number"
+                      style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, padding: "3px 8px", color: T.text, fontSize: 12, width: "100%" }}
+                    />
+                  ) : deal.phone ? (
                     <div className="dp-info-value">{deal.phone}</div>
                   ) : (
                     <div className="dp-info-value" style={{ color: T.muted }}>—</div>
@@ -581,7 +674,14 @@ export default function DealPanel({ dealId, onClose, onUpdate }: DealPanelProps)
                 </div>
                 <div className="dp-info-item">
                   <div className="dp-info-label">Email</div>
-                  {deal.email ? (
+                  {editingContact ? (
+                    <input
+                      value={editFields.email}
+                      onChange={e => setEditFields({ ...editFields, email: e.target.value })}
+                      placeholder="Email address"
+                      style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, padding: "3px 8px", color: T.text, fontSize: 12, width: "100%" }}
+                    />
+                  ) : deal.email ? (
                     <a href={`mailto:${deal.email}`} className="dp-info-link">{deal.email}</a>
                   ) : (
                     <div className="dp-info-value" style={{ color: T.muted }}>—</div>

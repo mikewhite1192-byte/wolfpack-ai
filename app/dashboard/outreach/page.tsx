@@ -84,7 +84,22 @@ export default function OutreachPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeState, setScrapeState] = useState("");
   const [scrapeCount, setScrapeCount] = useState(30);
-  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts" | "campaigns" | "scraper" | "sent" | "postmaster">("overview");
+  const [tab, setTab] = useState<"overview" | "emails" | "health" | "inbox" | "contacts" | "campaigns" | "scraper" | "sent" | "postmaster" | "emailsetup" | "messages" | "groupposting">("overview");
+  const [emailSetupSub, setEmailSetupSub] = useState<"addresses" | "health" | "postmaster">("addresses");
+  const [messagesSub, setMessagesSub] = useState<"inbox" | "sent">("inbox");
+
+  // Group Posting state
+  const [gpTab, setGpTab] = useState<"wolfpack" | "buenaonda">("wolfpack");
+  const [gpSearch, setGpSearch] = useState("");
+  const [gpStatusFilter, setGpStatusFilter] = useState<"all" | "due" | "posted">("all");
+  const [gpPlatformFilter, setGpPlatformFilter] = useState<"all" | "facebook" | "reddit">("all");
+  const [gpGeneratedPost, setGpGeneratedPost] = useState("");
+  const [gpIsGenerating, setGpIsGenerating] = useState(false);
+  const [gpCopied, setGpCopied] = useState(false);
+  const [gpEditingUrlId, setGpEditingUrlId] = useState<string | null>(null);
+  const [gpFlashId, setGpFlashId] = useState<string | null>(null);
+  const [gpWolfpackData, setGpWolfpackData] = useState<Record<string, { lastPosted?: string; url?: string }>>({});
+  const [gpBuenaondaData, setGpBuenaondaData] = useState<Record<string, { lastPosted?: string; url?: string }>>({});
 
   // Postmaster state
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -233,6 +248,16 @@ export default function OutreachPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  }, []);
+
+  // Load group posting data from localStorage
+  useEffect(() => {
+    try {
+      const wp = localStorage.getItem("wolfpack_tracker_v1");
+      if (wp) setGpWolfpackData(JSON.parse(wp));
+      const bo = localStorage.getItem("buenaonda_tracker_v1");
+      if (bo) setGpBuenaondaData(JSON.parse(bo));
+    } catch {}
   }, []);
 
   // Auto-refresh every 30 seconds
@@ -683,10 +708,10 @@ export default function OutreachPage() {
       .catch(() => {});
   }
 
-  // Load inbox when switching to inbox tab
+  // Load inbox when switching to messages tab with inbox sub-tab
   useEffect(() => {
-    if (tab === "inbox") loadInbox();
-  }, [tab, inboxFilter]);
+    if (tab === "messages" && messagesSub === "inbox") loadInbox();
+  }, [tab, messagesSub, inboxFilter]);
 
   async function pollInboxes() {
     setPolling(true);
@@ -827,7 +852,7 @@ export default function OutreachPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${T.border}`, marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${T.border}`, marginBottom: 20, flexWrap: "wrap" }}>
         <button className={`out-tab ${tab === "overview" ? "active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`out-tab ${tab === "campaigns" ? "active" : ""}`} onClick={() => setTab("campaigns")} style={{ position: "relative" }}>
           Campaigns ({campaigns.length})
@@ -838,29 +863,17 @@ export default function OutreachPage() {
           )}
         </button>
         <button className={`out-tab ${tab === "scraper" ? "active" : ""}`} onClick={() => setTab("scraper")}>Scraper</button>
-        <button className={`out-tab ${tab === "emails" ? "active" : ""}`} onClick={() => setTab("emails")}>Email Addresses</button>
-        <button className={`out-tab ${tab === "contacts" ? "active" : ""}`} onClick={() => setTab("contacts")}>Contacts ({outreachContacts.length})</button>
-        <button className={`out-tab ${tab === "health" ? "active" : ""}`} onClick={() => setTab("health")}>Health Monitor</button>
-        <button className={`out-tab ${tab === "inbox" ? "active" : ""}`} onClick={() => setTab("inbox")} style={{ position: "relative" }}>
-          Inbox
+        <button className={`out-tab ${tab === "emailsetup" ? "active" : ""}`} onClick={() => setTab("emailsetup")}>Email Setup</button>
+        <button className={`out-tab ${tab === "contacts" ? "active" : ""}`} onClick={() => setTab("contacts")}>Contacts</button>
+        <button className={`out-tab ${tab === "messages" ? "active" : ""}`} onClick={() => { setTab("messages"); if (messagesSub === "inbox") { fetch("/api/outreach/inbox").then(r => r.json()).then(d => { setInboxReplies(d.replies || []); setInboxTotal(d.total || 0); setUnreadCount(d.unread || 0); }); } }} style={{ position: "relative" }}>
+          Messages
           {unreadCount > 0 && (
             <span style={{ position: "absolute", top: 2, right: -4, background: T.red, color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 8, padding: "1px 5px", minWidth: 16, textAlign: "center" }}>
               {unreadCount}
             </span>
           )}
         </button>
-        <button className={`out-tab ${tab === "sent" ? "active" : ""}`} onClick={() => setTab("sent")}>Sent ({recentEmails.length})</button>
-        <button className={`out-tab ${tab === "postmaster" ? "active" : ""}`} onClick={() => {
-          setTab("postmaster");
-          if (!postmasterData && !postmasterLoading) {
-            setPostmasterLoading(true);
-            setPostmasterError("");
-            fetch(`/api/outreach/postmaster?range=${postmasterRange}`)
-              .then(r => r.json())
-              .then(d => { if (d.error) setPostmasterError(d.error); else setPostmasterData(d); setPostmasterLoading(false); })
-              .catch(() => { setPostmasterError("Failed to load"); setPostmasterLoading(false); });
-          }
-        }}>Postmaster</button>
+        <button className={`out-tab ${tab === "groupposting" ? "active" : ""}`} onClick={() => setTab("groupposting")}>Group Posting</button>
       </div>
 
       {loading ? (
@@ -1033,8 +1046,17 @@ export default function OutreachPage() {
             </>
           )}
 
-          {/* ============= EMAIL ADDRESSES TAB ============= */}
-          {tab === "emails" && (
+          {/* ============= EMAIL SETUP SUB-TAB BAR ============= */}
+          {tab === "emailsetup" && (
+            <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+              <button onClick={() => setEmailSetupSub("addresses")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: emailSetupSub === "addresses" ? T.orange : "transparent", color: emailSetupSub === "addresses" ? "#fff" : T.muted, border: `1px solid ${emailSetupSub === "addresses" ? T.orange : T.border}`, borderRadius: 6, cursor: "pointer" }}>Email Addresses</button>
+              <button onClick={() => setEmailSetupSub("health")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: emailSetupSub === "health" ? T.orange : "transparent", color: emailSetupSub === "health" ? "#fff" : T.muted, border: `1px solid ${emailSetupSub === "health" ? T.orange : T.border}`, borderRadius: 6, cursor: "pointer" }}>Health Monitor</button>
+              <button onClick={() => { setEmailSetupSub("postmaster"); if (!postmasterData && !postmasterLoading) { setPostmasterLoading(true); setPostmasterError(""); fetch(`/api/outreach/postmaster?range=${postmasterRange}`).then(r => r.json()).then(d => { if (d.error) setPostmasterError(d.error); else setPostmasterData(d); setPostmasterLoading(false); }).catch(() => { setPostmasterError("Failed to load"); setPostmasterLoading(false); }); } }} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: emailSetupSub === "postmaster" ? T.orange : "transparent", color: emailSetupSub === "postmaster" ? "#fff" : T.muted, border: `1px solid ${emailSetupSub === "postmaster" ? T.orange : T.border}`, borderRadius: 6, cursor: "pointer" }}>Postmaster</button>
+            </div>
+          )}
+
+          {/* ============= EMAIL ADDRESSES (Email Setup > Addresses) ============= */}
+          {tab === "emailsetup" && emailSetupSub === "addresses" && (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1303,8 +1325,8 @@ export default function OutreachPage() {
             </>
           )}
 
-          {/* ============= HEALTH MONITOR TAB ============= */}
-          {tab === "health" && (() => {
+          {/* ============= HEALTH MONITOR (Email Setup > Health) ============= */}
+          {tab === "emailsetup" && emailSetupSub === "health" && (() => {
             const senderCampaignMap: Record<string, string> = {};
             campaigns.forEach((c: Record<string, unknown>) => {
               const senders = (c.senders || []) as { id: string; email: string }[];
@@ -2173,9 +2195,19 @@ export default function OutreachPage() {
             </>
           )}
 
-          {/* ============= INBOX TAB ============= */}
-          {/* ============= SENT EMAILS TAB ============= */}
-          {tab === "sent" && (
+          {/* ============= MESSAGES TAB (Inbox + Sent) ============= */}
+          {tab === "messages" && (
+            <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+              <button onClick={() => setMessagesSub("inbox")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: messagesSub === "inbox" ? T.orange : "transparent", color: messagesSub === "inbox" ? "#fff" : T.muted, border: `1px solid ${messagesSub === "inbox" ? T.orange : T.border}`, borderRadius: 6, cursor: "pointer", position: "relative" }}>
+                Inbox
+                {unreadCount > 0 && <span style={{ position: "absolute", top: -4, right: -4, background: T.red, color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 8, padding: "1px 5px", minWidth: 14, textAlign: "center" }}>{unreadCount}</span>}
+              </button>
+              <button onClick={() => setMessagesSub("sent")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: messagesSub === "sent" ? T.orange : "transparent", color: messagesSub === "sent" ? "#fff" : T.muted, border: `1px solid ${messagesSub === "sent" ? T.orange : T.border}`, borderRadius: 6, cursor: "pointer" }}>Sent</button>
+            </div>
+          )}
+
+          {/* ============= SENT EMAILS (Messages > Sent) ============= */}
+          {tab === "messages" && messagesSub === "sent" && (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div className="out-label" style={{ marginBottom: 0 }}>Sent Emails</div>
@@ -2260,7 +2292,8 @@ export default function OutreachPage() {
             </>
           )}
 
-          {tab === "inbox" && (
+          {/* ============= INBOX (Messages > Inbox) ============= */}
+          {tab === "messages" && messagesSub === "inbox" && (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -2561,8 +2594,444 @@ export default function OutreachPage() {
         </div>
       )}
 
-      {/* ============= POSTMASTER TAB ============= */}
-      {tab === "postmaster" && (
+      {/* ============= GROUP POSTING TAB ============= */}
+      {tab === "groupposting" && (() => {
+        const WOLFPACK_GROUPS: { id: string; name: string; platform: "facebook" | "reddit"; niche: string; size: string; rules: string }[] = [
+          { id: "wp1", name: "Roofing Contractors Network", platform: "facebook", niche: "Contractors", size: "Large", rules: "Business tools OK" },
+          { id: "wp2", name: "HVAC Business Owners", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Check rules" },
+          { id: "wp3", name: "Plumbing Business Owners", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp4", name: "Electricians & Electrical Biz", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Business tools OK" },
+          { id: "wp5", name: "Home Service Business Owners", platform: "facebook", niche: "Contractors", size: "Large", rules: "Check pinned rules" },
+          { id: "wp6", name: "Contractor Business Growth", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp7", name: "Trades & Contractor Entrepreneurs", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Business tools OK" },
+          { id: "wp8", name: "Small Business Marketing Tips", platform: "facebook", niche: "SMB Owners", size: "Large", rules: "Promo threads OK" },
+          { id: "wp9", name: "Local Business Owners Network", platform: "facebook", niche: "SMB Owners", size: "Large", rules: "Check rules" },
+          { id: "wp10", name: "Service Business Owners", platform: "facebook", niche: "SMB Owners", size: "Large", rules: "Value first" },
+          { id: "wp11", name: "General Contractors Network", platform: "facebook", niche: "Contractors", size: "Large", rules: "Business tools OK" },
+          { id: "wp12", name: "Landscaping Business Owners", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Check rules" },
+          { id: "wp13", name: "Painting Contractors Group", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp14", name: "Home Renovation Pros", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Business tools OK" },
+          { id: "wp15", name: "Concrete & Masonry Contractors", platform: "facebook", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp16", name: "Pest Control Business Owners", platform: "facebook", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp17", name: "Pressure Washing Business Owners", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Business tools OK" },
+          { id: "wp18", name: "Gutter Cleaning & Installation", platform: "facebook", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp19", name: "Flooring Contractors Network", platform: "facebook", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp20", name: "Solar Installation Business", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Business tools OK" },
+          { id: "wp21", name: "Home Inspection Professionals", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Check rules" },
+          { id: "wp22", name: "Fence & Deck Contractors", platform: "facebook", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp23", name: "Pool & Spa Service Owners", platform: "facebook", niche: "Contractors", size: "Small", rules: "Business tools OK" },
+          { id: "wp24", name: "Appliance Repair Business Owners", platform: "facebook", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp25", name: "Home Service Entrepreneurs", platform: "facebook", niche: "Contractors", size: "Large", rules: "Business tools OK" },
+          { id: "wp26", name: "Contractors & Tradesmen USA", platform: "facebook", niche: "Contractors", size: "Large", rules: "Value posts OK" },
+          { id: "wp27", name: "Blue Collar Business Owners", platform: "facebook", niche: "Contractors", size: "Large", rules: "Business tools OK" },
+          { id: "wp28", name: "Exterior Remodeling Contractors", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Check rules" },
+          { id: "wp29", name: "Window & Door Contractors", platform: "facebook", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp30", name: "Drywall & Insulation Pros", platform: "facebook", niche: "Contractors", size: "Small", rules: "Business tools OK" },
+          { id: "wp31", name: "Tile & Stone Contractors", platform: "facebook", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp32", name: "Handyman Business Owners", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp33", name: "Remodeling Contractors Network", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Business tools OK" },
+          { id: "wp34", name: "Home Builders & Developers", platform: "facebook", niche: "Contractors", size: "Large", rules: "Check rules" },
+          { id: "wp35", name: "Contractor Lead Generation Tips", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp36", name: "Trades Business Owners Network", platform: "facebook", niche: "Contractors", size: "Large", rules: "Business tools OK" },
+          { id: "wp37", name: "Field Service Business Owners", platform: "facebook", niche: "SMB Owners", size: "Medium", rules: "Check rules" },
+          { id: "wp38", name: "Local Services Business Growth", platform: "facebook", niche: "SMB Owners", size: "Large", rules: "Value posts OK" },
+          { id: "wp39", name: "Home Services Digital Marketing", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Check rules" },
+          { id: "wp40", name: "Contractor CRM & Software Tips", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Tools welcome" },
+          { id: "wp41", name: "Residential Roofing Professionals", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Business tools OK" },
+          { id: "wp42", name: "Commercial HVAC Professionals", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Check rules" },
+          { id: "wp43", name: "Plumbers & Pipefitters Network", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp44", name: "Licensed Electricians Business", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Business tools OK" },
+          { id: "wp45", name: "Tree Service Business Owners", platform: "facebook", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp46", name: "Snow Removal Business Owners", platform: "facebook", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp47", name: "Junk Removal Business Owners", platform: "facebook", niche: "Contractors", size: "Small", rules: "Business tools OK" },
+          { id: "wp48", name: "Cleaning Business Owners Network", platform: "facebook", niche: "SMB Owners", size: "Medium", rules: "Value posts OK" },
+          { id: "wp49", name: "Maid & House Cleaning Business", platform: "facebook", niche: "SMB Owners", size: "Medium", rules: "Business tools OK" },
+          { id: "wp50", name: "Property Management Pros", platform: "facebook", niche: "SMB Owners", size: "Medium", rules: "Value posts OK" },
+          { id: "wp51", name: "Septic & Drain Service Owners", platform: "facebook", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp52", name: "Irrigation & Sprinkler Business", platform: "facebook", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp53", name: "Chimney Sweep Business Owners", platform: "facebook", niche: "Contractors", size: "Small", rules: "Business tools OK" },
+          { id: "wp54", name: "Air Duct Cleaning Business", platform: "facebook", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp55", name: "Masonry & Brick Contractors", platform: "facebook", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp56", name: "Cabinet & Millwork Business", platform: "facebook", niche: "Contractors", size: "Small", rules: "Business tools OK" },
+          { id: "wp57", name: "Moving Company Business Owners", platform: "facebook", niche: "SMB Owners", size: "Small", rules: "Check rules" },
+          { id: "wp58", name: "Auto Detailing Business Owners", platform: "facebook", niche: "SMB Owners", size: "Small", rules: "Value posts OK" },
+          { id: "wp59", name: "Real Estate Investor Network", platform: "facebook", niche: "SMB Owners", size: "Large", rules: "Check rules" },
+          { id: "wp60", name: "Contractor Websites & Marketing", platform: "facebook", niche: "Contractors", size: "Medium", rules: "Tools welcome" },
+          { id: "wp61", name: "r/sweatystartup", platform: "reddit", niche: "Contractors", size: "Large", rules: "Value posts OK" },
+          { id: "wp62", name: "r/smallbusiness", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Helpful posts OK" },
+          { id: "wp63", name: "r/Entrepreneur", platform: "reddit", niche: "Entrepreneurs", size: "Very Large", rules: "No direct promo" },
+          { id: "wp64", name: "r/HomeImprovement", platform: "reddit", niche: "Contractors", size: "Very Large", rules: "Value posts OK" },
+          { id: "wp65", name: "r/Roofing", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check rules" },
+          { id: "wp66", name: "r/HVAC", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp67", name: "r/Plumbing", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Helpful posts OK" },
+          { id: "wp68", name: "r/electricians", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check sidebar" },
+          { id: "wp69", name: "r/Landscaping", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp70", name: "r/PressureWashing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
+          { id: "wp71", name: "r/solar", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Check rules" },
+          { id: "wp72", name: "r/cleaning", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp73", name: "r/PaintingandDecoration", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check sidebar" },
+          { id: "wp74", name: "r/pools", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp75", name: "r/lawncare", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Helpful posts OK" },
+          { id: "wp76", name: "r/pestcontrol", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp77", name: "r/realestateinvesting", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Value posts OK" },
+          { id: "wp78", name: "r/PropertyManagement", platform: "reddit", niche: "SMB Owners", size: "Medium", rules: "Check rules" },
+          { id: "wp79", name: "r/Handyman", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
+          { id: "wp80", name: "r/construction", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp81", name: "r/generalcontractor", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp82", name: "r/Concrete", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp83", name: "r/HomeOwners", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Value posts OK" },
+          { id: "wp84", name: "r/SideProject", platform: "reddit", niche: "Entrepreneurs", size: "Medium", rules: "Build-in-public OK" },
+          { id: "wp85", name: "r/agency", platform: "reddit", niche: "Agency Owners", size: "Medium", rules: "Value-first" },
+          { id: "wp86", name: "r/Flooring", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
+          { id: "wp87", name: "r/HomeRenovation", platform: "reddit", niche: "Contractors", size: "Medium", rules: "Value posts OK" },
+          { id: "wp88", name: "r/fencing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp89", name: "r/treecare", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp90", name: "r/gutters", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp91", name: "r/junkremoval", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp92", name: "r/paving", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
+          { id: "wp93", name: "r/Insulation", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp94", name: "r/msp", platform: "reddit", niche: "SMB Owners", size: "Medium", rules: "Check rules" },
+          { id: "wp95", name: "r/marketing", platform: "reddit", niche: "Marketing", size: "Large", rules: "No self-promo" },
+          { id: "wp96", name: "r/digital_marketing", platform: "reddit", niche: "Marketing", size: "Large", rules: "Self-promo limited" },
+          { id: "wp97", name: "r/ApplianceRepair", platform: "reddit", niche: "Contractors", size: "Small", rules: "Check rules" },
+          { id: "wp98", name: "r/framing", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+          { id: "wp99", name: "r/chimney", platform: "reddit", niche: "Contractors", size: "Small", rules: "Helpful posts OK" },
+          { id: "wp100", name: "r/hvacadvice", platform: "reddit", niche: "Contractors", size: "Small", rules: "Value posts OK" },
+        ];
+
+        const BUENAONDA_GROUPS: { id: string; name: string; platform: "facebook" | "reddit"; niche: string; size: string; rules: string }[] = [
+          { id: "bo1", name: "Affiliate Marketing Mastermind", platform: "facebook", niche: "Affiliate Marketers", size: "Large", rules: "Promo OK Fridays" },
+          { id: "bo2", name: "Affiliate Marketing Group", platform: "facebook", niche: "Affiliate Marketers", size: "Large", rules: "Check pinned rules" },
+          { id: "bo3", name: "SaaS Affiliate Programs", platform: "facebook", niche: "Affiliate Marketers", size: "Medium", rules: "Programs welcome" },
+          { id: "bo4", name: "Passive Income & Affiliate Mktg", platform: "facebook", niche: "Affiliate Marketers", size: "Medium", rules: "Value posts OK" },
+          { id: "bo5", name: "Super Affiliate Insiders", platform: "facebook", niche: "Affiliate Marketers", size: "Medium", rules: "Active promos OK" },
+          { id: "bo6", name: "Affiliate Marketing for Beginners", platform: "facebook", niche: "Affiliate Marketers", size: "Large", rules: "Helpful posts" },
+          { id: "bo7", name: "High Ticket Affiliate Marketing", platform: "facebook", niche: "Affiliate Marketers", size: "Medium", rules: "HT programs welcome" },
+          { id: "bo8", name: "Recurring Commission Programs", platform: "facebook", niche: "Affiliate Marketers", size: "Small", rules: "Recurring focus" },
+          { id: "bo9", name: "SaaS & Software Affiliates", platform: "facebook", niche: "Affiliate Marketers", size: "Small", rules: "Programs OK" },
+          { id: "bo10", name: "Make Money Online Community", platform: "facebook", niche: "Affiliate Marketers", size: "Large", rules: "Check rules" },
+          { id: "bo11", name: "Digital Marketing Agency Owners", platform: "facebook", niche: "Agency Owners", size: "Large", rules: "Promo in threads" },
+          { id: "bo12", name: "Facebook Ads Mastery", platform: "facebook", niche: "Agency / Marketing", size: "Very Large", rules: "Value first" },
+          { id: "bo13", name: "Google Ads PPC Experts", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "No spam" },
+          { id: "bo14", name: "Social Media Marketing Pros", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "Check rules" },
+          { id: "bo15", name: "Agency Growth Hackers", platform: "facebook", niche: "Agency Owners", size: "Medium", rules: "Promo threads OK" },
+          { id: "bo16", name: "Marketing Agency Owners", platform: "facebook", niche: "Agency Owners", size: "Medium", rules: "Value posts OK" },
+          { id: "bo17", name: "Freelance Digital Marketers", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "Check rules" },
+          { id: "bo18", name: "Media Buyers & Advertisers", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Promos OK" },
+          { id: "bo19", name: "PPC Advertising Professionals", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Value first" },
+          { id: "bo20", name: "eCommerce & Paid Ads Experts", platform: "facebook", niche: "eCommerce", size: "Large", rules: "Promo threads" },
+          { id: "bo21", name: "SaaS Growth Hacks", platform: "facebook", niche: "SaaS / Tech", size: "Medium", rules: "Promos welcome" },
+          { id: "bo22", name: "AI Tools & Automation", platform: "facebook", niche: "AI / Automation", size: "Large", rules: "Tools welcome" },
+          { id: "bo23", name: "AI for Business Owners", platform: "facebook", niche: "AI / Automation", size: "Large", rules: "Value posts OK" },
+          { id: "bo24", name: "Marketing Automation Pros", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Tools OK" },
+          { id: "bo25", name: "GoHighLevel Community", platform: "facebook", niche: "Agency Owners", size: "Large", rules: "Tools/apps OK" },
+          { id: "bo26", name: "GoHighLevel Users Group", platform: "facebook", niche: "Agency Owners", size: "Large", rules: "Value posts OK" },
+          { id: "bo27", name: "ClickFunnels Community", platform: "facebook", niche: "Entrepreneurs", size: "Large", rules: "Check rules" },
+          { id: "bo28", name: "ActiveCampaign Users Group", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Tools OK" },
+          { id: "bo29", name: "Entrepreneurs & Business Owners", platform: "facebook", niche: "Entrepreneurs", size: "Very Large", rules: "Promo days" },
+          { id: "bo30", name: "Growth Hacking Strategies", platform: "facebook", niche: "Entrepreneurs", size: "Large", rules: "Check rules" },
+          { id: "bo31", name: "Online Business Owners Network", platform: "facebook", niche: "Entrepreneurs", size: "Large", rules: "Value first" },
+          { id: "bo32", name: "Passive Income Ideas & Tips", platform: "facebook", niche: "Affiliate Marketers", size: "Large", rules: "Value posts OK" },
+          { id: "bo33", name: "Digital Marketing Mastery", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "Check rules" },
+          { id: "bo34", name: "Email Marketing Pros", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Value posts OK" },
+          { id: "bo35", name: "Shopify & eCommerce Marketing", platform: "facebook", niche: "eCommerce", size: "Large", rules: "Tools OK" },
+          { id: "bo36", name: "Instagram & TikTok Ads Mastery", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "Value first" },
+          { id: "bo37", name: "Performance Marketing Network", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "Promos OK" },
+          { id: "bo38", name: "B2B Sales & Marketing Leaders", platform: "facebook", niche: "Agency Owners", size: "Large", rules: "Value posts OK" },
+          { id: "bo39", name: "Funnel Building & Conversion", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Tools OK" },
+          { id: "bo40", name: "Paid Traffic Mastery", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "Value first" },
+          { id: "bo41", name: "Meta Ads Agency Owners", platform: "facebook", niche: "Agency Owners", size: "Large", rules: "Promo threads OK" },
+          { id: "bo42", name: "Google Ads Agency Network", platform: "facebook", niche: "Agency Owners", size: "Medium", rules: "Value posts OK" },
+          { id: "bo43", name: "TikTok Ads & Marketing", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Check rules" },
+          { id: "bo44", name: "eCommerce Brand Owners", platform: "facebook", niche: "eCommerce", size: "Large", rules: "Value posts OK" },
+          { id: "bo45", name: "Dropshipping & eCommerce Ads", platform: "facebook", niche: "eCommerce", size: "Large", rules: "Check rules" },
+          { id: "bo46", name: "SaaS Founders Network", platform: "facebook", niche: "SaaS / Founders", size: "Medium", rules: "Build-in-public OK" },
+          { id: "bo47", name: "B2B SaaS Marketing Leaders", platform: "facebook", niche: "SaaS / Tech", size: "Medium", rules: "Value posts OK" },
+          { id: "bo48", name: "Startup Founders & Entrepreneurs", platform: "facebook", niche: "SaaS / Founders", size: "Large", rules: "Check rules" },
+          { id: "bo49", name: "AI Marketing Tools & Strategies", platform: "facebook", niche: "AI / Automation", size: "Large", rules: "Tools welcome" },
+          { id: "bo50", name: "ChatGPT & AI for Business", platform: "facebook", niche: "AI / Automation", size: "Very Large", rules: "Value posts OK" },
+          { id: "bo51", name: "Marketing Agency Scaling", platform: "facebook", niche: "Agency Owners", size: "Medium", rules: "Promo threads OK" },
+          { id: "bo52", name: "White Label Marketing Services", platform: "facebook", niche: "Agency Owners", size: "Medium", rules: "Value posts OK" },
+          { id: "bo53", name: "Lead Generation Experts", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "Check rules" },
+          { id: "bo54", name: "CRM & Sales Automation", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Tools OK" },
+          { id: "bo55", name: "Zapier & Automation Experts", platform: "facebook", niche: "AI / Automation", size: "Medium", rules: "Tools welcome" },
+          { id: "bo56", name: "Digital Agency Masterclass", platform: "facebook", niche: "Agency Owners", size: "Medium", rules: "Check rules" },
+          { id: "bo57", name: "7-Figure Agency Owners", platform: "facebook", niche: "Agency Owners", size: "Medium", rules: "Value posts OK" },
+          { id: "bo58", name: "Freelance PPC & Paid Ads", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Check rules" },
+          { id: "bo59", name: "Klaviyo Email Marketing", platform: "facebook", niche: "eCommerce", size: "Medium", rules: "Value posts OK" },
+          { id: "bo60", name: "HubSpot & CRM Community", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Tools OK" },
+          { id: "bo61", name: "Affiliate Marketing Insiders", platform: "facebook", niche: "Affiliate Marketers", size: "Medium", rules: "Programs OK" },
+          { id: "bo62", name: "Recurring Revenue Business", platform: "facebook", niche: "SaaS / Founders", size: "Medium", rules: "Value posts OK" },
+          { id: "bo63", name: "YouTube Ads Experts", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Check rules" },
+          { id: "bo64", name: "Content Marketing & SEO", platform: "facebook", niche: "Agency / Marketing", size: "Large", rules: "No spam" },
+          { id: "bo65", name: "Amazon FBA & eCommerce Growth", platform: "facebook", niche: "eCommerce", size: "Large", rules: "Value posts OK" },
+          { id: "bo66", name: "Remote Work & Side Hustles", platform: "facebook", niche: "Entrepreneurs", size: "Large", rules: "Check rules" },
+          { id: "bo67", name: "Marketing Funnel Builders", platform: "facebook", niche: "Agency / Marketing", size: "Medium", rules: "Tools OK" },
+          { id: "bo68", name: "Webflow & No-Code Builders", platform: "facebook", niche: "SaaS / Tech", size: "Medium", rules: "Value posts OK" },
+          { id: "bo69", name: "r/affiliatemarketing", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Self-promo Sat only" },
+          { id: "bo70", name: "r/juststart", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Value-first, no spam" },
+          { id: "bo71", name: "r/passive_income", platform: "reddit", niche: "Affiliate Marketers", size: "Large", rules: "Check sidebar rules" },
+          { id: "bo72", name: "r/Entrepreneur", platform: "reddit", niche: "Entrepreneurs", size: "Very Large", rules: "No direct promo" },
+          { id: "bo73", name: "r/SaaS", platform: "reddit", niche: "SaaS / Tech", size: "Medium", rules: "Value posts OK" },
+          { id: "bo74", name: "r/digital_marketing", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "Self-promo limited" },
+          { id: "bo75", name: "r/PPC", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Helpful posts OK" },
+          { id: "bo76", name: "r/FacebookAds", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "No blatant ads" },
+          { id: "bo77", name: "r/GoogleAds", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check rules" },
+          { id: "bo78", name: "r/agency", platform: "reddit", niche: "Agency Owners", size: "Medium", rules: "Value-first" },
+          { id: "bo79", name: "r/marketing", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "No self-promo" },
+          { id: "bo80", name: "r/startups", platform: "reddit", niche: "SaaS / Founders", size: "Large", rules: "No spam" },
+          { id: "bo81", name: "r/ecommerce", platform: "reddit", niche: "eCommerce", size: "Large", rules: "Check rules" },
+          { id: "bo82", name: "r/dropshipping", platform: "reddit", niche: "eCommerce", size: "Large", rules: "No spam" },
+          { id: "bo83", name: "r/indiehackers", platform: "reddit", niche: "SaaS / Founders", size: "Medium", rules: "Build-in-public OK" },
+          { id: "bo84", name: "r/EntrepreneurRideAlong", platform: "reddit", niche: "Entrepreneurs", size: "Medium", rules: "Build-in-public OK" },
+          { id: "bo85", name: "r/SEO", platform: "reddit", niche: "Agency / Marketing", size: "Large", rules: "No self-promo" },
+          { id: "bo86", name: "r/socialmedia", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check sidebar" },
+          { id: "bo87", name: "r/EmailMarketing", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Value posts OK" },
+          { id: "bo88", name: "r/chatgpt", platform: "reddit", niche: "AI / Automation", size: "Very Large", rules: "Value posts OK" },
+          { id: "bo89", name: "r/ArtificialIntelligence", platform: "reddit", niche: "AI / Automation", size: "Large", rules: "Value posts OK" },
+          { id: "bo90", name: "r/AutomateYourLife", platform: "reddit", niche: "AI / Automation", size: "Medium", rules: "Tools OK" },
+          { id: "bo91", name: "r/smallbusiness", platform: "reddit", niche: "SMB Owners", size: "Large", rules: "Helpful posts OK" },
+          { id: "bo92", name: "r/Blogging", platform: "reddit", niche: "Content Creators", size: "Medium", rules: "Value posts OK" },
+          { id: "bo93", name: "r/content_marketing", platform: "reddit", niche: "Agency / Marketing", size: "Medium", rules: "Check rules" },
+          { id: "bo94", name: "r/ycombinator", platform: "reddit", niche: "SaaS / Founders", size: "Medium", rules: "Value posts OK" },
+          { id: "bo95", name: "r/Affiliatemarketing", platform: "reddit", niche: "Affiliate Marketers", size: "Medium", rules: "Check rules" },
+          { id: "bo96", name: "r/sweatystartup", platform: "reddit", niche: "Entrepreneurs", size: "Large", rules: "Value posts OK" },
+          { id: "bo97", name: "r/learnprogramming", platform: "reddit", niche: "Tech", size: "Very Large", rules: "No promo" },
+          { id: "bo98", name: "r/webdev", platform: "reddit", niche: "Tech", size: "Very Large", rules: "No promo" },
+        ];
+
+        const WOLFPACK_SYSTEM = `You write Facebook and Reddit posts for Mike, the owner of thewolfpack.ai. He sells websites and CRM tools to home service contractors — roofers, HVAC, plumbers, electricians, landscapers, and other tradespeople.\n\nHis offers:\n- Contractor website: $500 flat, one-time. No monthly fees. Professional, mobile-ready.\n- CRM retainer: $97/month. Manages leads, follow-ups, pipelines.\n- Google Business Profile management: $49/month. Gets them ranking locally.\n\nReferral program (mention occasionally, not every post):\n- $100 cash when a referred contractor buys a website\n- $20/month recurring as long as the referral stays on CRM\n- The referred contractor gets their first month of CRM free\n\nMike's voice: casual, plain English, outcome-first, real numbers, no corporate fluff, never sounds salesy or desperate. He speaks like a contractor himself — direct and no-BS. Uses short punchy sentences. Never uses the word "leverage" or "synergy" or any buzzwords.\n\nEach post must feel completely different from the last. Rotate through angles: pain-point hook, results/numbers hook, curiosity hook, direct offer, question, contrarian take, story-based. Never start two posts the same way.\n\nOutput ONLY the post text. No intro, no "Here's a post:", no hashtags unless they feel natural, no quotation marks around the post.`;
+
+        const BUENAONDA_SYSTEM = `You write Facebook and Reddit posts for Mike, the owner of buenaonda.ai.\n\nBuenaOnda is an autonomous AI ad management platform for Meta, Google, and TikTok. It manages campaigns on full autopilot — budget optimization, audience testing, performance reporting — without human babysitting.\n\nHis affiliate program:\n- 40% recurring commission on every referral\n- Monthly Stripe payouts\n- Affiliate signup page: buenaonda.ai/affiliates\n- Plans: Starter $97/mo ($38.80/mo commission), Pro $179/mo ($71.60/mo), Agency $1,499/mo ($599.60/mo)\n\nTarget audience for posts: affiliate marketers looking for recurring SaaS programs, agency owners who could use the tool AND refer it, media buyers, marketing freelancers.\n\nThe posts have two goals:\n1. Get affiliates to sign up at buenaonda.ai/affiliates (primary goal right now)\n2. Generate awareness of what the product does so affiliates can speak to it authentically\n\nMike's voice: casual, plain English, outcome-first, real dollar amounts not just percentages, no hype or get-rich-quick tone. Confident but not arrogant.\n\nEach post must feel completely different from the last. Rotate through angles: commission math hook, product capability hook, agency pain-point, affiliate income angle, behind-the-scenes build, curiosity hook, direct offer. Never start two posts the same way.\n\nAlways include buenaonda.ai/affiliates somewhere in the post naturally.\n\nOutput ONLY the post text. No intro, no "Here's a post:", no quotation marks around the post.`;
+
+        const gpAccent = gpTab === "wolfpack" ? "#E94560" : "#00B894";
+        const groups = gpTab === "wolfpack" ? WOLFPACK_GROUPS : BUENAONDA_GROUPS;
+        const data = gpTab === "wolfpack" ? gpWolfpackData : gpBuenaondaData;
+        const setData = gpTab === "wolfpack" ? setGpWolfpackData : setGpBuenaondaData;
+        const storageKey = gpTab === "wolfpack" ? "wolfpack_tracker_v1" : "buenaonda_tracker_v1";
+
+        const daysSince = (d: string | undefined) => !d ? null : Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+        const isOverdue = (d: string | undefined) => !d || (daysSince(d) ?? 999) >= 7;
+
+        const angles = ["pain-point", "results", "curiosity", "direct offer", "question", "contrarian", "story"];
+        const todayAngle = angles[new Date().getDay()];
+        const today = new Date();
+        const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
+        const dateStr = today.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+        const filtered = groups.filter(g => {
+          if (gpSearch && !g.name.toLowerCase().includes(gpSearch.toLowerCase()) && !g.niche.toLowerCase().includes(gpSearch.toLowerCase())) return false;
+          if (gpPlatformFilter !== "all" && g.platform !== gpPlatformFilter) return false;
+          if (gpStatusFilter === "due" && !isOverdue(data[g.id]?.lastPosted)) return false;
+          if (gpStatusFilter === "posted" && isOverdue(data[g.id]?.lastPosted)) return false;
+          return true;
+        });
+
+        const postedThisWeek = groups.filter(g => { const d = daysSince(data[g.id]?.lastPosted); return d !== null && d <= 6; }).length;
+        const dueCount = groups.filter(g => isOverdue(data[g.id]?.lastPosted)).length;
+
+        const handleDone = (id: string) => {
+          const newData = { ...data, [id]: { ...data[id], lastPosted: new Date().toISOString().split("T")[0] } };
+          setData(newData);
+          try { localStorage.setItem(storageKey, JSON.stringify(newData)); } catch {}
+          setGpFlashId(id);
+          setTimeout(() => setGpFlashId(null), 1200);
+        };
+
+        const handleUndo = (id: string) => {
+          const newData = { ...data };
+          if (newData[id]) { delete newData[id].lastPosted; }
+          setData(newData);
+          try { localStorage.setItem(storageKey, JSON.stringify(newData)); } catch {}
+        };
+
+        const handleUrlSave = (id: string, url: string) => {
+          const newData = { ...data, [id]: { ...data[id], url } };
+          setData(newData);
+          try { localStorage.setItem(storageKey, JSON.stringify(newData)); } catch {}
+          setGpEditingUrlId(null);
+        };
+
+        const handleGenerate = async () => {
+          setGpIsGenerating(true);
+          setGpCopied(false);
+          try {
+            const systemPrompt = gpTab === "wolfpack" ? WOLFPACK_SYSTEM : BUENAONDA_SYSTEM;
+            const userPrompt = `Today is ${dayName}, ${dateStr}. Day seed: ${new Date().getDay() + 1}.\nWrite a unique post. Angle this time: ${todayAngle}.\nMake it feel fresh. Do not repeat hooks or openings from common patterns.`;
+            const res = await fetch("/api/ai/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ system: systemPrompt, prompt: userPrompt, maxTokens: 400 }),
+            });
+            const d = await res.json();
+            setGpGeneratedPost(d.text || d.content || "Generation failed — try again.");
+          } catch {
+            setGpGeneratedPost("Generation failed — check your connection.");
+          }
+          setGpIsGenerating(false);
+        };
+
+        return (
+          <div>
+            {/* Product tabs */}
+            <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+              <button onClick={() => { setGpTab("wolfpack"); setGpGeneratedPost(""); }} style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, background: gpTab === "wolfpack" ? "#E94560" : "transparent", color: gpTab === "wolfpack" ? "#fff" : T.muted, border: `1px solid ${gpTab === "wolfpack" ? "#E94560" : T.border}`, borderRadius: 6, cursor: "pointer" }}>THE WOLFPACK</button>
+              <button onClick={() => { setGpTab("buenaonda"); setGpGeneratedPost(""); }} style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, background: gpTab === "buenaonda" ? "#00B894" : "transparent", color: gpTab === "buenaonda" ? "#fff" : T.muted, border: `1px solid ${gpTab === "buenaonda" ? "#00B894" : T.border}`, borderRadius: 6, cursor: "pointer" }}>BUENA ONDA</button>
+            </div>
+
+            {/* Stats bar */}
+            <div className="out-stats" style={{ marginBottom: 14 }}>
+              {[
+                { label: "Posted This Week", value: String(postedThisWeek), color: gpAccent },
+                { label: "Due / Overdue", value: String(dueCount), color: dueCount > 0 ? T.red : T.green },
+                { label: "Total Groups", value: String(groups.length), color: T.text },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: s.color, fontFamily: "'Bebas Neue', sans-serif" }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: T.muted, fontWeight: 600 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* AI Post Generator panel */}
+            <div className="out-card" style={{ marginBottom: 16, background: "rgba(255,255,255,0.02)", borderColor: `${gpAccent}30` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Today&apos;s Post — {dateStr}</div>
+                <div style={{ fontSize: 10, color: T.muted }}>Angle: {todayAngle}</div>
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={gpIsGenerating}
+                style={{ padding: "10px 24px", fontSize: 13, fontWeight: 700, background: gpAccent, color: "#fff", border: "none", borderRadius: 6, cursor: gpIsGenerating ? "wait" : "pointer", opacity: gpIsGenerating ? 0.6 : 1, marginBottom: 12, width: "100%" }}
+              >
+                {gpIsGenerating ? "Generating..." : "Generate Today's Post"}
+              </button>
+              {gpGeneratedPost && (
+                <>
+                  <textarea
+                    value={gpGeneratedPost}
+                    onChange={e => setGpGeneratedPost(e.target.value)}
+                    style={{ width: "100%", minHeight: 120, background: "rgba(0,0,0,0.3)", color: T.text, border: `1px solid ${T.border}`, borderRadius: 6, padding: 12, fontSize: 13, fontFamily: "'Courier New', monospace", resize: "vertical", lineHeight: 1.5 }}
+                  />
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(gpGeneratedPost); setGpCopied(true); setTimeout(() => setGpCopied(false), 2000); }}
+                    style={{ marginTop: 8, padding: "8px 20px", fontSize: 12, fontWeight: 600, background: gpCopied ? T.green : "rgba(255,255,255,0.08)", color: gpCopied ? "#fff" : T.text, border: `1px solid ${gpCopied ? T.green : T.border}`, borderRadius: 6, cursor: "pointer" }}
+                  >
+                    {gpCopied ? "✓ Copied!" : "Copy to Clipboard"}
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Commission reference */}
+            <div className="out-card" style={{ marginBottom: 16, padding: "10px 14px", borderColor: `${gpAccent}20` }}>
+              {gpTab === "wolfpack" ? (
+                <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: 11, color: T.muted }}>
+                  <span><strong style={{ color: T.text }}>Website:</strong> $500 flat → <strong style={{ color: gpAccent }}>$100 referral</strong></span>
+                  <span><strong style={{ color: T.text }}>CRM:</strong> $97/mo → <strong style={{ color: gpAccent }}>$20/mo recurring</strong></span>
+                  <span><strong style={{ color: T.text }}>GBP:</strong> $49/mo</span>
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: 11, color: T.muted }}>
+                  <span><strong style={{ color: T.text }}>Starter:</strong> $97/mo → <strong style={{ color: gpAccent }}>$38.80/mo</strong></span>
+                  <span><strong style={{ color: T.text }}>Pro:</strong> $179/mo → <strong style={{ color: gpAccent }}>$71.60/mo</strong></span>
+                  <span><strong style={{ color: T.text }}>Agency:</strong> $1,499/mo → <strong style={{ color: gpAccent }}>$599.60/mo</strong></span>
+                </div>
+              )}
+            </div>
+
+            {/* Filters */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+              <input
+                placeholder="Search groups..."
+                value={gpSearch}
+                onChange={e => setGpSearch(e.target.value)}
+                style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`, borderRadius: 6, padding: "6px 12px", color: T.text, fontSize: 12, width: 200 }}
+              />
+              <div style={{ display: "flex", gap: 2 }}>
+                {(["all", "due", "posted"] as const).map(s => (
+                  <button key={s} onClick={() => setGpStatusFilter(s)} style={{ padding: "5px 12px", fontSize: 11, fontWeight: 600, background: gpStatusFilter === s ? gpAccent : "transparent", color: gpStatusFilter === s ? "#fff" : T.muted, border: `1px solid ${gpStatusFilter === s ? gpAccent : T.border}`, borderRadius: 4, cursor: "pointer", textTransform: "capitalize" }}>{s}</button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 2 }}>
+                {(["all", "facebook", "reddit"] as const).map(p => (
+                  <button key={p} onClick={() => setGpPlatformFilter(p)} style={{ padding: "5px 12px", fontSize: 11, fontWeight: 600, background: gpPlatformFilter === p ? gpAccent : "transparent", color: gpPlatformFilter === p ? "#fff" : T.muted, border: `1px solid ${gpPlatformFilter === p ? gpAccent : T.border}`, borderRadius: 4, cursor: "pointer", textTransform: "capitalize" }}>{p}</button>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: T.muted, marginLeft: "auto" }}>Showing {filtered.length} of {groups.length} groups</div>
+            </div>
+
+            {/* Group list */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {filtered.map(g => {
+                const d = daysSince(data[g.id]?.lastPosted);
+                const statusColor = d === null ? T.red : d <= 2 ? T.green : d <= 6 ? T.yellow : T.red;
+                const statusText = d === null ? "Never" : d === 0 ? "Today" : d === 1 ? "Yesterday" : `${d}d ago`;
+                const url = data[g.id]?.url;
+                const isFlashing = gpFlashId === g.id;
+
+                return (
+                  <div
+                    key={g.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                      background: isFlashing ? `${gpAccent}15` : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${T.border}`, borderRadius: 6,
+                      transition: "background 0.3s",
+                    }}
+                  >
+                    {/* Platform badge */}
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: g.platform === "reddit" ? "rgba(255,140,0,0.15)" : "rgba(59,130,246,0.15)", color: g.platform === "reddit" ? "#FF8C00" : "#3B82F6", textTransform: "uppercase", whiteSpace: "nowrap" }}>{g.platform === "reddit" ? "Reddit" : "FB"}</span>
+
+                    {/* Group info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.name}</div>
+                      <div style={{ fontSize: 10, color: T.muted }}>{g.niche} · {g.size} · {g.rules}</div>
+                    </div>
+
+                    {/* URL field */}
+                    <div style={{ width: 120, flexShrink: 0 }}>
+                      {gpEditingUrlId === g.id ? (
+                        <input
+                          autoFocus
+                          placeholder="Paste URL..."
+                          defaultValue={url || ""}
+                          onBlur={e => handleUrlSave(g.id, e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") handleUrlSave(g.id, (e.target as HTMLInputElement).value); }}
+                          style={{ width: "100%", background: "rgba(0,0,0,0.3)", border: `1px solid ${gpAccent}`, borderRadius: 4, padding: "3px 6px", color: T.text, fontSize: 11 }}
+                        />
+                      ) : url ? (
+                        <a href={url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: gpAccent, textDecoration: "none" }}>Open Group ↗</a>
+                      ) : (
+                        <span onClick={() => setGpEditingUrlId(g.id)} style={{ fontSize: 11, color: T.muted, cursor: "pointer", opacity: 0.5 }}>Paste URL...</span>
+                      )}
+                    </div>
+
+                    {/* Status */}
+                    <div style={{ fontSize: 11, fontWeight: 600, color: statusColor, width: 70, textAlign: "center" }}>{statusText}</div>
+
+                    {/* DONE / Undo */}
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <button
+                        onClick={() => handleDone(g.id)}
+                        style={{ padding: "4px 14px", fontSize: 11, fontWeight: 700, background: d === 0 ? "transparent" : gpAccent, color: d === 0 ? gpAccent : "#fff", border: `1px solid ${gpAccent}`, borderRadius: 4, cursor: "pointer", opacity: d === 0 ? 0.5 : 1 }}
+                      >
+                        {d === 0 ? "✓" : "DONE"}
+                      </button>
+                      {d === 0 && (
+                        <button onClick={() => handleUndo(g.id)} style={{ fontSize: 10, color: T.muted, background: "none", border: "none", cursor: "pointer", padding: 2 }}>↩</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ============= POSTMASTER (Email Setup > Postmaster) ============= */}
+      {tab === "emailsetup" && emailSetupSub === "postmaster" && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div className="out-label">Google Postmaster Tools</div>
