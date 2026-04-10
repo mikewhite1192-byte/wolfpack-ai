@@ -85,7 +85,7 @@ export async function GET() {
 
     const sub = await sql`
       SELECT plan, status FROM subscriptions
-      WHERE org_id = ${userId} AND (status = 'active' OR status = 'trialing')
+      WHERE org_id = ${userId} AND (status = 'active' OR status = 'trialing' OR status = 'free')
       LIMIT 1
     `;
 
