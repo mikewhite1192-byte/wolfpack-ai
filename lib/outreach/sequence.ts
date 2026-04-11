@@ -48,7 +48,10 @@ export async function addToSequence(contacts: {
   return { added, skipped };
 }
 
-// Get contacts due for their next email, filtered by sender address
+// Get contacts due for their next email, filtered by sender address.
+// Prioritizes follow-ups (sequence_step DESC) over first-touch (step 1) so
+// follow-up backlog drains before new first-touch sends. Within the same step,
+// oldest due first.
 export async function getDueContacts(senderEmail: string, limit: number = 100): Promise<Record<string, unknown>[]> {
   return sql`
     SELECT * FROM outreach_contacts
@@ -59,7 +62,7 @@ export async function getDueContacts(senderEmail: string, limit: number = 100): 
       AND unsubscribed = FALSE
       AND sequence_step <= ${MAX_STEPS}
       AND assigned_sender = ${senderEmail}
-    ORDER BY next_email_at ASC
+    ORDER BY sequence_step DESC, next_email_at ASC
     LIMIT ${limit}
   `;
 }
