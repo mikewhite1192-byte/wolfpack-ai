@@ -22,6 +22,7 @@ import {
   Wallet,
   LineChart,
 } from "lucide-react";
+import BusinessDashboard from "./BusinessDashboard";
 
 const T = {
   orange: "#E86A2A",
@@ -173,13 +174,7 @@ export default function FinancePage() {
       {/* ── Content Area ───────────────────────────────────────── */}
       {mainTab === "business" && (
         <>
-          {bizSub === "dashboard" && (
-            <Placeholder
-              icon={BarChart3}
-              title="Business Dashboard"
-              description="Year-to-date revenue, expenses, net profit KPIs. Tax waterfall showing impact of each strategy. Monthly revenue vs expense chart. Quarterly tax payment progress."
-            />
-          )}
+          {bizSub === "dashboard" && <BusinessDashboard />}
           {bizSub === "statements" && (
             <Placeholder
               icon={Upload}
