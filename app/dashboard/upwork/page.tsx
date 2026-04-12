@@ -426,8 +426,11 @@ export default function UpworkPage() {
                   border: `1px solid ${T.border}`,
                 }}
               >
-                {/* Top row */}
-                <div className="flex items-start justify-between gap-3 mb-2">
+                {/* Top row — click anywhere to expand/collapse */}
+                <div
+                  className="flex items-start justify-between gap-3 mb-2 cursor-pointer"
+                  onClick={() => setExpandedId(isExpanded ? null : job.id)}
+                >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <a
@@ -436,6 +439,7 @@ export default function UpworkPage() {
                         rel="noopener noreferrer"
                         className="text-sm font-semibold hover:underline truncate"
                         style={{ color: T.text }}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {job.title}
                       </a>
@@ -500,24 +504,55 @@ export default function UpworkPage() {
                       )}
                     </div>
                   </div>
-                  {/* Expand toggle */}
-                  <button
-                    onClick={() =>
-                      setExpandedId(isExpanded ? null : job.id)
-                    }
-                    className="p-1 rounded cursor-pointer"
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: T.muted,
-                    }}
-                  >
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
+                  {/* Fast action buttons — always visible, no expand required */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {job.status === "new" && (
+                      <button
+                        onClick={() => handleSkip(job.id)}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-colors hover:opacity-80"
+                        style={{
+                          background: "rgba(255,255,255,0.04)",
+                          border: `1px solid ${T.border}`,
+                          color: T.muted,
+                        }}
+                        title="Skip this job"
+                      >
+                        Skip
+                      </button>
                     )}
-                  </button>
+                    {job.status === "new" && (
+                      <button
+                        onClick={() => handleMarkApplied(job.id)}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-colors hover:opacity-80"
+                        style={{
+                          background: `${T.orange}15`,
+                          border: `1px solid ${T.orange}30`,
+                          color: T.orange,
+                        }}
+                        title="Mark as applied"
+                      >
+                        Applied
+                      </button>
+                    )}
+                    <a
+                      href={job.job_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 rounded cursor-pointer transition-colors hover:opacity-80"
+                      style={{ color: T.muted }}
+                      title="Open on Upwork"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    {/* Expand indicator */}
+                    <span style={{ color: T.muted }} className="ml-0.5">
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Skills */}
