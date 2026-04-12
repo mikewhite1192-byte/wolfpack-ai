@@ -212,7 +212,7 @@ export default function CallerPage() {
         } else if (data.reason === "empty") {
           setLastDialerMsg("📭 Queue empty — import more leads");
         } else if (data.error) {
-          setLastDialerMsg(`⚠ ${data.error}`);
+          setLastDialerMsg(`⚠ ${data.error}${data.message ? `: ${data.message}` : ""}`);
         }
       } catch {
         setLastDialerMsg("⚠ Dialer error — retrying…");

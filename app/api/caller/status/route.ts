@@ -47,12 +47,10 @@ export async function GET() {
     let currentLead = null;
     if (session && session.status === "running") {
       const current = await sql`
-        SELECT id, business_name, contractor_type, city, phone, call_started_at
+        SELECT id, business_name, contractor_type, city, phone, called_at
         FROM caller_leads
-        WHERE session_id = ${session.id}
-          AND outcome IS NULL
-          AND call_started_at IS NOT NULL
-        ORDER BY call_started_at DESC LIMIT 1
+        WHERE status = 'calling'
+        ORDER BY called_at DESC LIMIT 1
       `;
       currentLead = current.length > 0 ? current[0] : null;
     }
@@ -68,7 +66,7 @@ export async function GET() {
 
     // Today's call log
     const callLog = await sql`
-      SELECT id, business_name, phone, outcome, duration_seconds, called_at, contractor_type, city
+      SELECT id, business_name, phone, outcome, call_duration_s AS duration_seconds, called_at, contractor_type, city
       FROM caller_leads
       WHERE called_at >= CURRENT_DATE
       ORDER BY called_at DESC
@@ -79,7 +77,7 @@ export async function GET() {
     const pendingRows = await sql`
       SELECT COUNT(*)::int AS count
       FROM caller_leads
-      WHERE outcome IS NULL AND called_at IS NULL
+      WHERE status = 'pending'
     `;
     const pendingCount = pendingRows[0]?.count || 0;
 
