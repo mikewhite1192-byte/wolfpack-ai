@@ -29,6 +29,7 @@ import MileageLogger from "./MileageLogger";
 import TaxFiling from "./TaxFiling";
 import NetWorthDashboard from "./NetWorthDashboard";
 import DebtPayoff from "./DebtPayoff";
+import RetirementReadiness from "./RetirementReadiness";
 
 const T = {
   orange: "#E86A2A",
@@ -220,13 +221,7 @@ export default function FinancePage() {
               description="Portfolio value, holdings table, YTD return vs S&P 500 benchmark. Contribution progress toward annual maximums. Retirement account integration."
             />
           )}
-          {personalSub === "retirement" && (
-            <Placeholder
-              icon={TrendingUp}
-              title="Retirement Readiness"
-              description="Your retirement number (4% rule). Current trajectory vs needed. Retirement age slider. Monthly contribution slider. Monte Carlo simulation (1000 runs). Milestone tracker. Cost of Waiting calculator."
-            />
-          )}
+          {personalSub === "retirement" && <RetirementReadiness />}
           {personalSub === "savings" && (
             <Placeholder
               icon={PiggyBank}
