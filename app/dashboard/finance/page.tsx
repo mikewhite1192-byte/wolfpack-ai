@@ -27,6 +27,8 @@ import QuarterlyPayments from "./QuarterlyPayments";
 import RetirementContributions from "./RetirementContributions";
 import MileageLogger from "./MileageLogger";
 import TaxFiling from "./TaxFiling";
+import NetWorthDashboard from "./NetWorthDashboard";
+import DebtPayoff from "./DebtPayoff";
 
 const T = {
   orange: "#E86A2A",
@@ -195,13 +197,7 @@ export default function FinancePage() {
 
       {mainTab === "personal" && (
         <>
-          {personalSub === "net-worth" && (
-            <Placeholder
-              icon={Wallet}
-              title="Net Worth Dashboard"
-              description="Total assets (checking, savings, investments, retirement) minus liabilities (credit card debt). Combined personal + business net worth. Month-over-month trend."
-            />
-          )}
+          {personalSub === "net-worth" && <NetWorthDashboard />}
           {personalSub === "spending" && (
             <Placeholder
               icon={CreditCard}
@@ -209,13 +205,7 @@ export default function FinancePage() {
               description="Category breakdown with donut chart. Budget targets per category (green/yellow/red). Recurring subscription detector. Month-over-month comparison."
             />
           )}
-          {personalSub === "debt" && (
-            <Placeholder
-              icon={Target}
-              title="Debt Payoff Engine"
-              description="Avalanche vs Snowball methods side-by-side. Exact payoff dates. Total interest comparison. Interactive slider — see what extra payments do to your timeline."
-            />
-          )}
+          {personalSub === "debt" && <DebtPayoff />}
           {personalSub === "credit" && (
             <Placeholder
               icon={Shield}
