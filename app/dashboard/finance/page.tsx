@@ -26,6 +26,7 @@ import BusinessDashboard from "./BusinessDashboard";
 import QuarterlyPayments from "./QuarterlyPayments";
 import RetirementContributions from "./RetirementContributions";
 import MileageLogger from "./MileageLogger";
+import TaxFiling from "./TaxFiling";
 
 const T = {
   orange: "#E86A2A",
@@ -182,19 +183,13 @@ export default function FinancePage() {
             <Placeholder
               icon={Upload}
               title="Statement Upload & Parsing"
-              description="Upload Capital One PDF bank statements. AI auto-categorizes every transaction with IRS deduction references. View, search, and re-categorize transactions."
+              description="Upload Capital One PDF bank statements. AI auto-categorizes every transaction with IRS deduction references. View, search, and re-categorize transactions. Upload via the Dashboard tab."
             />
           )}
           {bizSub === "tax-strategy" && <QuarterlyPayments />}
           {bizSub === "retirement" && <RetirementContributions />}
           {bizSub === "mileage" && <MileageLogger />}
-          {bizSub === "filing" && (
-            <Placeholder
-              icon={FileText}
-              title="Year-End Tax Filing"
-              description="Pre-filled Schedule C, Schedule SE, Form 1040, and MI-1040 generation. Step-by-step IRS Free File and Michigan Treasury instructions."
-            />
-          )}
+          {bizSub === "filing" && <TaxFiling />}
         </>
       )}
 
