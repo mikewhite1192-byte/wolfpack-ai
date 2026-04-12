@@ -137,6 +137,8 @@ export default function CallerPage() {
   const [callTimer, setCallTimer] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dialerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [lastDialerMsg, setLastDialerMsg] = useState<string>("");
 
   const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
   const isAdmin = ADMIN_EMAILS.includes(email);
@@ -173,6 +175,63 @@ export default function CallerPage() {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [isLoaded, isAdmin, router, fetchStatus]);
+
+  // ── Dialer trigger loop ──────────────────────────────────────
+  // While the campaign is RUNNING, poll /api/caller/start-call every 30
+  // seconds. The endpoint will either place a call (if a lead is due AND
+  // spacing / timezone / DNC checks pass) or return placed=false with a
+  // reason like "spacing" or "outside_hours". The server-side queue has
+  // its own 5-minute spacing so polling fast is safe — most polls will
+  // just no-op until the next call is allowed.
+  useEffect(() => {
+    const running = session?.status === "running";
+
+    // Clear any existing interval before deciding what to do
+    if (dialerRef.current) {
+      clearInterval(dialerRef.current);
+      dialerRef.current = null;
+    }
+
+    if (!running) {
+      setLastDialerMsg("");
+      return;
+    }
+
+    async function tick() {
+      try {
+        const res = await fetch("/api/caller/start-call", { method: "POST" });
+        const data = await res.json();
+        if (data.placed) {
+          setLastDialerMsg(`📞 Placing call to ${data.businessName || "lead"}…`);
+          // Refresh stats immediately so the new call shows in the UI
+          fetchStatus();
+        } else if (data.reason === "spacing") {
+          setLastDialerMsg("⏳ Waiting 5 min between calls…");
+        } else if (data.reason === "outside_hours") {
+          setLastDialerMsg("🕙 Outside calling hours (8am–5pm local)");
+        } else if (data.reason === "empty") {
+          setLastDialerMsg("📭 Queue empty — import more leads");
+        } else if (data.error) {
+          setLastDialerMsg(`⚠ ${data.error}`);
+        }
+      } catch {
+        setLastDialerMsg("⚠ Dialer error — retrying…");
+      }
+    }
+
+    // Fire immediately on start (no 30s wait for the first attempt),
+    // then every 30 seconds while running.
+    tick();
+    dialerRef.current = setInterval(tick, 30_000);
+
+    return () => {
+      if (dialerRef.current) {
+        clearInterval(dialerRef.current);
+        dialerRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.status]);
 
   // Call duration timer
   useEffect(() => {
@@ -368,6 +427,18 @@ export default function CallerPage() {
           ) : (
             <div className="text-sm" style={{ color: T.muted }}>
               {isRunning ? "Waiting for next call..." : "No active call"}
+            </div>
+          )}
+          {isRunning && lastDialerMsg && (
+            <div
+              className="mt-3 text-xs"
+              style={{
+                color: T.muted,
+                paddingTop: 10,
+                borderTop: `1px solid ${T.border}`,
+              }}
+            >
+              {lastDialerMsg}
             </div>
           )}
         </div>
