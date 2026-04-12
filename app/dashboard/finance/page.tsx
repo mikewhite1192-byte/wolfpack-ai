@@ -23,6 +23,9 @@ import {
   LineChart,
 } from "lucide-react";
 import BusinessDashboard from "./BusinessDashboard";
+import QuarterlyPayments from "./QuarterlyPayments";
+import RetirementContributions from "./RetirementContributions";
+import MileageLogger from "./MileageLogger";
 
 const T = {
   orange: "#E86A2A",
@@ -182,27 +185,9 @@ export default function FinancePage() {
               description="Upload Capital One PDF bank statements. AI auto-categorizes every transaction with IRS deduction references. View, search, and re-categorize transactions."
             />
           )}
-          {bizSub === "tax-strategy" && (
-            <Placeholder
-              icon={Calculator}
-              title="Tax Strategy Engine"
-              description="13 tax reduction strategies with real-time calculations. Tax waterfall visualization showing cumulative savings. S-Corp election threshold monitor."
-            />
-          )}
-          {bizSub === "retirement" && (
-            <Placeholder
-              icon={PiggyBank}
-              title="Retirement Contributions"
-              description="SEP-IRA and Solo 401(k) contribution calculator. Slider shows real-time tax bill reduction + retirement impact. Cross-tab with personal retirement readiness."
-            />
-          )}
-          {bizSub === "mileage" && (
-            <Placeholder
-              icon={Car}
-              title="Mileage Logger"
-              description="Log business trips with date, destination, miles, and purpose. Auto-calculates deduction at $0.67 per mile. YTD mileage summary."
-            />
-          )}
+          {bizSub === "tax-strategy" && <QuarterlyPayments />}
+          {bizSub === "retirement" && <RetirementContributions />}
+          {bizSub === "mileage" && <MileageLogger />}
           {bizSub === "filing" && (
             <Placeholder
               icon={FileText}
