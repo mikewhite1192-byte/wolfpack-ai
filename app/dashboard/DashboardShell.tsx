@@ -15,7 +15,6 @@ const NAV = [
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { label: "Contacts", href: "/dashboard/contacts", icon: Users },
   { label: "GBP", href: "/dashboard/gbp", icon: MapPin },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 const ADMIN_NAV = [
@@ -244,7 +243,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.07]">
         <div className="max-w-[1400px] mx-auto h-[52px] flex items-center justify-between px-6">
           <Link href="/dashboard" className="font-display text-lg tracking-[1.5px] text-[#e8eaf0] no-underline">
-            THE <span className="text-[#E86A2A]">WOLF</span> PACK
+            {isAdmin ? (
+              <>T<span className="text-[#E86A2A]">W</span>P</>
+            ) : (
+              <>THE <span className="text-[#E86A2A]">WOLF</span> PACK</>
+            )}
           </Link>
 
           {/* Desktop nav */}
@@ -296,8 +299,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                     <div className="text-xs font-semibold text-[#e8eaf0] truncate">{user?.firstName} {user?.lastName}</div>
                     <div className="text-[10px] text-[#8b8fa8] truncate">{userEmail}</div>
                   </div>
+                  <Link href="/dashboard/settings" onClick={() => setAccountOpen(false)}
+                    className="block w-full text-left px-4 py-2.5 text-xs text-[#b0b4c8] no-underline hover:bg-white/[0.04] hover:text-[#e8eaf0] transition-colors">
+                    Settings
+                  </Link>
                   <button onClick={() => { setAccountOpen(false); isDemoUser ? handleDemoSignOut() : handleSignOut(); }} disabled={signingOut}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:bg-white/[0.04] hover:text-red-400 transition-colors">
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#b0b4c8] bg-transparent border-none cursor-pointer hover:bg-white/[0.04] hover:text-red-400 transition-colors border-t border-white/[0.07]">
                     {signingOut ? "Signing out..." : "Sign Out"}
                   </button>
                 </div>
