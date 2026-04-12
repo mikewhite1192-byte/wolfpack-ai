@@ -23,6 +23,7 @@ import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { markBounced, markUnsubscribed } from "@/lib/outreach/sequence";
 import { recordBounce, recordComplaint, autoProtect } from "@/lib/outreach/email-health";
+import { markWebhookProcessed } from "@/lib/webhook-idempotency";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -58,6 +59,17 @@ export async function POST(req: Request) {
 
     // --- Handle Notification ---
     if (messageType === "Notification") {
+      // Idempotency: SNS includes a unique MessageId per delivery.
+      // SNS can retry notifications on 5xx — without dedup, bounces
+      // and complaints get double-counted and analytics inflate.
+      const snsMessageId = snsMessage.MessageId;
+      if (snsMessageId) {
+        const isNew = await markWebhookProcessed("ses_sns", snsMessageId);
+        if (!isNew) {
+          return NextResponse.json({ status: "duplicate", messageId: snsMessageId });
+        }
+      }
+
       // The Message field is a JSON string inside the SNS envelope
       const sesEvent = JSON.parse(snsMessage.Message);
       const notificationType = sesEvent.notificationType || sesEvent.eventType;

@@ -20,6 +20,12 @@ function isWithinCallingWindow(timezone: string): boolean {
 }
 
 // ── Get next pending lead ───────────────────────────────────────────
+// CONCURRENCY SAFETY: The lead selection uses an atomic UPDATE...WHERE
+// with a subquery that includes FOR UPDATE SKIP LOCKED. This prevents
+// two simultaneous polls from grabbing the same lead — if request A
+// locks lead X, request B skips X and grabs the next pending lead.
+// PostgreSQL wraps single statements in implicit transactions, so this
+// works without an explicit BEGIN/COMMIT even on Neon's HTTP driver.
 export async function getNextLead() {
   // Spacing check: refuse if any call was made in the last 5 minutes
   const recentCalls = await sql`
@@ -31,13 +37,22 @@ export async function getNextLead() {
     return { lead: null, reason: "spacing" as const };
   }
 
-  // Get next pending lead not on DNC
+  // Atomically select AND mark the next pending lead as 'calling'.
+  // FOR UPDATE SKIP LOCKED ensures concurrent requests don't fight
+  // over the same row — if another transaction already locked a lead,
+  // this query skips it and grabs the next one.
   const rows = await sql`
-    SELECT * FROM caller_leads
-    WHERE status = 'pending'
-      AND phone NOT IN (SELECT phone FROM caller_dnc)
-    ORDER BY created_at ASC
-    LIMIT 1
+    UPDATE caller_leads
+    SET status = 'calling'
+    WHERE id = (
+      SELECT id FROM caller_leads
+      WHERE status = 'pending'
+        AND phone NOT IN (SELECT phone FROM caller_dnc)
+      ORDER BY created_at ASC
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING *
   `;
 
   if (rows.length === 0) {
@@ -46,15 +61,13 @@ export async function getNextLead() {
 
   const lead = rows[0];
 
-  // Timezone window check
+  // Timezone window check — if outside hours, roll back to pending
   if (!isWithinCallingWindow(lead.timezone || "America/New_York")) {
+    await sql`
+      UPDATE caller_leads SET status = 'pending' WHERE id = ${lead.id}
+    `;
     return { lead: null, reason: "outside_hours" as const };
   }
-
-  // Mark as calling
-  await sql`
-    UPDATE caller_leads SET status = 'calling' WHERE id = ${lead.id}
-  `;
 
   return { lead, reason: null };
 }

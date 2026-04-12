@@ -7,6 +7,7 @@ import { getLearnings } from "@/lib/ai-learner";
 import { getGmailToken } from "@/lib/gmail";
 import { createCalendarEvent } from "@/lib/calendar";
 import { notifyOwner } from "@/lib/notify-owner";
+import { markWebhookProcessed } from "@/lib/webhook-idempotency";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -49,6 +50,17 @@ export async function POST(req: Request) {
     if (!from || !text) {
       console.log(`[loop-webhook] Skipping empty message`);
       return NextResponse.json({ received: true });
+    }
+
+    // Idempotency: Loop may retry webhooks on 5xx. Without dedup,
+    // the AI agent generates and sends a duplicate reply, and the
+    // contact receives the same message twice.
+    if (messageId) {
+      const isNew = await markWebhookProcessed("loop", messageId);
+      if (!isNew) {
+        console.log(`[loop-webhook] Duplicate message_id=${messageId}, skipping`);
+        return NextResponse.json({ received: true, duplicate: true });
+      }
     }
 
     console.log(`[loop-webhook] ${channel} from ${from}: "${text.substring(0, 80)}"`);

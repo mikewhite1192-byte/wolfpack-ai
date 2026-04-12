@@ -9,6 +9,7 @@ import {
 } from "@/lib/caller/retell-tools";
 import { sendDemoConfirmations } from "@/lib/caller/confirmations";
 import { sendPostCallFollowup } from "@/lib/caller/followup";
+import { markWebhookProcessed } from "@/lib/webhook-idempotency";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -29,6 +30,17 @@ export async function POST(req: Request) {
     const { event, call } = body;
 
     console.log(`[retell] Webhook event: ${event}, call_id: ${call?.call_id || "none"}`);
+
+    // Idempotency: use call_id + event type as the dedup key.
+    // Retell may retry on 5xx — without this, call_ended could fire
+    // follow-up SMS twice or book the same demo twice.
+    if (call?.call_id) {
+      const isNew = await markWebhookProcessed("retell", `${call.call_id}:${event}`);
+      if (!isNew) {
+        console.log(`[retell] Duplicate webhook skipped: ${call.call_id}:${event}`);
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+    }
 
     switch (event) {
       case "call_started": {

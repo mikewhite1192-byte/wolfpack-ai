@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { neon } from "@neondatabase/serverless";
+import { markWebhookProcessed } from "@/lib/webhook-idempotency";
 
 const sql = neon(process.env.DATABASE_URL!);
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -20,6 +21,12 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("[stripe webhook] Signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  // Idempotency: skip if this event was already processed (Stripe retries on 5xx)
+  const isNew = await markWebhookProcessed("stripe", event.id);
+  if (!isNew) {
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
   try {
