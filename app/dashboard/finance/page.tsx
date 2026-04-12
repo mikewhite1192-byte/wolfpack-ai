@@ -21,6 +21,7 @@ import {
   BarChart3,
   Wallet,
   LineChart,
+  Search,
 } from "lucide-react";
 import BusinessDashboard from "./BusinessDashboard";
 import QuarterlyPayments from "./QuarterlyPayments";
@@ -31,6 +32,7 @@ import NetWorthDashboard from "./NetWorthDashboard";
 import DebtPayoff from "./DebtPayoff";
 import RetirementReadiness from "./RetirementReadiness";
 import SavingsTracker from "./SavingsTracker";
+import CatchUp from "./CatchUp";
 
 const T = {
   orange: "#E86A2A",
@@ -48,7 +50,7 @@ const T = {
 const ADMIN_EMAILS = ["info@thewolfpackco.com", "mikewhite1192@gmail.com"];
 
 type MainTab = "business" | "personal";
-type BizSubTab = "dashboard" | "statements" | "tax-strategy" | "retirement" | "mileage" | "filing";
+type BizSubTab = "dashboard" | "catch-up" | "statements" | "tax-strategy" | "retirement" | "mileage" | "filing";
 type PersonalSubTab = "net-worth" | "spending" | "debt" | "credit" | "investments" | "retirement" | "savings" | "brief";
 
 // ── Placeholder Section ──────────────────────────────────────────
@@ -86,6 +88,7 @@ export default function FinancePage() {
 
   const BIZ_TABS: { key: BizSubTab; label: string; icon: React.ElementType }[] = [
     { key: "dashboard", label: "Dashboard", icon: BarChart3 },
+    { key: "catch-up", label: "Smart Scan", icon: Search },
     { key: "statements", label: "Statements", icon: Upload },
     { key: "tax-strategy", label: "Tax Strategy", icon: Calculator },
     { key: "retirement", label: "Retirement", icon: PiggyBank },
@@ -183,6 +186,7 @@ export default function FinancePage() {
       {mainTab === "business" && (
         <>
           {bizSub === "dashboard" && <BusinessDashboard />}
+          {bizSub === "catch-up" && <CatchUp />}
           {bizSub === "statements" && (
             <Placeholder
               icon={Upload}
