@@ -30,6 +30,7 @@ import TaxFiling from "./TaxFiling";
 import NetWorthDashboard from "./NetWorthDashboard";
 import DebtPayoff from "./DebtPayoff";
 import RetirementReadiness from "./RetirementReadiness";
+import SavingsTracker from "./SavingsTracker";
 
 const T = {
   orange: "#E86A2A",
@@ -222,13 +223,7 @@ export default function FinancePage() {
             />
           )}
           {personalSub === "retirement" && <RetirementReadiness />}
-          {personalSub === "savings" && (
-            <Placeholder
-              icon={PiggyBank}
-              title="Savings & Emergency Fund"
-              description="Current savings rate vs 10%/20%/50% targets. Emergency fund progress bar (3-month and 6-month targets). What cutting $X/month from specific categories does to your savings rate."
-            />
-          )}
+          {personalSub === "savings" && <SavingsTracker />}
           {personalSub === "brief" && (
             <Placeholder
               icon={Brain}
