@@ -33,6 +33,10 @@ import DebtPayoff from "./DebtPayoff";
 import RetirementReadiness from "./RetirementReadiness";
 import SavingsTracker from "./SavingsTracker";
 import CatchUp from "./CatchUp";
+import SpendingAnalysis from "./SpendingAnalysis";
+import CreditScoreTracker from "./CreditScoreTracker";
+import InvestmentTracker from "./InvestmentTracker";
+import AIBrief from "./AIBrief";
 
 const T = {
   orange: "#E86A2A",
@@ -204,37 +208,13 @@ export default function FinancePage() {
       {mainTab === "personal" && (
         <>
           {personalSub === "net-worth" && <NetWorthDashboard />}
-          {personalSub === "spending" && (
-            <Placeholder
-              icon={CreditCard}
-              title="Spending Analysis"
-              description="Category breakdown with donut chart. Budget targets per category (green/yellow/red). Recurring subscription detector. Month-over-month comparison."
-            />
-          )}
+          {personalSub === "spending" && <SpendingAnalysis />}
           {personalSub === "debt" && <DebtPayoff />}
-          {personalSub === "credit" && (
-            <Placeholder
-              icon={Shield}
-              title="Credit Score Tracker"
-              description="Score from all 3 bureaus. Factor breakdown (payment history 35%, utilization 30%, length 15%, mix 10%, inquiries 10%). Ranked action items by score impact."
-            />
-          )}
-          {personalSub === "investments" && (
-            <Placeholder
-              icon={LineChart}
-              title="Investment Tracker"
-              description="Portfolio value, holdings table, YTD return vs S&P 500 benchmark. Contribution progress toward annual maximums. Retirement account integration."
-            />
-          )}
+          {personalSub === "credit" && <CreditScoreTracker />}
+          {personalSub === "investments" && <InvestmentTracker />}
           {personalSub === "retirement" && <RetirementReadiness />}
           {personalSub === "savings" && <SavingsTracker />}
-          {personalSub === "brief" && (
-            <Placeholder
-              icon={Brain}
-              title="AI Monthly Brief"
-              description="Claude analyzes all your uploaded data and generates a plain English monthly report. Net worth change, top 3 wins, top 3 improvements, debt/credit updates, and one specific action to take this week."
-            />
-          )}
+          {personalSub === "brief" && <AIBrief />}
         </>
       )}
     </div>
