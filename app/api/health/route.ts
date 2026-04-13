@@ -31,10 +31,13 @@ export async function GET(req: NextRequest) {
 
     const goals = await sql`SELECT * FROM health_goals LIMIT 1`;
 
-    // Convert to a days map keyed by date string
+    // Convert to a days map keyed by "YYYY-MM-DD" string.
+    // Neon returns DATE columns as Date objects, not strings —
+    // use String() to safely convert before slicing.
     const days: Record<string, Record<string, unknown>> = {};
     for (const e of entries) {
-      const key = (e.date as string).slice(0, 10);
+      const raw = e.date instanceof Date ? e.date.toISOString() : String(e.date);
+      const key = raw.slice(0, 10);
       days[key] = {
         steps: e.steps,
         gym: e.gym,
@@ -67,11 +70,11 @@ export async function POST(req: NextRequest) {
 
       await sql`
         INSERT INTO health_entries (date, steps, gym, weight, meals, reading, gratitude, affirmation, updated_at)
-        VALUES (${date}, ${steps || null}, ${gym ?? null}, ${weight || null}, ${meals || null}, ${reading || null}, ${gratitude || null}, ${affirmation || null}, NOW())
+        VALUES (${date}, ${steps ?? null}, ${gym ?? null}, ${weight ?? null}, ${meals || null}, ${reading || null}, ${gratitude || null}, ${affirmation || null}, NOW())
         ON CONFLICT (date) DO UPDATE SET
-          steps = ${steps || null},
+          steps = ${steps ?? null},
           gym = ${gym ?? null},
-          weight = ${weight || null},
+          weight = ${weight ?? null},
           meals = ${meals || null},
           reading = ${reading || null},
           gratitude = ${gratitude || null},
