@@ -20,17 +20,19 @@ export async function GET(req: NextRequest) {
     const year = parseInt(req.nextUrl.searchParams.get("year") || String(new Date().getFullYear()));
     const month = parseInt(req.nextUrl.searchParams.get("month") || String(new Date().getMonth() + 1));
 
+    // Use "first of this month" to "first of next month" range.
+    // Avoids the "April 31 doesn't exist" bug that crashed the query.
     const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-    const endDate = `${year}-${String(month).padStart(2, "0")}-31`;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const endDate = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
 
-    // Use TO_CHAR in SQL to get clean YYYY-MM-DD strings directly from Postgres
-    // instead of relying on JavaScript Date parsing (which was the bug).
     const entries = await sql`
       SELECT
         TO_CHAR(date, 'YYYY-MM-DD') AS date_key,
         steps, gym, weight, meals, reading, gratitude, affirmation
       FROM health_entries
-      WHERE date >= ${startDate}::date AND date <= ${endDate}::date
+      WHERE date >= ${startDate}::date AND date < ${endDate}::date
       ORDER BY date ASC
     `;
 
