@@ -23,22 +23,22 @@ export async function GET(req: NextRequest) {
     const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
     const endDate = `${year}-${String(month).padStart(2, "0")}-31`;
 
+    // Use TO_CHAR in SQL to get clean YYYY-MM-DD strings directly from Postgres
+    // instead of relying on JavaScript Date parsing (which was the bug).
     const entries = await sql`
-      SELECT * FROM health_entries
-      WHERE date >= ${startDate} AND date <= ${endDate}
+      SELECT
+        TO_CHAR(date, 'YYYY-MM-DD') AS date_key,
+        steps, gym, weight, meals, reading, gratitude, affirmation
+      FROM health_entries
+      WHERE date >= ${startDate}::date AND date <= ${endDate}::date
       ORDER BY date ASC
     `;
 
     const goals = await sql`SELECT * FROM health_goals LIMIT 1`;
 
-    // Convert to a days map keyed by "YYYY-MM-DD" string.
-    // Neon returns DATE columns as Date objects, not strings —
-    // use String() to safely convert before slicing.
     const days: Record<string, Record<string, unknown>> = {};
     for (const e of entries) {
-      const raw = e.date instanceof Date ? e.date.toISOString() : String(e.date);
-      const key = raw.slice(0, 10);
-      days[key] = {
+      days[e.date_key as string] = {
         steps: e.steps,
         gym: e.gym,
         weight: e.weight ? parseFloat(String(e.weight)) : null,
