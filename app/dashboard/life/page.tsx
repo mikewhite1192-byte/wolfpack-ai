@@ -206,13 +206,15 @@ export default function LifePage() {
 
     return (
       <div>
-        <button onClick={() => setView("month")} style={{ background: "none", border: "none", color: T.muted, fontSize: 13, cursor: "pointer", padding: "0 0 8px", display: "flex", alignItems: "center", gap: 4 }}>
-          <ChevronLeft style={{ width: 14, height: 14 }} /> {monthName}
-        </button>
-        <div style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>{dayOfWeek}</div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: "0 0 24px" }}>{dayDisplay}</h2>
+        <div style={{ maxWidth: 500, margin: "0 auto" }}>
+          <button onClick={() => setView("month")} style={{ background: "none", border: "none", color: T.muted, fontSize: 13, cursor: "pointer", padding: "0 0 8px", display: "flex", alignItems: "center", gap: 4 }}>
+            <ChevronLeft style={{ width: 14, height: 14 }} /> {monthName}
+          </button>
+          <div style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>{dayOfWeek}</div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: "0 0 24px" }}>{dayDisplay}</h2>
+        </div>
 
-        <div style={{ maxWidth: 500, display: "flex", flexDirection: "column", gap: 18 }}>
+        <div style={{ maxWidth: 500, margin: "0 auto", display: "flex", flexDirection: "column", gap: 18 }}>
           {/* Gym toggle */}
           <div>
             <label style={labelStyle}>Gym Session</label>
