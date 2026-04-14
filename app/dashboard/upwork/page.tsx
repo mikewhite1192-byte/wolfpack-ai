@@ -17,6 +17,7 @@ import {
   TrendingUp,
   X,
   Loader2,
+  Calendar,
 } from "lucide-react";
 
 const T = {
@@ -83,6 +84,33 @@ const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: "skipped", label: "Skipped" },
 ];
 
+type DateRange =
+  | "today"
+  | "yesterday"
+  | "this_week"
+  | "last_week"
+  | "7d"
+  | "this_month"
+  | "last_month"
+  | "30d"
+  | "90d"
+  | "this_year"
+  | "all";
+
+const RANGE_OPTIONS: { key: DateRange; label: string }[] = [
+  { key: "today", label: "Today" },
+  { key: "yesterday", label: "Yesterday" },
+  { key: "this_week", label: "This week" },
+  { key: "last_week", label: "Last week" },
+  { key: "7d", label: "Last 7 days" },
+  { key: "this_month", label: "This month" },
+  { key: "last_month", label: "Last month" },
+  { key: "30d", label: "Last 30 days" },
+  { key: "90d", label: "Last 90 days" },
+  { key: "this_year", label: "This year" },
+  { key: "all", label: "All time" },
+];
+
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -92,6 +120,12 @@ function timeAgo(dateStr: string | null): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+function shortDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function scoreBadgeColor(score: number | null): string {
@@ -108,6 +142,7 @@ export default function UpworkPage() {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<FilterTab>("new_high");
+  const [range, setRange] = useState<DateRange>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingProposal, setEditingProposal] = useState<string | null>(null);
   const [proposalText, setProposalText] = useState("");
@@ -131,7 +166,8 @@ export default function UpworkPage() {
   const fetchJobs = useCallback(async () => {
     try {
       const statusParam = tab === "all" ? "" : `&status=${tab}`;
-      const res = await fetch(`/api/upwork/jobs?limit=100${statusParam}`);
+      const rangeParam = range === "all" ? "" : `&range=${range}`;
+      const res = await fetch(`/api/upwork/jobs?limit=100${statusParam}${rangeParam}`);
       const data = await res.json();
       setJobs(data.jobs || []);
       setCounts(data.counts || null);
@@ -140,7 +176,7 @@ export default function UpworkPage() {
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  }, [tab, range]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -376,30 +412,53 @@ export default function UpworkPage() {
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex gap-1 mb-5 overflow-x-auto pb-1">
-        {FILTER_TABS.map((ft) => (
-          <button
-            key={ft.key}
-            onClick={() => setTab(ft.key)}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-colors"
-            style={{
-              background: tab === ft.key ? `${T.orange}1f` : "rgba(255,255,255,0.04)",
-              border:
-                tab === ft.key
-                  ? `1px solid ${T.orange}40`
-                  : `1px solid ${T.border}`,
-              color: tab === ft.key ? T.orange : T.muted,
-            }}
+      {/* Filter Tabs + Date Range */}
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+        <div className="flex gap-1 overflow-x-auto pb-1 flex-1 min-w-0">
+          {FILTER_TABS.map((ft) => (
+            <button
+              key={ft.key}
+              onClick={() => setTab(ft.key)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-colors"
+              style={{
+                background: tab === ft.key ? `${T.orange}1f` : "rgba(255,255,255,0.04)",
+                border:
+                  tab === ft.key
+                    ? `1px solid ${T.orange}40`
+                    : `1px solid ${T.border}`,
+                color: tab === ft.key ? T.orange : T.muted,
+              }}
+            >
+              {ft.label}
+              {ft.key === "new_high" && counts
+                ? ` (${counts.new_high_count})`
+                : ft.key === "applied" && counts
+                ? ` (${counts.applied_count})`
+                : ""}
+            </button>
+          ))}
+        </div>
+        <div
+          className="flex items-center gap-1.5 px-2 py-1 rounded-lg flex-shrink-0"
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: `1px solid ${T.border}`,
+          }}
+        >
+          <Calendar className="w-3.5 h-3.5" style={{ color: T.muted }} />
+          <select
+            value={range}
+            onChange={(e) => setRange(e.target.value as DateRange)}
+            className="bg-transparent text-xs font-medium cursor-pointer outline-none pr-1"
+            style={{ color: T.text }}
           >
-            {ft.label}
-            {ft.key === "new_high" && counts
-              ? ` (${counts.new_high_count})`
-              : ft.key === "applied" && counts
-              ? ` (${counts.applied_count})`
-              : ""}
-          </button>
-        ))}
+            {RANGE_OPTIONS.map((r) => (
+              <option key={r.key} value={r.key} style={{ background: T.surface }}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Job Cards */}
@@ -479,7 +538,24 @@ export default function UpworkPage() {
                         </span>
                       )}
                       {job.job_type && <span>{job.job_type}</span>}
-                      {job.posted_at && <span>{timeAgo(job.posted_at)}</span>}
+                      {job.posted_at && (
+                        <span title={`Posted ${new Date(job.posted_at).toLocaleString()}`}>
+                          Posted {shortDate(job.posted_at)} · {timeAgo(job.posted_at)}
+                        </span>
+                      )}
+                      {!job.posted_at && job.created_at && (
+                        <span title={`Scraped ${new Date(job.created_at).toLocaleString()}`}>
+                          Scraped {shortDate(job.created_at)}
+                        </span>
+                      )}
+                      {job.applied_at && (
+                        <span
+                          title={`Applied ${new Date(job.applied_at).toLocaleString()}`}
+                          style={{ color: T.orange }}
+                        >
+                          Applied {shortDate(job.applied_at)}
+                        </span>
+                      )}
                       {job.client_country && <span>{job.client_country}</span>}
                       {job.client_rating !== null && (
                         <span className="flex items-center gap-0.5">

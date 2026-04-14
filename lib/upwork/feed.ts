@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { sendMessage } from "@/lib/loop/client";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -273,7 +274,19 @@ export async function pollUpworkRSS(feedUrls: string[]): Promise<number> {
             ON CONFLICT (upwork_id) DO NOTHING
             RETURNING id
           `;
-          if (result.length > 0) newCount++;
+          if (result.length > 0) {
+            newCount++;
+            if (process.env.OWNER_PHONE) {
+              try {
+                await sendMessage(
+                  process.env.OWNER_PHONE,
+                  `New Upwork job: ${job.title}\nBudget: ${job.budget || "not listed"}\n${job.job_url}`
+                );
+              } catch (err) {
+                console.error(`[upwork-feed] Text notification failed for ${job.upwork_id}:`, err);
+              }
+            }
+          }
         } catch (err) {
           console.error(`[upwork-feed] Insert error for ${job.upwork_id}:`, err);
         }
