@@ -10,14 +10,14 @@ export const metadata: Metadata = {
     description: "Responds in seconds. Qualifies leads. Books appointments. 24/7.",
     url: "https://thewolfpack.ai",
     siteName: "The Wolf Pack AI",
-    images: [{ url: "https://thewolfpack.ai/api/og", width: 1200, height: 630 }],
+    images: [{ url: "https://thewolfpack.ai/api/og?v=2", width: 1200, height: 630 }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "The Wolf Pack AI — Your AI Sales Agent That Never Sleeps",
     description: "Responds in seconds. Qualifies leads. Books appointments. 24/7.",
-    images: ["https://thewolfpack.ai/api/og"],
+    images: ["https://thewolfpack.ai/api/og?v=2"],
   },
 };
 
