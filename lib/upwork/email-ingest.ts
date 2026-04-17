@@ -273,6 +273,12 @@ export async function ingestUpworkEmails(): Promise<number> {
 
       for (const job of jobs) {
         try {
+          // On conflict, refresh parser-derived fields when the existing row
+          // has bad/empty values (earlier ingestion runs stored title="more"
+          // because the parser used anchor text). User-state columns
+          // (status, applied_at, won_at, notes, ai_*) are left untouched.
+          // xmax = 0 distinguishes a real INSERT from a DO UPDATE path so
+          // we only SMS once per job, never on re-ingest.
           const result = await sql`
             INSERT INTO upwork_jobs (
               upwork_id, title, description, budget, job_type, skills,
@@ -284,10 +290,29 @@ export async function ingestUpworkEmails(): Promise<number> {
               ${job.client_rating}, ${job.client_hire_rate}, ${job.client_payment_verified},
               ${job.job_url}, ${job.posted_at}, 'new'
             )
-            ON CONFLICT (upwork_id) DO NOTHING
-            RETURNING id
+            ON CONFLICT (upwork_id) DO UPDATE SET
+              title = CASE
+                WHEN upwork_jobs.title IN ('more', 'View job', 'Apply')
+                  OR upwork_jobs.title LIKE 'Upwork Job %'
+                  OR length(upwork_jobs.title) < 12
+                THEN EXCLUDED.title
+                ELSE upwork_jobs.title
+              END,
+              description = CASE
+                WHEN upwork_jobs.description IS NULL
+                  OR upwork_jobs.description = ''
+                  OR length(upwork_jobs.description) < length(EXCLUDED.description)
+                THEN EXCLUDED.description
+                ELSE upwork_jobs.description
+              END,
+              budget = COALESCE(upwork_jobs.budget, EXCLUDED.budget),
+              job_type = COALESCE(upwork_jobs.job_type, EXCLUDED.job_type),
+              posted_at = COALESCE(upwork_jobs.posted_at, EXCLUDED.posted_at),
+              job_url = COALESCE(upwork_jobs.job_url, EXCLUDED.job_url)
+            RETURNING id, (xmax = 0) AS was_inserted
           `;
-          if (result.length > 0) {
+          const wasInserted = result.length > 0 && result[0].was_inserted === true;
+          if (wasInserted) {
             newCount++;
             if (process.env.OWNER_PHONE) {
               try {
