@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { refreshAccessToken, gmailFetch } from "@/lib/gmail";
 import { sendMessage } from "@/lib/loop/client";
-import { scoreUpworkJob, type Verdict } from "@/lib/upwork/scoring";
+import { scoreUpworkJob, type Verdict, LEARNABLE_STACK_REASON } from "@/lib/upwork/scoring";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -333,16 +333,31 @@ function formatProps(count: number | null): string {
   return "50+ props";
 }
 
-function buildSms(job: ParsedJob, verdict: Verdict["verdict"]): string {
+// SMS body for a newly ingested job. Three variants:
+//   HOT            → 🔥 header, no disclosure footer
+//   STRETCH STACK  → 💼 "stretch stack" header + disclosure footer when the
+//                    verdict reasons include the learnable-stack flag
+//   WARM (regular) → 💼 "Upwork job" header, no footer
+function buildSms(job: ParsedJob, verdict: Verdict): string {
   const meta = [
     formatProps(job.proposal_count),
     formatSpend(job.client_lifetime_spend),
     job.client_country,
   ].filter(Boolean).join(" · ");
-  const header = verdict === "hot" ? "🔥 HOT Upwork" : "💼 Upwork job";
+
+  const isStretch = verdict.verdict === "warm" && verdict.reasons.includes(LEARNABLE_STACK_REASON);
+  const header =
+    verdict.verdict === "hot"
+      ? "🔥 HOT Upwork"
+      : isStretch
+      ? "💼 Upwork — stretch stack"
+      : "💼 Upwork job";
+
   const budgetLine = `💰 ${job.budget || "budget not listed"}`;
   const metaLine = meta ? `📊 ${meta}\n` : "";
-  return `${header}\n${job.title}\n${budgetLine}\n${metaLine}${job.job_url}`;
+  const disclosureLine = isStretch ? "⚠️ Pitch with honest disclosure\n" : "";
+
+  return `${header}\n${job.title}\n${budgetLine}\n${metaLine}${disclosureLine}${job.job_url}`;
 }
 
 // Pull Upwork alert emails from the owner's Gmail inbox, parse jobs, insert
@@ -469,7 +484,7 @@ export async function ingestUpworkEmails(): Promise<number> {
             newCount++;
             if (verdict !== "auto_skip" && process.env.OWNER_PHONE) {
               try {
-                await sendMessage(process.env.OWNER_PHONE, buildSms(job, verdict));
+                await sendMessage(process.env.OWNER_PHONE, buildSms(job, { verdict, reasons }));
               } catch (err) {
                 console.error(`[upwork-email] Text notification failed for ${job.upwork_id}:`, err);
               }

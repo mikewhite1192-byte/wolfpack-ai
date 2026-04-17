@@ -1,7 +1,28 @@
-// Rule-based scoring for ingested Upwork jobs.
-// Hard rules → verdict='auto_skip' (row stored, no SMS).
-// Soft signals → kept as reasons on a WARM row (still visible, still texted).
-// Stack match on an otherwise-clean job → verdict='hot' (🔥 SMS).
+// ─────────────────────────────────────────────────────────────────────
+// SCORING PHILOSOPHY — Red-light vs Yellow-light stacks
+// ─────────────────────────────────────────────────────────────────────
+// The scorer separates incompatible stacks into two buckets:
+//
+//   RED-LIGHT (HARD_SKIP_STACKS) — paradigm-different technologies with
+//   real learning curves where taking the job risks delivering badly:
+//   native iOS/Android, enterprise Java, .NET, Rails, Salesforce Apex,
+//   Unity, etc. These auto_skip with verdict "red-light stack".
+//
+//   YELLOW-LIGHT (LEARNABLE_STACKS) — no-code builders, automation
+//   platforms, and familiar-paradigm frameworks a senior Next.js dev
+//   can pick up in 3-5 days without risking client outcomes:
+//   WordPress, Webflow, Zapier, Shopify, React Native, etc. These
+//   flow through as "warm" with the reason "learnable stack — pitch
+//   with honest disclosure" so the SMS formatter can render a distinct
+//   "stretch stack" variant.
+//
+// Context: Mike is in the growth phase of his Upwork profile (3 jobs
+// completed, targeting Top Rated at ~12 completed). Strict stack
+// filtering kills winnable work. The yellow-light bucket lets him
+// expand range while being upfront with the client about what he
+// primarily builds in ("I build in Next.js primarily, but this scope
+// works in [their stack] and I'll execute cleanly").
+// ─────────────────────────────────────────────────────────────────────
 
 export interface JobForScoring {
   title: string;
@@ -22,8 +43,11 @@ export interface Verdict {
   reasons: string[];
 }
 
-// Countries we'll actively bid to. Rest are soft-demoted, not auto-skipped —
-// the PRD started at US-only; we loosened to these four per owner request.
+// Reason strings are also used by the SMS formatter to pick the right
+// notification template — keep this in sync with buildSms() in
+// lib/upwork/email-ingest.ts.
+export const LEARNABLE_STACK_REASON = "learnable stack — pitch with honest disclosure";
+
 const PREFERRED_COUNTRIES = new Set([
   "United States",
   "Canada",
@@ -31,9 +55,7 @@ const PREFERRED_COUNTRIES = new Set([
   "United Kingdom",
 ]);
 
-// Tokens that, when present anywhere in title/description/skills, indicate
-// the job is aligned with the owner's stack. Matching is case-insensitive
-// substring so "Next.js" and "nextjs" both fire.
+// Positive signals — presence in title/description/skills pushes toward HOT.
 const HOT_STACK_KEYWORDS = [
   "next.js",
   "nextjs",
@@ -49,25 +71,55 @@ const HOT_STACK_KEYWORDS = [
   "voice agent",
 ];
 
-// Hard body-shop patterns — the title is *explicitly* asking for theme or
-// site-builder work. A bare "WordPress" skill tag doesn't match here; those
-// jobs are often "migrate us OFF WordPress" and are worth seeing.
-const WRONG_STACK_TITLE_PATTERNS: RegExp[] = [
-  /\bwordpress\s+(theme|plugin|designer|developer)\b/i,
-  /\belementor\s+(site|design|page|developer)\b/i,
-  /\bwix\s+(site|developer|designer)\b/i,
-  /\bsquarespace\b/i,
-  /\bshopify\s+theme\b/i,
+// Red-light stacks: any mention triggers auto_skip. These are paradigm
+// shifts where "I'll figure it out" risks delivering badly.
+const HARD_SKIP_STACKS = [
+  "swift", "swiftui", "ios native",
+  "kotlin native", "android native",
+  "neo4j", "graph rag", "custom ontology",
+  "ruby on rails", "ror",
+  ".net core", "asp.net",
+  "spring boot", "java spring",
+  "laravel", "drupal", "magento",
+  "unity", "unreal engine",
+  "salesforce apex", "salesforce lightning",
 ];
 
-// Soft skill signals — downgrade to WARM but keep visible.
-const WRONG_STACK_SKILLS = new Set([
-  "wordpress",
-  "elementor",
-  "wix",
-  "squarespace",
-  "shopify",
-]);
+// Yellow-light stacks: any mention → warm with honest-disclosure reason.
+// Still visible, still texts the owner, but the SMS is flagged as a
+// "stretch stack" so the pitch framing is different.
+const LEARNABLE_STACKS = [
+  "wordpress", "elementor", "divi",
+  "webflow", "framer", "bubble", "bubble.io",
+  "shopify", "squarespace", "wix",
+  "zapier", "make.com", "n8n",
+  "airtable", "notion", "retool",
+  "flutter", "react native",
+  "gohighlevel", "ghl",
+  "hubspot", "activecampaign",
+];
+
+// Build a word-boundary regex for a stack token. Leading \b is only
+// emitted when the term starts with a word char — otherwise ".net core"
+// wouldn't match because \b before "." doesn't behave as expected.
+function buildStackRegex(term: string): RegExp {
+  const escaped = term
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    .replace(/\s+/g, "\\s+");
+  const leading = /^\w/.test(term) ? "\\b" : "";
+  const trailing = /\w$/.test(term) ? "\\b" : "";
+  return new RegExp(`${leading}${escaped}${trailing}`, "i");
+}
+
+const HARD_SKIP_REGEXES = HARD_SKIP_STACKS.map(buildStackRegex);
+const LEARNABLE_REGEXES = LEARNABLE_STACKS.map(buildStackRegex);
+
+function firstMatch(haystack: string, terms: string[], regexes: RegExp[]): string | null {
+  for (let i = 0; i < regexes.length; i++) {
+    if (regexes[i].test(haystack)) return terms[i];
+  }
+  return null;
+}
 
 function normalizeCountry(raw: string): string {
   const c = raw.trim();
@@ -96,16 +148,14 @@ export function scoreUpworkJob(job: JobForScoring): Verdict {
     return { verdict: "auto_skip", reasons: [`${job.proposal_count} proposals already`] };
   }
 
-  for (const pattern of WRONG_STACK_TITLE_PATTERNS) {
-    if (pattern.test(job.title)) {
-      return { verdict: "auto_skip", reasons: [`body-shop title pattern: ${pattern.source}`] };
-    }
+  const redLight = firstMatch(haystack, HARD_SKIP_STACKS, HARD_SKIP_REGEXES);
+  if (redLight) {
+    return { verdict: "auto_skip", reasons: [`red-light stack: ${redLight}`] };
   }
 
-  // ── SOFT SIGNALS (downgrade, don't skip) ────────────────────────────
+  // ── SOFT SIGNALS (country) — collected now but don't short-circuit ─
 
   const softReasons: string[] = [];
-
   if (job.client_country) {
     const normalized = normalizeCountry(job.client_country);
     if (!PREFERRED_COUNTRIES.has(normalized)) {
@@ -113,14 +163,10 @@ export function scoreUpworkJob(job: JobForScoring): Verdict {
     }
   }
 
-  for (const skill of job.skills) {
-    if (WRONG_STACK_SKILLS.has(skill.toLowerCase())) {
-      softReasons.push(`wrong-stack skill tag: ${skill}`);
-      break;
-    }
-  }
-
-  // ── HOT SIGNALS ─────────────────────────────────────────────────────
+  // ── HOT SIGNALS (runs BEFORE learnable check by design) ────────────
+  // A job that mentions Next.js + a learnable stack (e.g., "migrate
+  // from WordPress to Next.js") is exactly the HOT target audience —
+  // the learnable mention shouldn't demote it.
 
   const hasStackMatch = HOT_STACK_KEYWORDS.some(k => haystack.includes(k));
   const lowCompetition = job.proposal_count == null || job.proposal_count < 15;
@@ -130,6 +176,16 @@ export function scoreUpworkJob(job: JobForScoring): Verdict {
     return {
       verdict: "hot",
       reasons: ["stack match", "low competition", "established paying client"],
+    };
+  }
+
+  // ── LEARNABLE STACK CHECK (runs AFTER hot) ─────────────────────────
+
+  const yellow = firstMatch(haystack, LEARNABLE_STACKS, LEARNABLE_REGEXES);
+  if (yellow) {
+    return {
+      verdict: "warm",
+      reasons: [...softReasons, LEARNABLE_STACK_REASON, `stack: ${yellow}`],
     };
   }
 
