@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { neon } from "@neondatabase/serverless";
 import { pollUpworkRSS } from "@/lib/upwork/feed";
+import { ingestUpworkEmails } from "@/lib/upwork/email-ingest";
 
 const sql = neon(process.env.DATABASE_URL!);
 const ADMIN_EMAILS = ["info@thewolfpackco.com"];
@@ -211,10 +212,7 @@ export async function POST() {
     ? JSON.parse(settings[0].value)
     : [];
 
-  if (feedUrls.length === 0) {
-    return NextResponse.json({ error: "No RSS feed URLs configured" }, { status: 400 });
-  }
-
-  const newCount = await pollUpworkRSS(feedUrls);
-  return NextResponse.json({ newJobs: newCount });
+  const rssCount = feedUrls.length > 0 ? await pollUpworkRSS(feedUrls) : 0;
+  const emailCount = await ingestUpworkEmails();
+  return NextResponse.json({ newJobs: rssCount + emailCount, fromRss: rssCount, fromEmail: emailCount });
 }

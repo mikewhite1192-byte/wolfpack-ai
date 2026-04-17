@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { pollUpworkRSS } from "@/lib/upwork/feed";
+import { ingestUpworkEmails } from "@/lib/upwork/email-ingest";
 import { scoreAllUnscored } from "@/lib/upwork/scorer";
 
 const sql = neon(process.env.DATABASE_URL!);
@@ -43,13 +44,11 @@ export async function GET(req: NextRequest) {
       // Settings table might not exist yet
     }
 
-    if (feedUrls.length === 0) {
-      return NextResponse.json({ skipped: true, reason: "no feed URLs configured" });
-    }
-
-    const newJobs = await pollUpworkRSS(feedUrls);
+    const rssCount = feedUrls.length > 0 ? await pollUpworkRSS(feedUrls) : 0;
+    const emailCount = await ingestUpworkEmails();
+    const newJobs = rssCount + emailCount;
     // Don't auto-score — proposals are generated on-demand via button click
-    return NextResponse.json({ newJobs, scored: 0 });
+    return NextResponse.json({ newJobs, fromRss: rssCount, fromEmail: emailCount, scored: 0 });
   } catch (err) {
     console.error("[upwork-poll] Error:", err);
     return NextResponse.json({ error: "Poll failed" }, { status: 500 });
