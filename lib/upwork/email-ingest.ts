@@ -69,29 +69,26 @@ function decodePart(data: string): string {
   return Buffer.from(data, "base64url").toString("utf-8");
 }
 
-function extractHtmlBody(payload: Record<string, unknown>): string {
-  const body = payload?.body as Record<string, unknown> | undefined;
-  if (body?.data) return decodePart(body.data as string);
+// Walk the Gmail MIME tree recursively and return the first body matching
+// the requested mime type. Gmail nests parts arbitrarily deep on some
+// messages (multipart/alternative inside multipart/mixed inside
+// multipart/related), so the old 2-level lookup missed ~half of them.
+function findBodyByMime(payload: Record<string, unknown>, mime: string): string {
+  if ((payload as { mimeType?: string })?.mimeType === mime) {
+    const body = payload.body as Record<string, unknown> | undefined;
+    if (body?.data) return decodePart(body.data as string);
+  }
   const parts = payload?.parts as Array<Record<string, unknown>> | undefined;
   if (!parts) return "";
-  const html = parts.find(p => p.mimeType === "text/html");
-  if (html?.body && (html.body as Record<string, unknown>).data) {
-    return decodePart((html.body as Record<string, unknown>).data as string);
-  }
   for (const p of parts) {
-    const nested = p.parts as Array<Record<string, unknown>> | undefined;
-    if (nested) {
-      const h = nested.find(x => x.mimeType === "text/html");
-      if (h?.body && (h.body as Record<string, unknown>).data) {
-        return decodePart((h.body as Record<string, unknown>).data as string);
-      }
-    }
-  }
-  const text = parts.find(p => p.mimeType === "text/plain");
-  if (text?.body && (text.body as Record<string, unknown>).data) {
-    return decodePart((text.body as Record<string, unknown>).data as string);
+    const found = findBodyByMime(p, mime);
+    if (found) return found;
   }
   return "";
+}
+
+function extractHtmlBody(payload: Record<string, unknown>): string {
+  return findBodyByMime(payload, "text/html") || findBodyByMime(payload, "text/plain");
 }
 
 function stripTags(html: string): string {
@@ -128,74 +125,93 @@ function unwrapTrackingUrl(url: string): string {
   return url;
 }
 
-// Parse an Upwork alert email body and return every job referenced.
-// Upwork Premium alerts bundle multiple jobs per email; each job has an
-// anchor linking to a URL containing the cipher id `~<id>`.
-export function parseJobsFromEmail(html: string, subject: string, receivedDate: string | null): ParsedJob[] {
-  const jobs: ParsedJob[] = [];
-  const seen = new Set<string>();
+// Upwork Premium alert subjects look like:
+//   "New job: Build a P2P Delivery Platform - Budget $1,200"
+//   "Invitation to interview: React Developer"
+// Strip the prefix so the CRM title matches what the owner sees on Upwork.
+function titleFromSubject(subject: string): string {
+  return subject
+    .replace(/^\s*(new job|invitation to interview|invitation|new invitation|job invite|opportunity)\s*:\s*/i, "")
+    .trim();
+}
 
-  // Match anchor tags and pull href + inner text. Works on raw HTML bodies.
-  const anchorRe = /<a\b[^>]*href\s*=\s*"([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-  const matches: Array<{ url: string; text: string; index: number }> = [];
+// Pull "$1,200", "$50-$75/hr", "Budget $500", etc. out of a blob of text.
+function extractBudget(text: string): string | null {
+  const subjectOrBody = text.match(
+    /\$[\d,]+(?:\.\d+)?\s*(?:-\s*\$[\d,]+(?:\.\d+)?)?\s*(?:\/\s*hr|per hour|hourly)?/i
+  );
+  return subjectOrBody ? subjectOrBody[0].replace(/\s+/g, " ").trim() : null;
+}
+
+function extractJobType(text: string): string | null {
+  if (/hourly|\/\s*hr|per hour/i.test(text)) return "hourly";
+  if (/fixed[- ]?price|fixed budget/i.test(text)) return "fixed";
+  return null;
+}
+
+// Parse an Upwork alert email and return every job referenced.
+// Premium alerts are one job per email, so when there's a single ~id in
+// the body we treat the subject as the authoritative title and the plain
+// body as the description. Multi-id emails (older "jobs you may like"
+// digests) fall back to per-anchor parsing.
+export function parseJobsFromEmail(html: string, subject: string, receivedDate: string | null): ParsedJob[] {
+  // Pull every ~id present in the HTML, de-duped. We extract from the raw
+  // HTML so tracking-wrapped URLs and canonical URLs both match.
+  const ids = new Set<string>();
+  const idRe = /~([0-9a-zA-Z]{10,})/g;
   let m;
-  while ((m = anchorRe.exec(html)) !== null) {
-    matches.push({ url: m[1], text: stripTags(m[2]), index: m.index });
+  while ((m = idRe.exec(html)) !== null) ids.add(m[1]);
+  if (ids.size === 0) return [];
+
+  const bodyText = stripTags(html);
+  const subjectTitle = titleFromSubject(subject);
+
+  // Single-job email — use subject as title, full body as description.
+  if (ids.size === 1) {
+    const upworkId = Array.from(ids)[0];
+    return [{
+      upwork_id: upworkId,
+      title: subjectTitle || `Upwork Job ${upworkId}`,
+      description: bodyText.slice(0, 2000),
+      budget: extractBudget(subject) || extractBudget(bodyText),
+      job_type: extractJobType(subject) || extractJobType(bodyText),
+      skills: [],
+      client_country: null,
+      client_rating: null,
+      client_hire_rate: null,
+      client_payment_verified: false,
+      job_url: `https://www.upwork.com/jobs/~${upworkId}`,
+      posted_at: receivedDate,
+    }];
   }
 
-  for (const { url, text, index } of matches) {
-    const real = unwrapTrackingUrl(url);
+  // Multi-job email — walk the anchors and harvest per-job context.
+  const jobs: ParsedJob[] = [];
+  const seen = new Set<string>();
+  const anchorRe = /<a\b[^>]*href\s*=\s*"([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let a;
+  while ((a = anchorRe.exec(html)) !== null) {
+    const real = unwrapTrackingUrl(a[1]);
     const idMatch = real.match(/~([0-9a-zA-Z]{10,})/);
     if (!idMatch) continue;
     const upworkId = idMatch[1];
     if (seen.has(upworkId)) continue;
-
-    // Require the anchor's visible text to look like a title (skip bare
-    // "View job", "Apply", icon-only links — those are navigation chrome).
-    const cleanText = text.trim();
-    const looksLikeTitle =
-      cleanText.length >= 12 &&
-      !/^(view|apply|see|open|click|unsubscribe|manage|settings|upwork)\b/i.test(cleanText);
-    if (!looksLikeTitle) {
-      seen.add(upworkId);
-      // Still record with fallback title if nothing else turns up.
-      jobs.push({
-        upwork_id: upworkId,
-        title: cleanText || subject || `Upwork Job ${upworkId}`,
-        description: "",
-        budget: null,
-        job_type: null,
-        skills: [],
-        client_country: null,
-        client_rating: null,
-        client_hire_rate: null,
-        client_payment_verified: false,
-        job_url: `https://www.upwork.com/jobs/~${upworkId}`,
-        posted_at: receivedDate,
-      });
-      continue;
-    }
     seen.add(upworkId);
 
-    // Grab ~1200 chars of context after the anchor to harvest budget / type / country.
-    const contextHtml = html.slice(index, index + 1500);
-    const contextText = stripTags(contextHtml);
+    const anchorText = stripTags(a[2]).trim();
+    const looksLikeTitle =
+      anchorText.length >= 12 &&
+      !/^(view|apply|see|open|click|read|more|unsubscribe|manage|settings|upwork)\b/i.test(anchorText);
 
-    const budgetMatch =
-      contextText.match(/\$[\d,]+(?:\.\d+)?\s*(?:-\s*\$[\d,]+(?:\.\d+)?)?\s*(?:\/\s*hr|per hour|hourly)?/i) ||
-      null;
-    const hourlyMatch = /hourly|\/\s*hr|per hour/i.test(contextText);
-    const fixedMatch = /fixed[- ]?price|fixed budget/i.test(contextText);
-
-    // Description: the chunk of text right after the title, trimmed.
-    const afterTitle = contextText.replace(cleanText, "").trim().slice(0, 800);
+    const contextText = stripTags(html.slice(a.index, a.index + 1500));
+    const title = looksLikeTitle ? anchorText : subjectTitle || `Upwork Job ${upworkId}`;
 
     jobs.push({
       upwork_id: upworkId,
-      title: cleanText,
-      description: afterTitle,
-      budget: budgetMatch ? budgetMatch[0].replace(/\s+/g, " ").trim() : null,
-      job_type: hourlyMatch ? "hourly" : fixedMatch ? "fixed" : null,
+      title,
+      description: contextText.slice(0, 1200),
+      budget: extractBudget(contextText),
+      job_type: extractJobType(contextText),
       skills: [],
       client_country: null,
       client_rating: null,
@@ -205,7 +221,6 @@ export function parseJobsFromEmail(html: string, subject: string, receivedDate: 
       posted_at: receivedDate,
     });
   }
-
   return jobs;
 }
 
