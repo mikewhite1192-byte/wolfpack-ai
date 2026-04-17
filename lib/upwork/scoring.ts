@@ -80,10 +80,9 @@ export function scoreUpworkJob(job: JobForScoring): Verdict {
   const haystack = `${job.title} ${job.description} ${job.skills.join(" ")}`.toLowerCase();
 
   // ── HARD RULES (auto_skip) ──────────────────────────────────────────
-
-  if (!job.client_payment_verified && (job.client_lifetime_spend ?? 0) < 500) {
-    return { verdict: "auto_skip", reasons: ["unverified client with <$500 spent"] };
-  }
+  // (The "unverified + <$500 spent" rule was removed — 2 of 3 recent wins
+  // were first-time clients with no history, so this signal was costing
+  // more money than it saved.)
 
   if (job.job_type === "hourly" && job.hourly_max != null && job.hourly_max < 40) {
     return { verdict: "auto_skip", reasons: [`hourly max $${job.hourly_max} < $40 floor`] };
