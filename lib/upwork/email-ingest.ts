@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { refreshAccessToken, gmailFetch } from "@/lib/gmail";
 import { sendMessage } from "@/lib/loop/client";
+import { scoreUpworkJob, type Verdict } from "@/lib/upwork/scoring";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -17,6 +18,11 @@ interface ParsedJob {
   client_payment_verified: boolean;
   job_url: string;
   posted_at: string | null;
+  proposal_count: number | null;
+  client_lifetime_spend: number | null;
+  hourly_min: number | null;
+  hourly_max: number | null;
+  fixed_budget: number | null;
 }
 
 const OWNER_EMAIL = process.env.OWNER_EMAIL || "info@thewolfpackco.com";
@@ -145,8 +151,65 @@ function extractBudget(text: string): string | null {
 
 function extractJobType(text: string): string | null {
   if (/hourly|\/\s*hr|per hour/i.test(text)) return "hourly";
-  if (/fixed[- ]?price|fixed budget/i.test(text)) return "fixed";
+  if (/fixed[- ]?price|fixed budget|\bfixed\b/i.test(text)) return "fixed";
   return null;
+}
+
+// "$17K spent", "$1.5M spent", "$500 spent"
+function extractLifetimeSpend(text: string): number | null {
+  const m = text.match(/\$([\d,]+(?:\.\d+)?)\s*([KM])?\s*(?:spent|total\s+spent|lifetime)/i);
+  if (!m) return null;
+  const n = parseFloat(m[1].replace(/,/g, ""));
+  const suffix = m[2]?.toUpperCase();
+  if (suffix === "K") return n * 1000;
+  if (suffix === "M") return n * 1_000_000;
+  return n;
+}
+
+// Upwork shows proposal counts bucketed, not exact. Map to representative
+// midpoints so numeric comparisons in the scorer behave sensibly.
+function extractProposalCount(text: string): number | null {
+  if (/less\s+than\s+5\s+proposals?/i.test(text)) return 3;
+  if (/5\s+to\s+10\s+proposals?/i.test(text)) return 8;
+  if (/10\s+to\s+20\s+proposals?/i.test(text)) return 15;
+  if (/20\s+to\s+50\s+proposals?/i.test(text)) return 35;
+  if (/50\+\s*proposals?/i.test(text)) return 75;
+  return null;
+}
+
+function extractHourlyRange(text: string): { min: number | null; max: number | null } {
+  const m = text.match(
+    /\$(\d+(?:\.\d+)?)\s*(?:-\s*\$?(\d+(?:\.\d+)?))?\s*(?:\/\s*hr|per hour|hourly)/i
+  );
+  if (!m) return { min: null, max: null };
+  const min = parseFloat(m[1]);
+  const max = m[2] ? parseFloat(m[2]) : min;
+  return { min, max };
+}
+
+// "Fixed: $1,200", "Budget $1,200", "$1,200 fixed"
+function extractFixedBudget(text: string): number | null {
+  const m =
+    text.match(/(?:fixed|budget)[:\s]+\$?([\d,]+(?:\.\d+)?)/i) ||
+    text.match(/\$([\d,]+(?:\.\d+)?)\s+fixed/i);
+  if (!m) return null;
+  return parseFloat(m[1].replace(/,/g, ""));
+}
+
+function extractCountry(text: string): string | null {
+  const m = text.match(
+    /\b(United States|USA|U\.S\.?|Canada|Australia|United Kingdom|UK|Great Britain|Germany|France|India|Pakistan|Philippines|Ukraine|Russia|Brazil|Mexico|Spain|Italy|Netherlands|Sweden|Norway|Denmark|Poland|Turkey|Egypt|UAE|Saudi Arabia|Singapore|Japan|China|Hong Kong|South Korea|Israel|South Africa|Argentina|Chile|Colombia|New Zealand|Ireland)\b/i
+  );
+  return m ? m[1] : null;
+}
+
+function extractPaymentVerified(text: string): boolean {
+  return /payment\s+verified/i.test(text);
+}
+
+function extractClientRating(text: string): number | null {
+  const m = text.match(/(\d+(?:\.\d+)?)\s+stars?/i);
+  return m ? parseFloat(m[1]) : null;
 }
 
 // Parse an Upwork alert email and return every job referenced.
@@ -169,19 +232,28 @@ export function parseJobsFromEmail(html: string, subject: string, receivedDate: 
   // Single-job email — use subject as title, full body as description.
   if (ids.size === 1) {
     const upworkId = Array.from(ids)[0];
+    const combined = `${subject}\n${bodyText}`;
+    const { min: hourlyMin, max: hourlyMax } = extractHourlyRange(combined);
+    const fixed = extractFixedBudget(combined);
+    const jobType = extractJobType(combined) || (hourlyMax != null ? "hourly" : fixed != null ? "fixed" : null);
     return [{
       upwork_id: upworkId,
       title: subjectTitle || `Upwork Job ${upworkId}`,
       description: bodyText.slice(0, 2000),
       budget: extractBudget(subject) || extractBudget(bodyText),
-      job_type: extractJobType(subject) || extractJobType(bodyText),
+      job_type: jobType,
       skills: [],
-      client_country: null,
-      client_rating: null,
+      client_country: extractCountry(combined),
+      client_rating: extractClientRating(combined),
       client_hire_rate: null,
-      client_payment_verified: false,
+      client_payment_verified: extractPaymentVerified(combined),
       job_url: `https://www.upwork.com/jobs/~${upworkId}`,
       posted_at: receivedDate,
+      proposal_count: extractProposalCount(combined),
+      client_lifetime_spend: extractLifetimeSpend(combined),
+      hourly_min: hourlyMin,
+      hourly_max: hourlyMax,
+      fixed_budget: fixed,
     }];
   }
 
@@ -205,27 +277,77 @@ export function parseJobsFromEmail(html: string, subject: string, receivedDate: 
 
     const contextText = stripTags(html.slice(a.index, a.index + 1500));
     const title = looksLikeTitle ? anchorText : subjectTitle || `Upwork Job ${upworkId}`;
+    const { min: hourlyMin, max: hourlyMax } = extractHourlyRange(contextText);
+    const fixed = extractFixedBudget(contextText);
 
     jobs.push({
       upwork_id: upworkId,
       title,
       description: contextText.slice(0, 1200),
       budget: extractBudget(contextText),
-      job_type: extractJobType(contextText),
+      job_type: extractJobType(contextText) || (hourlyMax != null ? "hourly" : fixed != null ? "fixed" : null),
       skills: [],
-      client_country: null,
-      client_rating: null,
+      client_country: extractCountry(contextText),
+      client_rating: extractClientRating(contextText),
       client_hire_rate: null,
-      client_payment_verified: false,
+      client_payment_verified: extractPaymentVerified(contextText),
       job_url: `https://www.upwork.com/jobs/~${upworkId}`,
       posted_at: receivedDate,
+      proposal_count: extractProposalCount(contextText),
+      client_lifetime_spend: extractLifetimeSpend(contextText),
+      hourly_min: hourlyMin,
+      hourly_max: hourlyMax,
+      fixed_budget: fixed,
     });
   }
   return jobs;
 }
 
+// Add scoring / enriched-parse columns if the 020 migration hasn't been run.
+// Runs once per cold start (cheap: IF NOT EXISTS is a no-op when columns exist).
+let columnsEnsured = false;
+async function ensureScoringColumns(): Promise<void> {
+  if (columnsEnsured) return;
+  await sql`ALTER TABLE upwork_jobs ADD COLUMN IF NOT EXISTS verdict TEXT`;
+  await sql`ALTER TABLE upwork_jobs ADD COLUMN IF NOT EXISTS verdict_reasons TEXT[]`;
+  await sql`ALTER TABLE upwork_jobs ADD COLUMN IF NOT EXISTS proposal_count INT`;
+  await sql`ALTER TABLE upwork_jobs ADD COLUMN IF NOT EXISTS client_lifetime_spend NUMERIC`;
+  await sql`ALTER TABLE upwork_jobs ADD COLUMN IF NOT EXISTS hourly_min NUMERIC`;
+  await sql`ALTER TABLE upwork_jobs ADD COLUMN IF NOT EXISTS hourly_max NUMERIC`;
+  await sql`ALTER TABLE upwork_jobs ADD COLUMN IF NOT EXISTS fixed_budget NUMERIC`;
+  columnsEnsured = true;
+}
+
+function formatSpend(spend: number | null): string {
+  if (spend == null) return "";
+  if (spend >= 1000) return `$${(spend / 1000).toFixed(spend >= 10_000 ? 0 : 1)}K spent`;
+  return `$${Math.round(spend)} spent`;
+}
+
+function formatProps(count: number | null): string {
+  if (count == null) return "";
+  if (count <= 3) return "<5 props";
+  if (count <= 8) return "5-10 props";
+  if (count <= 15) return "10-20 props";
+  if (count <= 35) return "20-50 props";
+  return "50+ props";
+}
+
+function buildSms(job: ParsedJob, verdict: Verdict["verdict"]): string {
+  const meta = [
+    formatProps(job.proposal_count),
+    formatSpend(job.client_lifetime_spend),
+    job.client_country,
+  ].filter(Boolean).join(" · ");
+  const header = verdict === "hot" ? "🔥 HOT Upwork" : "💼 Upwork job";
+  const budgetLine = `💰 ${job.budget || "budget not listed"}`;
+  const metaLine = meta ? `📊 ${meta}\n` : "";
+  return `${header}\n${job.title}\n${budgetLine}\n${metaLine}${job.job_url}`;
+}
+
 // Pull Upwork alert emails from the owner's Gmail inbox, parse jobs, insert
-// into upwork_jobs (status='new'), and text the owner on new inserts.
+// into upwork_jobs (status='new'), score with the rules engine, and text
+// the owner on new inserts whose verdict isn't 'auto_skip'.
 // Dedupe is handled by the UNIQUE(upwork_id) constraint on the table.
 export async function ingestUpworkEmails(): Promise<number> {
   const token = await getOwnerGmailToken();
@@ -233,6 +355,7 @@ export async function ingestUpworkEmails(): Promise<number> {
     console.log("[upwork-email] No Gmail token for owner — skipping email ingest");
     return 0;
   }
+  await ensureScoringColumns();
 
   // Resolve the "Upwork - Job Notification" label to its Gmail label ID.
   // Using labelIds (not a `label:` search string) avoids ambiguity with
@@ -273,22 +396,42 @@ export async function ingestUpworkEmails(): Promise<number> {
 
       for (const job of jobs) {
         try {
+          const { verdict, reasons } = scoreUpworkJob({
+            title: job.title,
+            description: job.description,
+            skills: job.skills,
+            job_type: job.job_type,
+            hourly_min: job.hourly_min,
+            hourly_max: job.hourly_max,
+            fixed_budget: job.fixed_budget,
+            proposal_count: job.proposal_count,
+            client_country: job.client_country,
+            client_lifetime_spend: job.client_lifetime_spend,
+            client_payment_verified: job.client_payment_verified,
+          });
+
           // On conflict, refresh parser-derived fields when the existing row
           // has bad/empty values (earlier ingestion runs stored title="more"
           // because the parser used anchor text). User-state columns
           // (status, applied_at, won_at, notes, ai_*) are left untouched.
-          // xmax = 0 distinguishes a real INSERT from a DO UPDATE path so
-          // we only SMS once per job, never on re-ingest.
+          // verdict is always refreshed so tweaking the rules file re-tags
+          // existing rows. xmax = 0 distinguishes a real INSERT from a
+          // DO UPDATE path so we only SMS once per job, never on re-ingest.
           const result = await sql`
             INSERT INTO upwork_jobs (
               upwork_id, title, description, budget, job_type, skills,
               client_country, client_rating, client_hire_rate, client_payment_verified,
-              job_url, posted_at, status
+              job_url, posted_at, status,
+              proposal_count, client_lifetime_spend, hourly_min, hourly_max, fixed_budget,
+              verdict, verdict_reasons
             ) VALUES (
               ${job.upwork_id}, ${job.title}, ${job.description}, ${job.budget},
               ${job.job_type}, ${job.skills}, ${job.client_country},
               ${job.client_rating}, ${job.client_hire_rate}, ${job.client_payment_verified},
-              ${job.job_url}, ${job.posted_at}, 'new'
+              ${job.job_url}, ${job.posted_at}, 'new',
+              ${job.proposal_count}, ${job.client_lifetime_spend},
+              ${job.hourly_min}, ${job.hourly_max}, ${job.fixed_budget},
+              ${verdict}, ${reasons}
             )
             ON CONFLICT (upwork_id) DO UPDATE SET
               title = CASE
@@ -308,18 +451,25 @@ export async function ingestUpworkEmails(): Promise<number> {
               budget = COALESCE(upwork_jobs.budget, EXCLUDED.budget),
               job_type = COALESCE(upwork_jobs.job_type, EXCLUDED.job_type),
               posted_at = COALESCE(upwork_jobs.posted_at, EXCLUDED.posted_at),
-              job_url = COALESCE(upwork_jobs.job_url, EXCLUDED.job_url)
+              job_url = COALESCE(upwork_jobs.job_url, EXCLUDED.job_url),
+              client_country = COALESCE(upwork_jobs.client_country, EXCLUDED.client_country),
+              client_rating = COALESCE(upwork_jobs.client_rating, EXCLUDED.client_rating),
+              client_payment_verified = upwork_jobs.client_payment_verified OR EXCLUDED.client_payment_verified,
+              proposal_count = COALESCE(upwork_jobs.proposal_count, EXCLUDED.proposal_count),
+              client_lifetime_spend = COALESCE(upwork_jobs.client_lifetime_spend, EXCLUDED.client_lifetime_spend),
+              hourly_min = COALESCE(upwork_jobs.hourly_min, EXCLUDED.hourly_min),
+              hourly_max = COALESCE(upwork_jobs.hourly_max, EXCLUDED.hourly_max),
+              fixed_budget = COALESCE(upwork_jobs.fixed_budget, EXCLUDED.fixed_budget),
+              verdict = EXCLUDED.verdict,
+              verdict_reasons = EXCLUDED.verdict_reasons
             RETURNING id, (xmax = 0) AS was_inserted
           `;
           const wasInserted = result.length > 0 && result[0].was_inserted === true;
           if (wasInserted) {
             newCount++;
-            if (process.env.OWNER_PHONE) {
+            if (verdict !== "auto_skip" && process.env.OWNER_PHONE) {
               try {
-                await sendMessage(
-                  process.env.OWNER_PHONE,
-                  `New Upwork job: ${job.title}\nBudget: ${job.budget || "not listed"}\n${job.job_url}`
-                );
+                await sendMessage(process.env.OWNER_PHONE, buildSms(job, verdict));
               } catch (err) {
                 console.error(`[upwork-email] Text notification failed for ${job.upwork_id}:`, err);
               }
