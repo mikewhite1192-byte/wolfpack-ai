@@ -1,19 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { neon } from "@neondatabase/serverless";
+import { validateCallerApiKey } from "@/lib/caller/android-auth";
 
 const sql = neon(process.env.DATABASE_URL!);
-const ADMIN_EMAILS = ["info@thewolfpackco.com"];
+const ADMIN_EMAILS = ["info@thewolfpackco.com", "mikewhite1192@gmail.com"];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    // Accept either Clerk session (web) or API key (Android)
+    const isAndroid = validateCallerApiKey(request);
+    if (!isAndroid) {
+      const { userId } = await auth();
+      if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-    const user = await currentUser();
-    const email = user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "";
-    if (!ADMIN_EMAILS.includes(email)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      const user = await currentUser();
+      const email = user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "";
+      if (!ADMIN_EMAILS.includes(email)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     // Latest session

@@ -3,33 +3,25 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { neon } from "@neondatabase/serverless";
 import { getNextLead } from "@/lib/caller/lead-queue";
 import { startOutboundCall } from "@/lib/caller/retell-client";
+import { validateCallerApiKey } from "@/lib/caller/android-auth";
 
 const sql = neon(process.env.DATABASE_URL!);
-const ADMIN_EMAILS = ["info@thewolfpackco.com"];
+const ADMIN_EMAILS = ["info@thewolfpackco.com", "mikewhite1192@gmail.com"];
 
-// POST /api/caller/start-call
-// Fetches the next due lead from the queue and initiates a Retell call.
-// Respects caller_sessions.status (won't place calls if session is paused
-// or stopped). Intended to be polled by the dashboard's client-side loop
-// every ~30 seconds while the campaign is running.
-//
-// Returns:
-//   200 { ok: true,  placed: true,  leadId, callId }       → call initiated
-//   200 { ok: true,  placed: false, reason }               → queue had nothing to do
-//   409 { error: "Session not running" }                   → campaign paused/stopped
-//   500 { error: "..." }                                   → Retell API or DB failure
 export async function POST(req: NextRequest) {
-  void req;
   try {
-    // ── Admin auth ─────────────────────────────────────────────
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    const user = await currentUser();
-    const email = user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "";
-    if (!ADMIN_EMAILS.includes(email)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // ── Admin auth (Clerk or API key) ─────────────────────────
+    const isAndroid = validateCallerApiKey(req);
+    if (!isAndroid) {
+      const { userId } = await auth();
+      if (!userId) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      }
+      const user = await currentUser();
+      const email = user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "";
+      if (!ADMIN_EMAILS.includes(email)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     // ── Session gate: only run if campaign is active ───────────
