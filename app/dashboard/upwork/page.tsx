@@ -88,7 +88,7 @@ type FilterTab = "all" | "new_high" | "new" | "applied" | "interviewing" | "won"
 
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "new_high", label: "New (7+)" },
+  { key: "new_high", label: "New (Hot/Warm)" },
   { key: "new", label: "New" },
   { key: "applied", label: "Applied" },
   { key: "interviewing", label: "Interviewing" },

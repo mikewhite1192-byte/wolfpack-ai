@@ -87,11 +87,14 @@ export async function GET(req: NextRequest) {
   // so the pipeline shows the highest-priority jobs at the top when Mike opens it.
   let jobs;
   if (status === "new" || status === "new_high") {
-    const minScoreClause = status === "new_high" ? 7 : 0;
+    // new_high tab shows only HOT/WARM (the 2026 priority tiers).
+    // new tab shows every status='new' row regardless of verdict.
+    const verdictClause = status === "new_high";
     jobs = hasRange
       ? await sql`
           SELECT * FROM upwork_jobs
-          WHERE status = 'new' AND COALESCE(ai_score, 0) >= ${minScoreClause}
+          WHERE status = 'new'
+            AND (${!verdictClause} OR verdict IN ('hot', 'warm'))
             AND created_at >= ${since} AND created_at < ${until}
           ORDER BY
             CASE verdict WHEN 'hot' THEN 1 WHEN 'warm' THEN 2 WHEN 'cold' THEN 3 ELSE 4 END ASC,
@@ -101,7 +104,8 @@ export async function GET(req: NextRequest) {
         `
       : await sql`
           SELECT * FROM upwork_jobs
-          WHERE status = 'new' AND COALESCE(ai_score, 0) >= ${minScoreClause}
+          WHERE status = 'new'
+            AND (${!verdictClause} OR verdict IN ('hot', 'warm'))
           ORDER BY
             CASE verdict WHEN 'hot' THEN 1 WHEN 'warm' THEN 2 WHEN 'cold' THEN 3 ELSE 4 END ASC,
             posted_at DESC NULLS LAST,
@@ -187,7 +191,7 @@ export async function GET(req: NextRequest) {
     ? await sql`
         SELECT
           COUNT(*) FILTER (WHERE status = 'new' AND created_at >= ${since} AND created_at < ${until}) as new_count,
-          COUNT(*) FILTER (WHERE status = 'new' AND ai_score >= 7 AND created_at >= ${since} AND created_at < ${until}) as new_high_count,
+          COUNT(*) FILTER (WHERE status = 'new' AND verdict IN ('hot', 'warm') AND created_at >= ${since} AND created_at < ${until}) as new_high_count,
           COUNT(*) FILTER (WHERE applied_at >= ${since} AND applied_at < ${until}) as applied_count,
           COUNT(*) FILTER (WHERE status = 'interviewing' AND applied_at >= ${since} AND applied_at < ${until}) as interviewing_count,
           COUNT(*) FILTER (WHERE status = 'won' AND won_at >= ${since} AND won_at < ${until}) as won_count,
@@ -200,7 +204,7 @@ export async function GET(req: NextRequest) {
     : await sql`
         SELECT
           COUNT(*) FILTER (WHERE status = 'new') as new_count,
-          COUNT(*) FILTER (WHERE status = 'new' AND ai_score >= 7) as new_high_count,
+          COUNT(*) FILTER (WHERE status = 'new' AND verdict IN ('hot', 'warm')) as new_high_count,
           COUNT(*) FILTER (WHERE status = 'applied') as applied_count,
           COUNT(*) FILTER (WHERE status = 'interviewing') as interviewing_count,
           COUNT(*) FILTER (WHERE status = 'won') as won_count,
