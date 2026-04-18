@@ -333,6 +333,40 @@ export function parseJobsFromEmail(html: string, subject: string, receivedDate: 
   return jobs;
 }
 
+// Quiet hours: don't fire SMS between 22:00 and 07:30 in Mike's local
+// timezone (America/Detroit). HOT jobs still land in the pipeline and
+// will be visible at the top when he opens the CRM in the morning —
+// the phone just stays silent overnight. Tunable via env:
+//   QUIET_HOURS_TZ    (default "America/Detroit")
+//   QUIET_HOURS_START (default "22:00" — 24h format)
+//   QUIET_HOURS_END   (default "07:30")
+function parseHHMM(s: string, fallback: [number, number]): [number, number] {
+  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return fallback;
+  return [parseInt(m[1], 10), parseInt(m[2], 10)];
+}
+
+function isQuietHours(now: Date = new Date()): boolean {
+  const tz = process.env.QUIET_HOURS_TZ || "America/Detroit";
+  const [startH, startM] = parseHHMM(process.env.QUIET_HOURS_START || "22:00", [22, 0]);
+  const [endH, endM] = parseHHMM(process.env.QUIET_HOURS_END || "07:30", [7, 30]);
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(now);
+  const h = parseInt(parts.find(p => p.type === "hour")!.value, 10);
+  const m = parseInt(parts.find(p => p.type === "minute")!.value, 10);
+  const nowMin = h * 60 + m;
+  const startMin = startH * 60 + startM;
+  const endMin = endH * 60 + endM;
+
+  // Quiet window crosses midnight (e.g. 22:00 → 07:30): quiet if
+  // now >= start OR now < end. Non-wrapping window: now in [start, end).
+  return startMin > endMin
+    ? nowMin >= startMin || nowMin < endMin
+    : nowMin >= startMin && nowMin < endMin;
+}
+
 // Add scoring / enriched-parse columns if the 020 migration hasn't been run.
 // Runs once per cold start (cheap: IF NOT EXISTS is a no-op when columns exist).
 let columnsEnsured = false;
@@ -512,12 +546,18 @@ export async function ingestUpworkEmails(): Promise<number> {
           if (wasInserted) {
             newCount++;
             // Text only on HOT per the 2026 rules. WARM/COLD go to the
-            // pipeline silently.
+            // pipeline silently. Also silent during quiet hours
+            // (22:00-07:30 Detroit by default) — the HOT job is still
+            // in the pipeline for the morning.
             if (verdict === "hot" && process.env.OWNER_PHONE) {
-              try {
-                await sendMessage(process.env.OWNER_PHONE, buildSms(job));
-              } catch (err) {
-                console.error(`[upwork-email] Text notification failed for ${job.upwork_id}:`, err);
+              if (isQuietHours()) {
+                console.log(`[upwork-email] HOT suppressed by quiet hours: ${job.upwork_id}`);
+              } else {
+                try {
+                  await sendMessage(process.env.OWNER_PHONE, buildSms(job));
+                } catch (err) {
+                  console.error(`[upwork-email] Text notification failed for ${job.upwork_id}:`, err);
+                }
               }
             }
           }
