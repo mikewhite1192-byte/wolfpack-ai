@@ -83,19 +83,30 @@ export async function GET(req: NextRequest) {
 
   // For scoped status tabs, filter/order by the action timestamp when a range is active,
   // so "Applied last 7 days" counts jobs you actually applied to in that window.
+  // The "new" and "all" branches sort by verdict tier first (hot → warm → cold)
+  // so the pipeline shows the highest-priority jobs at the top when Mike opens it.
   let jobs;
-  if (status === "new_high") {
+  if (status === "new" || status === "new_high") {
+    const minScoreClause = status === "new_high" ? 7 : 0;
     jobs = hasRange
       ? await sql`
           SELECT * FROM upwork_jobs
-          WHERE status = 'new' AND ai_score >= 7
+          WHERE status = 'new' AND COALESCE(ai_score, 0) >= ${minScoreClause}
             AND created_at >= ${since} AND created_at < ${until}
-          ORDER BY created_at DESC LIMIT ${lim} OFFSET ${off}
+          ORDER BY
+            CASE verdict WHEN 'hot' THEN 1 WHEN 'warm' THEN 2 WHEN 'cold' THEN 3 ELSE 4 END ASC,
+            posted_at DESC NULLS LAST,
+            created_at DESC
+          LIMIT ${lim} OFFSET ${off}
         `
       : await sql`
           SELECT * FROM upwork_jobs
-          WHERE status = 'new' AND ai_score >= 7
-          ORDER BY created_at DESC LIMIT ${lim} OFFSET ${off}
+          WHERE status = 'new' AND COALESCE(ai_score, 0) >= ${minScoreClause}
+          ORDER BY
+            CASE verdict WHEN 'hot' THEN 1 WHEN 'warm' THEN 2 WHEN 'cold' THEN 3 ELSE 4 END ASC,
+            posted_at DESC NULLS LAST,
+            created_at DESC
+          LIMIT ${lim} OFFSET ${off}
         `;
   } else if (status === "applied" || status === "interviewing" || status === "lost") {
     jobs = hasRange
@@ -154,11 +165,19 @@ export async function GET(req: NextRequest) {
       ? await sql`
           SELECT * FROM upwork_jobs
           WHERE created_at >= ${since} AND created_at < ${until}
-          ORDER BY created_at DESC LIMIT ${lim} OFFSET ${off}
+          ORDER BY
+            CASE verdict WHEN 'hot' THEN 1 WHEN 'warm' THEN 2 WHEN 'cold' THEN 3 ELSE 4 END ASC,
+            posted_at DESC NULLS LAST,
+            created_at DESC
+          LIMIT ${lim} OFFSET ${off}
         `
       : await sql`
           SELECT * FROM upwork_jobs
-          ORDER BY created_at DESC LIMIT ${lim} OFFSET ${off}
+          ORDER BY
+            CASE verdict WHEN 'hot' THEN 1 WHEN 'warm' THEN 2 WHEN 'cold' THEN 3 ELSE 4 END ASC,
+            posted_at DESC NULLS LAST,
+            created_at DESC
+          LIMIT ${lim} OFFSET ${off}
         `;
   }
 

@@ -57,6 +57,19 @@ interface UpworkJob {
   contract_value: number | null;
   notes: string | null;
   created_at: string;
+  verdict: "hot" | "warm" | "cold" | null;
+  verdict_reasons: string[] | null;
+}
+
+// Visual tier indicator driven by the 2026 scoring verdict.
+// HOT → red/orange accent, WARM → yellow, COLD → gray.
+function verdictTheme(verdict: string | null): { color: string; label: string; bg: string } {
+  switch (verdict) {
+    case "hot":  return { color: T.orange, label: "HOT",  bg: `${T.orange}15` };
+    case "warm": return { color: T.yellow, label: "WARM", bg: `${T.yellow}15` };
+    case "cold": return { color: T.muted,  label: "COLD", bg: "rgba(255,255,255,0.04)" };
+    default:     return { color: T.muted,  label: "—",    bg: "rgba(255,255,255,0.04)" };
+  }
 }
 
 interface Counts {
@@ -475,6 +488,7 @@ export default function UpworkPage() {
           {jobs.map((job) => {
             const isExpanded = expandedId === job.id;
             const isEditingThis = editingProposal === job.id;
+            const theme = verdictTheme(job.verdict);
 
             return (
               <div
@@ -483,6 +497,7 @@ export default function UpworkPage() {
                 style={{
                   background: T.surface,
                   border: `1px solid ${T.border}`,
+                  borderLeft: `4px solid ${theme.color}`,
                 }}
               >
                 {/* Top row — click anywhere to expand/collapse */}
@@ -502,17 +517,32 @@ export default function UpworkPage() {
                       >
                         {job.title}
                       </a>
-                      {/* Score badge */}
-                      <span
-                        className="text-xs font-bold px-2 py-0.5 rounded-full"
-                        style={{
-                          background: `${scoreBadgeColor(job.ai_score)}20`,
-                          color: scoreBadgeColor(job.ai_score),
-                          border: `1px solid ${scoreBadgeColor(job.ai_score)}40`,
-                        }}
-                      >
-                        {job.ai_score !== null ? `${job.ai_score}/10` : "Unscored"}
-                      </span>
+                      {/* Verdict badge (2026 scoring) */}
+                      {job.verdict && (
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                          style={{
+                            background: theme.bg,
+                            color: theme.color,
+                            border: `1px solid ${theme.color}40`,
+                          }}
+                        >
+                          {theme.label}
+                        </span>
+                      )}
+                      {/* Legacy AI score (retained for the Write Proposal flow) */}
+                      {job.ai_score !== null && (
+                        <span
+                          className="text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{
+                            background: `${scoreBadgeColor(job.ai_score)}20`,
+                            color: scoreBadgeColor(job.ai_score),
+                            border: `1px solid ${scoreBadgeColor(job.ai_score)}40`,
+                          }}
+                        >
+                          {job.ai_score}/10
+                        </span>
+                      )}
                       {/* Status badge */}
                       {job.status !== "new" && (
                         <span
@@ -661,6 +691,23 @@ export default function UpworkPage() {
                 {/* Expanded content */}
                 {isExpanded && (
                   <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${T.border}` }}>
+                    {/* Verdict Reasons (2026 rule-based scoring log) */}
+                    {job.verdict_reasons && job.verdict_reasons.length > 0 && (
+                      <div className="mb-3">
+                        <div
+                          className="text-[10px] uppercase tracking-wider font-semibold mb-1"
+                          style={{ color: theme.color }}
+                        >
+                          Scoring — {theme.label}
+                        </div>
+                        <ul className="text-xs leading-relaxed list-none space-y-0.5" style={{ color: T.muted }}>
+                          {job.verdict_reasons.map((r, i) => (
+                            <li key={i}>· {r}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                     {/* AI Reasoning */}
                     {job.ai_reasoning && (
                       <div className="mb-3">

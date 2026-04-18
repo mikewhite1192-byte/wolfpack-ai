@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { refreshAccessToken, gmailFetch } from "@/lib/gmail";
 import { sendMessage } from "@/lib/loop/client";
-import { scoreUpworkJob, type Verdict, LEARNABLE_STACK_REASON } from "@/lib/upwork/scoring";
+import { scoreUpworkJob } from "@/lib/upwork/scoring";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -212,6 +212,35 @@ function extractClientRating(text: string): number | null {
   return m ? parseFloat(m[1]) : null;
 }
 
+// Upwork Premium alerts put the actual description snippet between a
+// "Job Description:" label and a "… more" / "View job" marker. Everything
+// else is header ("Upwork — New job alert") and footer ("You received
+// this email because Freelancer Plus members..."). Without this extractor
+// the stored description would be ~2000 chars of boilerplate and the
+// length-based HOT/WARM filters would never discriminate.
+function extractJobDescription(bodyText: string): string {
+  const between = bodyText.match(
+    /Job Description:\s*([\s\S]+?)\s*(?:…\s*more|\.\.\.\s*more\b|\bView job\b|Client\s+(?:Fixed|Hourly)\s*:)/i
+  );
+  if (between) return between[1].trim();
+
+  const labelIdx = bodyText.toLowerCase().indexOf("job description:");
+  if (labelIdx !== -1) {
+    const after = bodyText.slice(labelIdx + "job description:".length);
+    const boilerplateIdx = after.search(/You received this email|manage your alert|unsubscribe/i);
+    return (boilerplateIdx !== -1 ? after.slice(0, boilerplateIdx) : after.slice(0, 800)).trim();
+  }
+
+  // Last resort: chop the footer and the Upwork intro line.
+  const footerIdx = bodyText.search(/You received this email|manage your alert preferences/i);
+  const withoutFooter = footerIdx !== -1 ? bodyText.slice(0, footerIdx) : bodyText;
+  return withoutFooter
+    .replace(/^.*?This job looks like a match for you\.[^.]*\.\s*/i, "")
+    .replace(/^.*?Check it out[^.]*\.\s*/i, "")
+    .trim()
+    .slice(0, 1500);
+}
+
 // Parse an Upwork alert email and return every job referenced.
 // Premium alerts are one job per email, so when there's a single ~id in
 // the body we treat the subject as the authoritative title and the plain
@@ -229,17 +258,18 @@ export function parseJobsFromEmail(html: string, subject: string, receivedDate: 
   const bodyText = stripTags(html);
   const subjectTitle = titleFromSubject(subject);
 
-  // Single-job email — use subject as title, full body as description.
+  // Single-job email — use subject as title, extracted snippet as description.
   if (ids.size === 1) {
     const upworkId = Array.from(ids)[0];
     const combined = `${subject}\n${bodyText}`;
     const { min: hourlyMin, max: hourlyMax } = extractHourlyRange(combined);
     const fixed = extractFixedBudget(combined);
     const jobType = extractJobType(combined) || (hourlyMax != null ? "hourly" : fixed != null ? "fixed" : null);
+    const description = extractJobDescription(bodyText);
     return [{
       upwork_id: upworkId,
       title: subjectTitle || `Upwork Job ${upworkId}`,
-      description: bodyText.slice(0, 2000),
+      description,
       budget: extractBudget(subject) || extractBudget(bodyText),
       job_type: jobType,
       skills: [],
@@ -318,46 +348,40 @@ async function ensureScoringColumns(): Promise<void> {
   columnsEnsured = true;
 }
 
-function formatSpend(spend: number | null): string {
-  if (spend == null) return "";
-  if (spend >= 1000) return `$${(spend / 1000).toFixed(spend >= 10_000 ? 0 : 1)}K spent`;
-  return `$${Math.round(spend)} spent`;
+function formatBudget(job: ParsedJob): string {
+  if (job.hourly_max != null) {
+    return job.hourly_min != null && job.hourly_min !== job.hourly_max
+      ? `$${job.hourly_min}-${job.hourly_max}/hr`
+      : `$${job.hourly_max}/hr`;
+  }
+  if (job.fixed_budget != null) return `$${job.fixed_budget} fixed`;
+  return job.budget || "budget TBD";
 }
 
-function formatProps(count: number | null): string {
-  if (count == null) return "";
-  if (count <= 3) return "<5 props";
-  if (count <= 8) return "5-10 props";
-  if (count <= 15) return "10-20 props";
-  if (count <= 35) return "20-50 props";
-  return "50+ props";
+function formatPosted(postedAt: string | null): string {
+  if (!postedAt) return "just now";
+  const mins = Math.max(0, (Date.now() - new Date(postedAt).getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${Math.round(mins)}m ago`;
+  const hours = mins / 60;
+  if (hours < 24) return `${Math.round(hours)}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
 }
 
-// SMS body for a newly ingested job. Three variants:
-//   HOT            → 🔥 header, no disclosure footer
-//   STRETCH STACK  → 💼 "stretch stack" header + disclosure footer when the
-//                    verdict reasons include the learnable-stack flag
-//   WARM (regular) → 💼 "Upwork job" header, no footer
-function buildSms(job: ParsedJob, verdict: Verdict): string {
-  const meta = [
-    formatProps(job.proposal_count),
-    formatSpend(job.client_lifetime_spend),
-    job.client_country,
-  ].filter(Boolean).join(" · ");
-
-  const isStretch = verdict.verdict === "warm" && verdict.reasons.includes(LEARNABLE_STACK_REASON);
-  const header =
-    verdict.verdict === "hot"
-      ? "🔥 HOT Upwork"
-      : isStretch
-      ? "💼 Upwork — stretch stack"
-      : "💼 Upwork job";
-
-  const budgetLine = `💰 ${job.budget || "budget not listed"}`;
-  const metaLine = meta ? `📊 ${meta}\n` : "";
-  const disclosureLine = isStretch ? "⚠️ Pitch with honest disclosure\n" : "";
-
-  return `${header}\n${job.title}\n${budgetLine}\n${metaLine}${disclosureLine}${job.job_url}`;
+// SMS body for a newly-ingested HOT job. WARM and COLD don't text at all
+// per the 2026 rules — they just land in the pipeline.
+// Format: "HOT: <title> | <budget> | Posted <time> | <first 50 chars of desc>"
+// followed by the job URL on its own line.
+function buildSms(job: ParsedJob): string {
+  const descSnippet = (job.description || "").trim().slice(0, 50);
+  const descSuffix = (job.description || "").length > 50 ? "..." : "";
+  const firstLine = [
+    `HOT: ${job.title}`,
+    formatBudget(job),
+    `Posted ${formatPosted(job.posted_at)}`,
+    descSnippet ? `${descSnippet}${descSuffix}` : null,
+  ].filter(Boolean).join(" | ");
+  return `${firstLine}\n${job.job_url}`;
 }
 
 // Pull Upwork alert emails from the owner's Gmail inbox, parse jobs, insert
@@ -414,16 +438,21 @@ export async function ingestUpworkEmails(): Promise<number> {
           const { verdict, reasons } = scoreUpworkJob({
             title: job.title,
             description: job.description,
-            skills: job.skills,
-            job_type: job.job_type,
+            posted_at: job.posted_at,
+            client_payment_verified: job.client_payment_verified,
             hourly_min: job.hourly_min,
             hourly_max: job.hourly_max,
             fixed_budget: job.fixed_budget,
-            proposal_count: job.proposal_count,
-            client_country: job.client_country,
-            client_lifetime_spend: job.client_lifetime_spend,
-            client_payment_verified: job.client_payment_verified,
           });
+
+          // Per-job log line so the verdict decision is auditable from
+          // Vercel function logs (user asked for this explicitly).
+          console.log(
+            `[upwork-email] ${verdict.toUpperCase()} — "${job.title.slice(0, 60)}" — ${reasons.join(" / ")}`
+          );
+
+          // SKIP = don't insert at all. Stale jobs and scam phrases.
+          if (verdict === "skip") continue;
 
           // On conflict, refresh parser-derived fields when the existing row
           // has bad/empty values (earlier ingestion runs stored title="more"
@@ -482,9 +511,11 @@ export async function ingestUpworkEmails(): Promise<number> {
           const wasInserted = result.length > 0 && result[0].was_inserted === true;
           if (wasInserted) {
             newCount++;
-            if (verdict !== "auto_skip" && process.env.OWNER_PHONE) {
+            // Text only on HOT per the 2026 rules. WARM/COLD go to the
+            // pipeline silently.
+            if (verdict === "hot" && process.env.OWNER_PHONE) {
               try {
-                await sendMessage(process.env.OWNER_PHONE, buildSms(job, { verdict, reasons }));
+                await sendMessage(process.env.OWNER_PHONE, buildSms(job));
               } catch (err) {
                 console.error(`[upwork-email] Text notification failed for ${job.upwork_id}:`, err);
               }
