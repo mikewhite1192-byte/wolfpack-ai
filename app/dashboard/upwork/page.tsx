@@ -170,6 +170,8 @@ export default function UpworkPage() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [wonModalId, setWonModalId] = useState<string | null>(null);
   const [wonValue, setWonValue] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const isAdmin =
     isLoaded &&
@@ -199,6 +201,59 @@ export default function UpworkPage() {
     }
     fetchJobs();
   }, [isLoaded, isAdmin, router, fetchJobs]);
+
+  // Clear selection when tab or range changes — stale ids from a different
+  // view would silently apply to the bulk action otherwise.
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [tab, range]);
+
+  const showCheckboxes = tab === "new" || tab === "new_high";
+  const selectableIds = showCheckboxes
+    ? jobs.filter(j => j.status === "new").map(j => j.id)
+    : [];
+  const allSelected = selectableIds.length > 0 && selectableIds.every(id => selectedIds.has(id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds(prev => {
+      if (allSelected) return new Set();
+      const next = new Set(prev);
+      selectableIds.forEach(id => next.add(id));
+      return next;
+    });
+  }
+
+  async function handleBulkSkip() {
+    if (selectedIds.size === 0) return;
+    setBulkBusy(true);
+    try {
+      const res = await fetch("/api/upwork/jobs/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds), status: "skipped" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Bulk skip failed");
+        return;
+      }
+      setSelectedIds(new Set());
+      fetchJobs();
+    } catch {
+      alert("Bulk skip failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   async function handlePoll() {
     setPolling(true);
@@ -485,21 +540,54 @@ export default function UpworkPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
+          {showCheckboxes && selectableIds.length > 0 && (
+            <label
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-medium cursor-pointer select-none"
+              style={{ color: T.muted, background: "rgba(255,255,255,0.02)" }}
+            >
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleSelectAll}
+                className="cursor-pointer"
+                style={{ accentColor: T.orange }}
+              />
+              {allSelected ? "Deselect all" : `Select all ${selectableIds.length} on this tab`}
+            </label>
+          )}
           {jobs.map((job) => {
             const isExpanded = expandedId === job.id;
             const isEditingThis = editingProposal === job.id;
             const theme = verdictTheme(job.verdict);
+            const isSelectable = showCheckboxes && job.status === "new";
+            const isChecked = selectedIds.has(job.id);
 
             return (
               <div
                 key={job.id}
-                className="rounded-xl p-4"
+                className="rounded-xl p-4 flex gap-3"
                 style={{
                   background: T.surface,
                   border: `1px solid ${T.border}`,
                   borderLeft: `4px solid ${theme.color}`,
                 }}
               >
+                {isSelectable && (
+                  <div
+                    className="flex-shrink-0 flex items-start pt-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleSelect(job.id)}
+                      className="cursor-pointer w-4 h-4"
+                      style={{ accentColor: T.orange }}
+                      aria-label={`Select ${job.title}`}
+                    />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
                 {/* Top row — click anywhere to expand/collapse */}
                 <div
                   className="flex items-start justify-between gap-3 mb-2 cursor-pointer"
@@ -987,6 +1075,7 @@ export default function UpworkPage() {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             );
           })}
@@ -1171,6 +1260,47 @@ export default function UpworkPage() {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Sticky bulk action bar — appears when any row is checked on the
+          New / New (Hot/Warm) tabs. Lets Mike skip multiple leads in one go. */}
+      {selectedIds.size > 0 && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg"
+          style={{
+            background: T.surface,
+            border: `1px solid ${T.orange}60`,
+            boxShadow: `0 8px 24px rgba(0,0,0,0.5)`,
+          }}
+        >
+          <span className="text-xs font-medium" style={{ color: T.text }}>
+            {selectedIds.size} selected
+          </span>
+          <button
+            onClick={handleBulkSkip}
+            disabled={bulkBusy}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50"
+            style={{
+              background: T.orange,
+              border: "none",
+              color: "#fff",
+            }}
+          >
+            {bulkBusy ? "Skipping..." : `Skip ${selectedIds.size}`}
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            disabled={bulkBusy}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer disabled:opacity-50"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid ${T.border}`,
+              color: T.muted,
+            }}
+          >
+            Clear
+          </button>
         </div>
       )}
     </div>
