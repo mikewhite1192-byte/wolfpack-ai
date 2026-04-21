@@ -161,15 +161,15 @@ export async function book_demo(
     const eventAny = event as unknown as Record<string, unknown>;
     const eventId = eventAny.id as string;
 
-    // Update lead record
+    // Update lead record — prod schema has no demo_calendar_event_id / updated_at
     await sql`
       UPDATE caller_leads SET
         status = 'demo_booked',
-        demo_time = ${startDate.toISOString()},
-        demo_calendar_event_id = ${eventId},
-        updated_at = NOW()
+        outcome = 'demo_booked',
+        demo_time = ${startDate.toISOString()}
       WHERE id = ${leadId}
     `;
+    void eventId;
 
     const dayDisplay = startDate.toLocaleDateString("en-US", {
       weekday: "long",
@@ -206,14 +206,11 @@ export async function signal_outcome(
 ): Promise<{ acknowledged: boolean }> {
   console.log(`[caller] Outcome for ${leadId}: ${result}`);
 
-  const updates: Record<string, string> = { status: result };
-  if (demoTime) updates.demo_time = new Date(demoTime).toISOString();
-
   await sql`
     UPDATE caller_leads SET
       status = ${result},
-      demo_time = ${demoTime ? new Date(demoTime).toISOString() : null},
-      updated_at = NOW()
+      outcome = ${result},
+      demo_time = ${demoTime ? new Date(demoTime).toISOString() : null}
     WHERE id = ${leadId}
   `;
 

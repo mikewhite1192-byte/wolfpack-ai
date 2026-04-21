@@ -53,7 +53,7 @@ interface CurrentLead {
   contractor_type: string;
   city: string;
   phone: string;
-  call_started_at: string;
+  call_started_at?: string; // only present when the lead is actively being called
 }
 
 interface DemoEntry {
@@ -128,6 +128,7 @@ export default function CallerPage() {
     demos_booked: 0,
   });
   const [currentLead, setCurrentLead] = useState<CurrentLead | null>(null);
+  const [upNext, setUpNext] = useState<CurrentLead | null>(null);
   const [demos, setDemos] = useState<DemoEntry[]>([]);
   const [callLog, setCallLog] = useState<CallLogEntry[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
@@ -139,19 +140,23 @@ export default function CallerPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dialerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [lastDialerMsg, setLastDialerMsg] = useState<string>("");
+  const [range, setRange] = useState<"today" | "yesterday" | "7d" | "30d" | "all">("today");
 
   const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
   const isAdmin = ADMIN_EMAILS.includes(email);
 
-  // Fetch status
+  // Fetch status. The `range` dependency matters — without it, the
+  // polling interval keeps calling a stale closure and the stats/log
+  // never re-fetch when the user changes the date filter.
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/caller/status");
+      const res = await fetch(`/api/caller/status?range=${range}`);
       if (!res.ok) return;
       const data = await res.json();
       setSession(data.session);
       setStats(data.stats || stats);
       setCurrentLead(data.currentLead);
+      setUpNext(data.upNext || null);
       setDemos(data.demos || []);
       setCallLog(data.callLog || []);
       setPendingCount(data.pendingCount || 0);
@@ -159,7 +164,7 @@ export default function CallerPage() {
       /* ignore polling errors */
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [range]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -174,7 +179,7 @@ export default function CallerPage() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [isLoaded, isAdmin, router, fetchStatus]);
+  }, [isLoaded, isAdmin, router, fetchStatus, range]);
 
   // ── Dialer trigger loop ──────────────────────────────────────
   // While the campaign is RUNNING, poll /api/caller/start-call every 30
@@ -364,6 +369,33 @@ export default function CallerPage() {
         </div>
       </div>
 
+      {/* Date Range Selector */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: T.muted }}>
+          Range
+        </span>
+        {([
+          ["today", "Today"],
+          ["yesterday", "Yesterday"],
+          ["7d", "7 Days"],
+          ["30d", "30 Days"],
+          ["all", "All Time"],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setRange(key)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            style={{
+              background: range === key ? T.orange : T.surface,
+              color: range === key ? "white" : T.text,
+              border: `1px solid ${range === key ? T.orange : T.border}`,
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
@@ -402,7 +434,7 @@ export default function CallerPage() {
           <div className="flex items-center gap-2 mb-4">
             <PhoneCall className="w-4 h-4" style={{ color: T.orange }} />
             <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: T.orange }}>
-              Currently Calling
+              {currentLead ? "Currently Calling" : (upNext && isRunning ? "Up Next" : "Currently Calling")}
             </span>
           </div>
           {currentLead ? (
@@ -422,6 +454,15 @@ export default function CallerPage() {
                     {formatDuration(callTimer)}
                   </span>
                 </div>
+              </div>
+            </div>
+          ) : upNext && isRunning ? (
+            <div>
+              <div className="text-base font-bold mb-1" style={{ color: T.text }}>
+                {upNext.business_name}
+              </div>
+              <div className="text-xs" style={{ color: T.muted }}>
+                {upNext.contractor_type} &middot; {upNext.city}
               </div>
             </div>
           ) : (
