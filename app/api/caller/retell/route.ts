@@ -10,82 +10,9 @@ import {
 import { sendDemoConfirmations } from "@/lib/caller/confirmations";
 import { sendPostCallFollowup } from "@/lib/caller/followup";
 import { markWebhookProcessed } from "@/lib/webhook-idempotency";
+import { resolveOutcome } from "@/lib/caller/outcome";
 
 const sql = neon(process.env.DATABASE_URL!);
-
-// ── Outcome resolution ──────────────────────────────────────────────
-// Collapse Retell's 30+ possible disconnection_reason values (see
-// retell-sdk's call.d.ts) down to the six we track in CallerOutcome.
-// Priority order inside resolveOutcome:
-//   1. signal_outcome tool call landed call_outcome on custom_analysis_data
-//   2. metadata.outcome (rare, kept for compatibility)
-//   3. call_analysis.in_voicemail is the explicit voicemail flag — trust it
-//      over disconnection_reason, because when the agent leaves a voicemail
-//      message and hangs up, disconnection_reason is `agent_hangup`, not
-//      `voicemail_reached`. Without this check voicemails get bucketed as
-//      no_answer (which is what was tanking the dashboard's vm count).
-//   4. Explicit disconnection_reason mapping
-//   5. Fallback: treat unknowns with real audio duration as hung_up,
-//      otherwise no_answer
-type RetellCall = {
-  disconnection_reason?: string;
-  duration_ms?: number;
-  transcript?: string | null;
-  metadata?: { outcome?: string } & Record<string, unknown>;
-  call_analysis?: {
-    in_voicemail?: boolean;
-    custom_analysis_data?: Record<string, unknown>;
-  };
-};
-
-function resolveOutcome(call: RetellCall): string {
-  const analysisOutcome =
-    (call.call_analysis?.custom_analysis_data?.call_outcome as string | undefined) ||
-    call.metadata?.outcome;
-  if (analysisOutcome) return analysisOutcome;
-
-  if (call.call_analysis?.in_voicemail === true) return "voicemail";
-
-  const reason = call.disconnection_reason;
-  switch (reason) {
-    case "voicemail_reached":
-      return "voicemail";
-    case "user_hangup":
-      return "hung_up";
-    case "call_transfer":
-    case "transfer_bridged":
-      return "callback_requested";
-    case "dial_busy":
-    case "dial_failed":
-    case "dial_no_answer":
-    case "invalid_destination":
-    case "registered_call_timeout":
-    case "user_declined":
-    case "marked_as_spam":
-    case "scam_detected":
-    case "telephony_provider_permission_denied":
-    case "telephony_provider_unavailable":
-    case "sip_routing_error":
-    case "no_valid_payment":
-    case "concurrency_limit_reached":
-    case "ivr_reached":
-    case "transfer_cancelled":
-      return "no_answer";
-    case "inactivity":
-    case "agent_hangup":
-    case "max_duration_reached": {
-      // The agent ended the call. If there was meaningful audio time (>10s)
-      // and signal_outcome never fired, treat it as a hang-up from the
-      // contact's side — they answered but the conversation didn't resolve.
-      // Sub-10s calls are almost always voicemail beeps the agent reacted to.
-      const durationS = call.duration_ms ? call.duration_ms / 1000 : 0;
-      return durationS > 10 ? "hung_up" : "voicemail";
-    }
-    default:
-      // Errors (error_*), unknowns: no pickup
-      return "no_answer";
-  }
-}
 
 // POST /api/caller/retell — Retell AI webhook events
 export async function POST(req: Request) {
