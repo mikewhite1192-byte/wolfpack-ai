@@ -35,7 +35,7 @@ Wolf Pack AI is an end-to-end sales automation platform built for electricians, 
 
 ## Architecture highlights
 
-- **Cron-driven background work.** Eight scheduled jobs in [vercel.json](vercel.json) handle AI follow-ups, reminders, email warmup (send/reply/bounce), GBP review processing, Upwork lead ingestion (every minute), and monthly affiliate payouts.
+- **Cron-driven background work.** Seven scheduled jobs in [vercel.json](vercel.json) handle AI follow-ups, reminders, email warmup (send/reply/bounce), GBP review processing, and monthly affiliate payouts.
 - **Webhook hardening.** Inbound webhooks from Clerk, Twilio (SMS/voice/recording), SES, Facebook, Google, and Loop all go through an idempotency layer ([lib/webhook-idempotency.ts](lib/webhook-idempotency.ts)) so retries and replays never double-process.
 - **Rate limiting.** Zero-dep in-memory limiter ([lib/rate-limit.ts](lib/rate-limit.ts)) protects AI endpoints and the public scoring tool from abuse.
 - **Multi-tenant workspaces.** Every request is scoped to a workspace id resolved from the Clerk session ([lib/workspace.ts](lib/workspace.ts)), so a single deployment serves many home-services businesses.

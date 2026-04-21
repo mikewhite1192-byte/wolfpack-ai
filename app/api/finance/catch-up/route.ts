@@ -35,7 +35,6 @@ KNOWN BUSINESS TOOLS & SERVICES (flag these as 100% business):
 - Zoho Mail
 - Google Workspace
 - Skool
-- Upwork (fees)
 - GoHighLevel / GHL
 - Stripe (fees deducted from revenue — may not appear as charges)
 - GitHub / GitLab

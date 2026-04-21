@@ -7,7 +7,6 @@
     { "path": "/api/outreach/warmup?type=reply&batch=0", "schedule": "30 */2 * * *" },
     { "path": "/api/outreach/warmup?type=bounce&batch=0", "schedule": "0 */12 * * *" },
     { "path": "/api/gbp/reviews?process=true", "schedule": "0 */6 * * *" },
-    { "path": "/api/upwork/poll", "schedule": "* * * * *" },
     { "path": "/api/cron/affiliate-payouts", "schedule": "0 10 1 * *" }
   ]
 }

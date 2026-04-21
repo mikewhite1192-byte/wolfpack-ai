@@ -19,7 +19,7 @@ interface Rule {
 const RULES: Rule[] = [
   // ── Advertising & Marketing ──────────────────────────────
   {
-    keywords: ["google ads", "meta ads", "facebook ads", "tiktok ads", "linkedin ads", "advertising", "marketing", "ads manager", "fiverr", "upwork", "canva", "mailchimp", "constant contact", "hootsuite", "buffer"],
+    keywords: ["google ads", "meta ads", "facebook ads", "tiktok ads", "linkedin ads", "advertising", "marketing", "ads manager", "fiverr", "canva", "mailchimp", "constant contact", "hootsuite", "buffer"],
     match: { category: "Advertising", subcategory: "Digital Marketing", isDeductible: true, deductionPct: 100, irsReference: "Schedule C Line 8" },
   },
   {
