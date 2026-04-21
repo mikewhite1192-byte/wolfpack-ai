@@ -127,6 +127,10 @@ export async function GET(request: NextRequest) {
     // Currently calling lead (if session is running). called_at is exposed
     // as call_started_at too so the dashboard's live call timer can bind to
     // a consistent field name.
+    // Only treat a row as "currently calling" if it was dialed within the
+    // last 5 minutes. Otherwise it's a stuck row from a call whose end
+    // webhook never arrived, and the dashboard's live timer would run
+    // indefinitely (we saw 128+ min). Retell calls should never take >5 min.
     let currentLead = null;
     if (session && session.status === "running") {
       const current = await sql`
@@ -134,6 +138,7 @@ export async function GET(request: NextRequest) {
                called_at, called_at AS call_started_at
         FROM caller_leads
         WHERE status = 'calling'
+          AND called_at > NOW() - INTERVAL '5 minutes'
         ORDER BY called_at DESC LIMIT 1
       `;
       currentLead = current.length > 0 ? current[0] : null;
