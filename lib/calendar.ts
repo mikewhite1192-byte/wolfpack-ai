@@ -12,7 +12,7 @@ export function getTzOffset(tz: string, refDate: Date = new Date()): string {
       const match = offsetPart.value.match(/GMT([+-]\d+)/);
       if (match) {
         const hours = parseInt(match[1]);
-        return `${hours >= 0 ? "+" : ""}${String(Math.abs(hours)).padStart(2, "0")}:00`;
+        return `${hours >= 0 ? "+" : "-"}${String(Math.abs(hours)).padStart(2, "0")}:00`;
       }
     }
   } catch { /* fallback */ }
