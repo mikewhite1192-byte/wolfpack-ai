@@ -8,6 +8,7 @@
     { "path": "/api/outreach/warmup?type=bounce&batch=0", "schedule": "0 */12 * * *" },
     { "path": "/api/gbp/reviews?process=true", "schedule": "0 */6 * * *" },
     { "path": "/api/cron/affiliate-payouts", "schedule": "0 10 1 * *" },
-    { "path": "/api/cron/caller-stuck-calls", "schedule": "0 * * * *" }
+    { "path": "/api/cron/caller-stuck-calls", "schedule": "0 * * * *" },
+    { "path": "/api/cron/mercury-sync", "schedule": "*/15 * * * *" }
   ]
 }

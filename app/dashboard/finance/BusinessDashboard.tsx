@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { Upload, TrendingUp, TrendingDown, DollarSign, FileText, AlertTriangle } from "lucide-react";
 import { calculateTaxStrategies, type TaxInput, type TaxCalculation } from "@/lib/finance/tax-engine";
+import MercuryBalances from "./MercuryBalances";
 
 const T = {
   orange: "#E86A2A",
@@ -161,6 +162,9 @@ export default function BusinessDashboard() {
 
   return (
     <div>
+      {/* Mercury live balances */}
+      <MercuryBalances workspace="business" />
+
       {/* Upload bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, padding: "12px 16px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10 }}>
         <Upload style={{ width: 16, height: 16, color: T.orange }} />

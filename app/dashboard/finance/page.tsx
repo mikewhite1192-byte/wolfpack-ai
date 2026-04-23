@@ -37,6 +37,8 @@ import SpendingAnalysis from "./SpendingAnalysis";
 import CreditScoreTracker from "./CreditScoreTracker";
 import InvestmentTracker from "./InvestmentTracker";
 import AIBrief from "./AIBrief";
+import MercuryBalances from "./MercuryBalances";
+import BusinessCandidateReview from "./BusinessCandidateReview";
 
 const T = {
   orange: "#E86A2A",
@@ -54,7 +56,7 @@ const T = {
 const ADMIN_EMAILS = ["info@thewolfpackco.com", "mikewhite1192@gmail.com"];
 
 type MainTab = "business" | "personal";
-type BizSubTab = "dashboard" | "catch-up" | "statements" | "tax-strategy" | "retirement" | "mileage" | "filing";
+type BizSubTab = "dashboard" | "catch-up" | "reclassify" | "statements" | "tax-strategy" | "retirement" | "mileage" | "filing";
 type PersonalSubTab = "net-worth" | "spending" | "debt" | "credit" | "investments" | "retirement" | "savings" | "brief";
 
 // ── Placeholder Section ──────────────────────────────────────────
@@ -93,6 +95,7 @@ export default function FinancePage() {
   const BIZ_TABS: { key: BizSubTab; label: string; icon: React.ElementType }[] = [
     { key: "dashboard", label: "Dashboard", icon: BarChart3 },
     { key: "catch-up", label: "Smart Scan", icon: Search },
+    { key: "reclassify", label: "Expense Review", icon: Target },
     { key: "statements", label: "Statements", icon: Upload },
     { key: "tax-strategy", label: "Tax Strategy", icon: Calculator },
     { key: "retirement", label: "Retirement", icon: PiggyBank },
@@ -191,6 +194,7 @@ export default function FinancePage() {
         <>
           {bizSub === "dashboard" && <BusinessDashboard />}
           {bizSub === "catch-up" && <CatchUp />}
+          {bizSub === "reclassify" && <BusinessCandidateReview />}
           {bizSub === "statements" && (
             <Placeholder
               icon={Upload}
@@ -207,6 +211,7 @@ export default function FinancePage() {
 
       {mainTab === "personal" && (
         <>
+          <MercuryBalances workspace="personal" />
           {personalSub === "net-worth" && <NetWorthDashboard />}
           {personalSub === "spending" && <SpendingAnalysis />}
           {personalSub === "debt" && <DebtPayoff />}
