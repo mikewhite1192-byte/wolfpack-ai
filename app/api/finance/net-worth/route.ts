@@ -13,58 +13,88 @@ async function requireAdmin() {
   if (!ADMIN_EMAILS.includes(email)) throw new Error("Forbidden");
 }
 
-// GET /api/finance/net-worth — compute current net worth from account balances
+// Computes personal + business net worth as the union of:
+// - Mercury accounts (live sync, source of truth for Mike's banking)
+// - Legacy personal_accounts (manual entries the user may add for external
+//   cards, 401k, etc. that Mercury can't see)
+async function computeBalances() {
+  // Mercury personal: split by kind for the assets breakdown.
+  const mercuryPersonal = await sql`
+    SELECT kind, COALESCE(SUM(current_balance), 0)::numeric AS total
+    FROM mercury_accounts
+    WHERE workspace = 'personal' AND archived = false
+    GROUP BY kind
+  `;
+  const mp: Record<string, number> = {};
+  for (const r of mercuryPersonal) mp[r.kind as string] = parseFloat(String(r.total)) || 0;
+
+  // Mercury business: one aggregate (business net worth).
+  const mercuryBusinessRows = await sql`
+    SELECT COALESCE(SUM(current_balance), 0)::numeric AS total
+    FROM mercury_accounts
+    WHERE workspace = 'business' AND archived = false
+  `;
+  const mercuryBusiness = parseFloat(String(mercuryBusinessRows[0]?.total)) || 0;
+
+  // Legacy personal_accounts (for manual external accounts).
+  const legacy = await sql`
+    SELECT type, COALESCE(SUM(current_balance), 0)::numeric AS total
+    FROM personal_accounts
+    WHERE is_active = TRUE
+    GROUP BY type
+  `;
+  const lg: Record<string, number> = {};
+  for (const r of legacy) lg[r.type as string] = parseFloat(String(r.total)) || 0;
+
+  // Merge. Mercury "checking" + legacy "checking" etc. Mercury doesn't
+  // surface retirement accounts, so those only come from legacy.
+  const checking = (mp["checking"] || 0) + (lg["checking"] || 0);
+  const savings = (mp["savings"] || 0) + (lg["savings"] || 0);
+  const investments = (mp["investment"] || 0) + (lg["investment"] || 0);
+  const retirement = lg["retirement"] || 0;
+  const treasury = mp["treasury"] || 0;
+  // Mercury credit card kind is "creditCard"; legacy uses "credit_card".
+  const creditCards = (mp["creditCard"] || 0) + (lg["credit_card"] || 0);
+
+  return {
+    checking,
+    savings,
+    investments,
+    retirement,
+    treasury,
+    creditCards,
+    businessNetWorth: mercuryBusiness,
+  };
+}
+
+// GET /api/finance/net-worth
 export async function GET() {
   try {
     await requireAdmin();
+    const b = await computeBalances();
 
-    // Personal accounts
-    const accounts = await sql`
-      SELECT type, COALESCE(SUM(current_balance), 0)::numeric AS total
-      FROM personal_accounts
-      WHERE is_active = TRUE
-      GROUP BY type
-    `;
-
-    const byType: Record<string, number> = {};
-    for (const a of accounts) byType[a.type as string] = parseFloat(String(a.total)) || 0;
-
-    const checking = byType["checking"] || 0;
-    const savings = byType["savings"] || 0;
-    const investments = byType["investment"] || 0;
-    const retirement = byType["retirement"] || 0;
-    const creditCards = byType["credit_card"] || 0; // These are NEGATIVE (debt)
-
-    const totalAssets = checking + savings + investments + retirement;
-    const totalLiabilities = Math.abs(creditCards); // credit card balances are debts
+    const totalAssets = b.checking + b.savings + b.investments + b.retirement + b.treasury;
+    const totalLiabilities = Math.abs(b.creditCards);
     const personalNetWorth = totalAssets - totalLiabilities;
+    const combinedNetWorth = personalNetWorth + b.businessNetWorth;
 
-    // Business net worth (from biz statements — just the latest closing balance)
-    const bizBalance = await sql`
-      SELECT closing_balance FROM biz_statements ORDER BY month DESC LIMIT 1
-    `;
-    const businessNetWorth = parseFloat(String(bizBalance[0]?.closing_balance)) || 0;
-
-    const combinedNetWorth = personalNetWorth + businessNetWorth;
-
-    // Historical snapshots
     const history = await sql`
       SELECT snapshot_date, net_worth, combined_net_worth
       FROM personal_net_worth_snapshots
       ORDER BY snapshot_date DESC
       LIMIT 12
     `;
-
-    // Previous month's net worth for comparison
     const prevSnapshot = history.length > 0 ? history[0] : null;
-    const monthChange = prevSnapshot ? personalNetWorth - (parseFloat(String(prevSnapshot.net_worth)) || 0) : 0;
+    const monthChange = prevSnapshot
+      ? personalNetWorth - (parseFloat(String(prevSnapshot.net_worth)) || 0)
+      : 0;
 
     return NextResponse.json({
       assets: {
-        checking,
-        savings,
-        investments,
-        retirement,
+        checking: b.checking,
+        savings: b.savings,
+        investments: b.investments,
+        retirement: b.retirement,
         total: totalAssets,
       },
       liabilities: {
@@ -72,7 +102,7 @@ export async function GET() {
         total: totalLiabilities,
       },
       personalNetWorth,
-      businessNetWorth,
+      businessNetWorth: b.businessNetWorth,
       combinedNetWorth,
       monthChange,
       history: history.reverse(),
@@ -82,36 +112,25 @@ export async function GET() {
   }
 }
 
-// POST /api/finance/net-worth — save a snapshot (triggered after uploads)
+// POST /api/finance/net-worth — save a snapshot row (for the history chart)
 export async function POST() {
   try {
     await requireAdmin();
+    const b = await computeBalances();
 
-    // Recalculate from accounts
-    const accounts = await sql`
-      SELECT type, COALESCE(SUM(current_balance), 0)::numeric AS total
-      FROM personal_accounts WHERE is_active = TRUE GROUP BY type
-    `;
-    const byType: Record<string, number> = {};
-    for (const a of accounts) byType[a.type as string] = parseFloat(String(a.total)) || 0;
-
-    const checkingSavings = (byType["checking"] || 0) + (byType["savings"] || 0);
-    const investments = byType["investment"] || 0;
-    const retirement = byType["retirement"] || 0;
-    const totalAssets = checkingSavings + investments + retirement;
-    const creditCardDebt = Math.abs(byType["credit_card"] || 0);
+    const checkingSavings = b.checking + b.savings + b.treasury;
+    const totalAssets = checkingSavings + b.investments + b.retirement;
+    const creditCardDebt = Math.abs(b.creditCards);
     const netWorth = totalAssets - creditCardDebt;
-
-    const bizBalance = await sql`SELECT closing_balance FROM biz_statements ORDER BY month DESC LIMIT 1`;
-    const businessNetWorth = parseFloat(String(bizBalance[0]?.closing_balance)) || 0;
 
     const result = await sql`
       INSERT INTO personal_net_worth_snapshots (
         snapshot_date, total_assets, checking_savings, investments, retirement,
         total_liabilities, credit_card_debt, net_worth, business_net_worth, combined_net_worth
       ) VALUES (
-        CURRENT_DATE, ${totalAssets}, ${checkingSavings}, ${investments}, ${retirement},
-        ${creditCardDebt}, ${creditCardDebt}, ${netWorth}, ${businessNetWorth}, ${netWorth + businessNetWorth}
+        CURRENT_DATE, ${totalAssets}, ${checkingSavings}, ${b.investments}, ${b.retirement},
+        ${creditCardDebt}, ${creditCardDebt}, ${netWorth}, ${b.businessNetWorth},
+        ${netWorth + b.businessNetWorth}
       )
       RETURNING *
     `;
