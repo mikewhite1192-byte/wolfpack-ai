@@ -39,7 +39,6 @@ import InvestmentTracker from "./InvestmentTracker";
 import AIBrief from "./AIBrief";
 import MercuryBalances from "./MercuryBalances";
 import BusinessCandidateReview from "./BusinessCandidateReview";
-import Statements from "./Statements";
 
 const T = {
   orange: "#E86A2A",
@@ -57,8 +56,8 @@ const T = {
 const ADMIN_EMAILS = ["info@thewolfpackco.com", "mikewhite1192@gmail.com"];
 
 type MainTab = "business" | "personal";
-type BizSubTab = "dashboard" | "catch-up" | "reclassify" | "statements" | "tax-strategy" | "retirement" | "mileage" | "filing";
-type PersonalSubTab = "net-worth" | "statements" | "spending" | "debt" | "credit" | "investments" | "retirement" | "savings" | "brief";
+type BizSubTab = "dashboard" | "catch-up" | "reclassify" | "tax-strategy" | "retirement" | "mileage" | "filing";
+type PersonalSubTab = "net-worth" | "spending" | "debt" | "credit" | "investments" | "retirement" | "savings" | "brief";
 
 // ── Placeholder Section ──────────────────────────────────────────
 // Each module gets built out in subsequent phases. For now, show a
@@ -97,7 +96,6 @@ export default function FinancePage() {
     { key: "dashboard", label: "Dashboard", icon: BarChart3 },
     { key: "catch-up", label: "Smart Scan", icon: Search },
     { key: "reclassify", label: "Expense Review", icon: Target },
-    { key: "statements", label: "Statements", icon: Upload },
     { key: "tax-strategy", label: "Tax Strategy", icon: Calculator },
     { key: "retirement", label: "Retirement", icon: PiggyBank },
     { key: "mileage", label: "Mileage", icon: Car },
@@ -106,7 +104,6 @@ export default function FinancePage() {
 
   const PERSONAL_TABS: { key: PersonalSubTab; label: string; icon: React.ElementType }[] = [
     { key: "net-worth", label: "Net Worth", icon: Wallet },
-    { key: "statements", label: "Statements", icon: Upload },
     { key: "spending", label: "Spending", icon: CreditCard },
     { key: "debt", label: "Debt Payoff", icon: Target },
     { key: "credit", label: "Credit Score", icon: Shield },
@@ -197,7 +194,6 @@ export default function FinancePage() {
           {bizSub === "dashboard" && <BusinessDashboard />}
           {bizSub === "catch-up" && <CatchUp />}
           {bizSub === "reclassify" && <BusinessCandidateReview />}
-          {bizSub === "statements" && <Statements variant="business" />}
           {bizSub === "tax-strategy" && <QuarterlyPayments />}
           {bizSub === "retirement" && <RetirementContributions />}
           {bizSub === "mileage" && <MileageLogger />}
@@ -209,7 +205,6 @@ export default function FinancePage() {
         <>
           <MercuryBalances workspace="personal" />
           {personalSub === "net-worth" && <NetWorthDashboard />}
-          {personalSub === "statements" && <Statements variant="personal" />}
           {personalSub === "spending" && <SpendingAnalysis />}
           {personalSub === "debt" && <DebtPayoff />}
           {personalSub === "credit" && <CreditScoreTracker />}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Sparkles, CheckCircle2, XCircle, Repeat, RefreshCw, TrendingUp } from "lucide-react";
+import ManualBusinessExpense from "./ManualBusinessExpense";
 
 const T = {
   orange: "#E86A2A",
@@ -157,6 +158,9 @@ export default function BusinessCandidateReview() {
 
   return (
     <div>
+      {/* Manual entry panel for pre-Mercury historical business expenses */}
+      <ManualBusinessExpense onAdded={load} />
+
       {/* Header with counts + run button */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20, padding: 16, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12 }}>
         <div style={{ width: 40, height: 40, borderRadius: 10, background: `${T.orange}15`, border: `1px solid ${T.orange}30`, display: "flex", alignItems: "center", justifyContent: "center" }}>

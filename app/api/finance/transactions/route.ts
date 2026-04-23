@@ -71,6 +71,63 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// POST /api/finance/transactions — create a manual business expense
+// (used for pre-Mercury historical spend that lived on personal cards).
+// Not wired for personal creation; personal txns come from Mercury or PDFs.
+export async function POST(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const user = await currentUser();
+    const email = user?.emailAddresses?.[0]?.emailAddress?.toLowerCase() || "";
+    if (!ADMIN_EMAILS.includes(email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const body = await req.json();
+    const {
+      type = "business",
+      date,
+      description,
+      amount,
+      category,
+      subcategory,
+      is_deductible = true,
+      deduction_pct = 100,
+      irs_reference,
+      notes,
+    } = body;
+
+    if (type !== "business") {
+      return NextResponse.json({ error: "Manual creation only supported for business" }, { status: 400 });
+    }
+    if (!date || !description || typeof amount !== "number" || !category) {
+      return NextResponse.json(
+        { error: "Missing required fields: date, description, amount, category" },
+        { status: 400 },
+      );
+    }
+
+    // Manual biz expenses are negative (money spent). Accept positive input and flip.
+    const signedAmount = amount > 0 ? -Math.abs(amount) : amount;
+
+    const result = await sql`
+      INSERT INTO biz_transactions (
+        statement_id, date, description, amount, type,
+        category, subcategory, is_deductible, deduction_pct, irs_reference, notes
+      ) VALUES (
+        NULL, ${date}, ${description}, ${signedAmount}, 'expense',
+        ${category}, ${subcategory ?? null}, ${is_deductible}, ${deduction_pct},
+        ${irs_reference ?? null}, ${notes ?? null}
+      )
+      RETURNING id
+    `;
+
+    return NextResponse.json({ ok: true, id: result[0].id });
+  } catch (err) {
+    console.error("[finance/transactions POST]", err);
+    return NextResponse.json({ error: "Create failed" }, { status: 500 });
+  }
+}
+
 // PATCH /api/finance/transactions — update a transaction's category
 export async function PATCH(req: NextRequest) {
   try {
