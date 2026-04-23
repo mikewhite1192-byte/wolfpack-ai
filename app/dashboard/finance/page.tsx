@@ -39,6 +39,7 @@ import InvestmentTracker from "./InvestmentTracker";
 import AIBrief from "./AIBrief";
 import MercuryBalances from "./MercuryBalances";
 import BusinessCandidateReview from "./BusinessCandidateReview";
+import Statements from "./Statements";
 
 const T = {
   orange: "#E86A2A",
@@ -57,7 +58,7 @@ const ADMIN_EMAILS = ["info@thewolfpackco.com", "mikewhite1192@gmail.com"];
 
 type MainTab = "business" | "personal";
 type BizSubTab = "dashboard" | "catch-up" | "reclassify" | "statements" | "tax-strategy" | "retirement" | "mileage" | "filing";
-type PersonalSubTab = "net-worth" | "spending" | "debt" | "credit" | "investments" | "retirement" | "savings" | "brief";
+type PersonalSubTab = "net-worth" | "statements" | "spending" | "debt" | "credit" | "investments" | "retirement" | "savings" | "brief";
 
 // ── Placeholder Section ──────────────────────────────────────────
 // Each module gets built out in subsequent phases. For now, show a
@@ -105,6 +106,7 @@ export default function FinancePage() {
 
   const PERSONAL_TABS: { key: PersonalSubTab; label: string; icon: React.ElementType }[] = [
     { key: "net-worth", label: "Net Worth", icon: Wallet },
+    { key: "statements", label: "Statements", icon: Upload },
     { key: "spending", label: "Spending", icon: CreditCard },
     { key: "debt", label: "Debt Payoff", icon: Target },
     { key: "credit", label: "Credit Score", icon: Shield },
@@ -195,13 +197,7 @@ export default function FinancePage() {
           {bizSub === "dashboard" && <BusinessDashboard />}
           {bizSub === "catch-up" && <CatchUp />}
           {bizSub === "reclassify" && <BusinessCandidateReview />}
-          {bizSub === "statements" && (
-            <Placeholder
-              icon={Upload}
-              title="Statement Upload & Parsing"
-              description="Upload Capital One PDF bank statements. AI auto-categorizes every transaction with IRS deduction references. View, search, and re-categorize transactions. Upload via the Dashboard tab."
-            />
-          )}
+          {bizSub === "statements" && <Statements variant="business" />}
           {bizSub === "tax-strategy" && <QuarterlyPayments />}
           {bizSub === "retirement" && <RetirementContributions />}
           {bizSub === "mileage" && <MileageLogger />}
@@ -213,6 +209,7 @@ export default function FinancePage() {
         <>
           <MercuryBalances workspace="personal" />
           {personalSub === "net-worth" && <NetWorthDashboard />}
+          {personalSub === "statements" && <Statements variant="personal" />}
           {personalSub === "spending" && <SpendingAnalysis />}
           {personalSub === "debt" && <DebtPayoff />}
           {personalSub === "credit" && <CreditScoreTracker />}

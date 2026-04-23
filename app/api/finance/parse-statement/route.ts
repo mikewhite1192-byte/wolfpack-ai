@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { neon } from "@neondatabase/serverless";
-import { parseCapitalOneStatement } from "@/lib/finance/pdf-parser";
+import { parseStatementWithClaude } from "@/lib/finance/pdf-parser-claude";
 import { categorizeTransaction, detectTransactionType } from "@/lib/finance/biz-categorizer";
 
 const sql = neon(process.env.DATABASE_URL!);
 const ADMIN_EMAILS = ["info@thewolfpackco.com", "mikewhite1192@gmail.com"];
 
 // POST /api/finance/parse-statement
-// Accepts a PDF file upload, parses it, categorizes transactions, and
-// stores everything in the database.
+// Accepts a PDF file upload, parses it via Claude (handles any bank/credit card),
+// auto-creates the personal_accounts row if needed, and stores everything.
 //
 // FormData fields:
-//   file: PDF file
-//   type: "business" | "personal"
-//   account_id: UUID (required for personal, ignored for business)
+//   file: PDF file (required)
+//   type: "business" | "personal" (required)
+//   account_id: UUID (optional for personal — we'll find-or-create based on
+//     detected institution + last_four. Required if you want to force a specific account.)
 export async function POST(req: NextRequest) {
   try {
-    // Auth
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     const user = await currentUser();
@@ -29,42 +29,37 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const type = (formData.get("type") as string) || "business";
-    const accountId = formData.get("account_id") as string | null;
+    const suppliedAccountId = formData.get("account_id") as string | null;
 
     if (!file || !file.name.endsWith(".pdf")) {
       return NextResponse.json({ error: "PDF file required" }, { status: 400 });
     }
 
-    // Read the PDF file
     const buffer = Buffer.from(await file.arrayBuffer());
+    const parsed = await parseStatementWithClaude(buffer, file.name);
 
-    // Parse PDF text — dynamic import to avoid bundling issues
-    const pdfParseModule = await import("pdf-parse");
-    const pdfParse = (pdfParseModule as unknown as { default: (buf: Buffer) => Promise<{ text: string }> }).default || pdfParseModule;
-    const pdfData = await (pdfParse as (buf: Buffer) => Promise<{ text: string }>)(buffer);
-    const text = pdfData.text;
-
-    if (!text || text.trim().length < 50) {
+    if (!parsed.transactions || parsed.transactions.length === 0) {
       return NextResponse.json(
-        { error: "Could not extract text from PDF. The file may be image-based — try a text-based PDF statement." },
+        { error: "Parser found no transactions. Is this a valid statement PDF?" },
         { status: 422 },
       );
     }
 
-    // Parse the statement
-    const parsed = parseCapitalOneStatement(text);
-
     if (type === "business") {
-      // ── Business statement flow ──────────────────────────────
-      // 1. Create statement record
+      // Business flow: single biz_statements table, no per-account split.
       const stmtResult = await sql`
-        INSERT INTO biz_statements (filename, month, opening_balance, closing_balance, total_deposits, total_withdrawals, parsed_at)
-        VALUES (${file.name}, ${parsed.month}, ${parsed.openingBalance}, ${parsed.closingBalance}, ${parsed.totalDeposits}, ${parsed.totalWithdrawals}, NOW())
+        INSERT INTO biz_statements (
+          filename, month, opening_balance, closing_balance,
+          total_deposits, total_withdrawals, parsed_at
+        ) VALUES (
+          ${file.name}, ${parsed.month},
+          ${parsed.opening_balance}, ${parsed.closing_balance},
+          ${parsed.total_credits}, ${parsed.total_debits}, NOW()
+        )
         RETURNING id
       `;
-      const statementId = stmtResult[0].id;
+      const statementId = stmtResult[0].id as string;
 
-      // 2. Categorize and insert transactions
       let inserted = 0;
       for (const tx of parsed.transactions) {
         const cat = categorizeTransaction(tx.description);
@@ -86,70 +81,116 @@ export async function POST(req: NextRequest) {
         ok: true,
         type: "business",
         statementId,
+        institution: parsed.institution,
+        account_type: parsed.account_type,
+        statement_type: parsed.statement_type,
+        last_four: parsed.last_four,
         month: parsed.month,
-        openingBalance: parsed.openingBalance,
-        closingBalance: parsed.closingBalance,
-        totalDeposits: parsed.totalDeposits,
-        totalWithdrawals: parsed.totalWithdrawals,
-        transactionsImported: inserted,
-        transactionsTotal: parsed.transactions.length,
-      });
-    } else {
-      // ── Personal statement flow ──────────────────────────────
-      if (!accountId) {
-        return NextResponse.json({ error: "account_id required for personal statements" }, { status: 400 });
-      }
-
-      // 1. Create statement record
-      const stmtResult = await sql`
-        INSERT INTO personal_statements (
-          account_id, filename, month, statement_type,
-          opening_balance, closing_balance, total_credits, total_debits, parsed_at
-        ) VALUES (
-          ${accountId}, ${file.name}, ${parsed.month}, 'bank',
-          ${parsed.openingBalance}, ${parsed.closingBalance},
-          ${parsed.totalDeposits}, ${parsed.totalWithdrawals}, NOW()
-        )
-        RETURNING id
-      `;
-      const statementId = stmtResult[0].id;
-
-      // 2. Insert transactions (personal categorization is simpler for now)
-      let inserted = 0;
-      for (const tx of parsed.transactions) {
-        const txType = detectTransactionType(tx.amount, tx.description);
-        // Personal categorization uses a simplified approach
-        // Full personal-categorizer.ts will be built in Phase 6
-        const category = txType === "income" ? "Income" : "Uncategorized";
-
-        await sql`
-          INSERT INTO personal_transactions (
-            statement_id, account_id, date, description, amount, type, category
-          ) VALUES (
-            ${statementId}, ${accountId}, ${tx.date}, ${tx.description}, ${tx.amount},
-            ${txType}, ${category}
-          )
-        `;
-        inserted++;
-      }
-
-      // 3. Update account balance
-      if (parsed.closingBalance > 0) {
-        await sql`
-          UPDATE personal_accounts SET current_balance = ${parsed.closingBalance}
-          WHERE id = ${accountId}
-        `;
-      }
-
-      return NextResponse.json({
-        ok: true,
-        type: "personal",
-        statementId,
-        accountId,
-        month: parsed.month,
+        openingBalance: parsed.opening_balance,
+        closingBalance: parsed.closing_balance,
+        totalDeposits: parsed.total_credits,
+        totalWithdrawals: parsed.total_debits,
         transactionsImported: inserted,
       });
     }
+
+    // Personal flow: resolve account_id (supplied or find-or-create).
+    let accountId = suppliedAccountId;
+
+    if (!accountId) {
+      // Find-or-create by (institution, last_four). If last_four is null we
+      // fall back to (institution, type).
+      const existing = parsed.last_four
+        ? await sql`
+            SELECT id FROM personal_accounts
+            WHERE institution = ${parsed.institution}
+              AND last_four = ${parsed.last_four}
+            LIMIT 1
+          `
+        : await sql`
+            SELECT id FROM personal_accounts
+            WHERE institution = ${parsed.institution}
+              AND type = ${parsed.account_type}
+            LIMIT 1
+          `;
+
+      if (existing.length > 0) {
+        accountId = existing[0].id as string;
+      } else {
+        const name =
+          parsed.account_type === "credit_card"
+            ? `${parsed.institution} Credit Card${parsed.last_four ? ` ••${parsed.last_four}` : ""}`
+            : `${parsed.institution} ${parsed.account_type === "savings" ? "Savings" : "Checking"}${parsed.last_four ? ` ••${parsed.last_four}` : ""}`;
+        const created = await sql`
+          INSERT INTO personal_accounts (
+            name, type, institution, last_four,
+            current_balance, credit_limit, is_active
+          ) VALUES (
+            ${name}, ${parsed.account_type}, ${parsed.institution}, ${parsed.last_four},
+            ${parsed.closing_balance ?? 0}, ${parsed.credit_limit}, true
+          )
+          RETURNING id
+        `;
+        accountId = created[0].id as string;
+      }
+    }
+
+    const stmtResult = await sql`
+      INSERT INTO personal_statements (
+        account_id, filename, month, statement_type,
+        opening_balance, closing_balance,
+        total_credits, total_debits,
+        minimum_payment, parsed_at
+      ) VALUES (
+        ${accountId}, ${file.name}, ${parsed.month}, ${parsed.statement_type},
+        ${parsed.opening_balance}, ${parsed.closing_balance},
+        ${parsed.total_credits}, ${parsed.total_debits},
+        ${parsed.minimum_payment_due}, NOW()
+      )
+      RETURNING id
+    `;
+    const statementId = stmtResult[0].id as string;
+
+    let inserted = 0;
+    for (const tx of parsed.transactions) {
+      const txType = detectTransactionType(tx.amount, tx.description);
+      const category = txType === "income" ? "Income" : "Uncategorized";
+
+      await sql`
+        INSERT INTO personal_transactions (
+          statement_id, account_id, date, description, amount, type, category
+        ) VALUES (
+          ${statementId}, ${accountId}, ${tx.date}, ${tx.description}, ${tx.amount},
+          ${txType}, ${category}
+        )
+      `;
+      inserted++;
+    }
+
+    // Update account current balance from closing balance.
+    if (parsed.closing_balance != null) {
+      await sql`
+        UPDATE personal_accounts
+        SET current_balance = ${parsed.closing_balance},
+            credit_limit = COALESCE(${parsed.credit_limit}, credit_limit)
+        WHERE id = ${accountId}
+      `;
+    }
+
+    return NextResponse.json({
+      ok: true,
+      type: "personal",
+      statementId,
+      accountId,
+      institution: parsed.institution,
+      account_type: parsed.account_type,
+      statement_type: parsed.statement_type,
+      last_four: parsed.last_four,
+      month: parsed.month,
+      openingBalance: parsed.opening_balance,
+      closingBalance: parsed.closing_balance,
+      transactionsImported: inserted,
+    });
   } catch (err) {
     console.error("[finance/parse-statement]", err);
     return NextResponse.json(
