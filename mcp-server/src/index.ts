@@ -143,6 +143,76 @@ const tools: Tool[] = [
       "When was Mercury last synced for each workspace, and did it succeed? Also surfaces errors from failed runs.",
     inputSchema: { type: "object", properties: {} },
   },
+
+  // ── Write tools ─────────────────────────────────────────────────────
+  // Each write tool mutates Neon. They mirror the CRM UI actions so Claude
+  // Desktop can close the loop: read candidates, decide, move them.
+
+  {
+    name: "reclassify_to_business",
+    description:
+      "Move a single personal transaction to biz_transactions as a deductible business expense. The personal row stays intact (marked confirmed_business) and the new biz row links back via reclassified_from_personal_id.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        source: { type: "string", enum: ["legacy", "mercury"], description: "'legacy' for personal_transactions, 'mercury' for mercury_transactions where workspace='personal'." },
+        personal_id: { type: "string", description: "UUID of the personal transaction to reclassify." },
+        category: { type: "string", description: "Business category (e.g. 'Software & Subscriptions')." },
+        deduction_pct: { type: "integer", description: "0-100. Default 100." },
+        irs_reference: { type: "string", description: "Optional Schedule C reference." },
+        notes: { type: "string" },
+      },
+      required: ["source", "personal_id", "category"],
+    },
+  },
+  {
+    name: "reclassify_all_for_merchant",
+    description:
+      "Batch: find every pending_review personal transaction where the description or subscription_name matches this merchant (case-insensitive substring), and reclassify them all to business. Returns how many were moved. Use dry_run=true first to see what would be moved without writing.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        merchant: { type: "string", description: "Substring to match in description / counterparty / subscription_name." },
+        category: { type: "string" },
+        deduction_pct: { type: "integer", description: "Default 100." },
+        irs_reference: { type: "string" },
+        dry_run: { type: "boolean", description: "If true, return the matching rows without moving them." },
+      },
+      required: ["merchant", "category"],
+    },
+  },
+  {
+    name: "mark_kept_personal",
+    description:
+      "Mark a personal transaction as reviewed-and-kept-personal so it stops appearing in the business-candidate queue. Doesn't delete anything.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        source: { type: "string", enum: ["legacy", "mercury"] },
+        personal_id: { type: "string" },
+      },
+      required: ["source", "personal_id"],
+    },
+  },
+  {
+    name: "add_manual_biz_expense",
+    description:
+      "Create a biz_transactions row directly. Use for historical business spend that ran through non-Mercury cards, cash receipts, or anywhere the normal sync + reclassify flow doesn't fit.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        date: { type: "string", description: "YYYY-MM-DD" },
+        amount: { type: "number", description: "Positive number; this will be stored as a debit." },
+        description: { type: "string" },
+        category: { type: "string" },
+        subcategory: { type: "string" },
+        deduction_pct: { type: "integer", description: "Default 100." },
+        irs_reference: { type: "string" },
+        notes: { type: "string" },
+      },
+      required: ["date", "amount", "description", "category"],
+    },
+  },
 ];
 
 // ──────────────────────────────────────────────────────────────────────
@@ -587,6 +657,216 @@ async function handleCreditSummary() {
   };
 }
 
+// ── Write handlers ──────────────────────────────────────────────────────
+
+async function handleReclassifyToBusiness(args: Args) {
+  const source = toStr(args.source);
+  const personalId = toStr(args.personal_id);
+  const category = toStr(args.category);
+  const deductionPct = Math.round(toNum(args.deduction_pct) ?? 100);
+  const irsReference = toStr(args.irs_reference) ?? null;
+  const notes = toStr(args.notes) ?? null;
+
+  if (source !== "legacy" && source !== "mercury") {
+    throw new McpError(ErrorCode.InvalidParams, "source must be 'legacy' or 'mercury'");
+  }
+  if (!personalId || !category) {
+    throw new McpError(ErrorCode.InvalidParams, "personal_id and category are required");
+  }
+
+  const row =
+    source === "legacy"
+      ? (await sql`
+          SELECT id, date::text AS date, amount, description, subcategory AS orig_sub
+          FROM personal_transactions WHERE id = ${personalId}
+        `)[0]
+      : (await sql`
+          SELECT id,
+                 COALESCE(posted_at::date::text, created_at::date::text) AS date,
+                 amount,
+                 COALESCE(counterparty_name, bank_description, '') AS description,
+                 our_subcategory AS orig_sub
+          FROM mercury_transactions WHERE id = ${personalId}
+        `)[0];
+
+  if (!row) throw new McpError(ErrorCode.InvalidParams, `No personal transaction with id ${personalId}`);
+
+  const inserted = await sql`
+    INSERT INTO biz_transactions (
+      statement_id, date, description, amount, type,
+      category, subcategory, is_deductible, deduction_pct, irs_reference, notes,
+      reclassified_from_personal_id
+    ) VALUES (
+      NULL, ${row.date}, ${row.description}, ${row.amount}, 'expense',
+      ${category}, ${row.orig_sub ?? null}, true, ${deductionPct},
+      ${irsReference}, ${notes}, ${personalId}
+    )
+    RETURNING id
+  `;
+
+  if (source === "legacy") {
+    await sql`
+      UPDATE personal_transactions
+      SET business_review_status = 'confirmed_business', reviewed_at = now()
+      WHERE id = ${personalId}
+    `;
+  } else {
+    await sql`
+      UPDATE mercury_transactions
+      SET business_review_status = 'confirmed_business', reviewed_at = now()
+      WHERE id = ${personalId}
+    `;
+  }
+
+  return {
+    biz_transaction_id: inserted[0].id,
+    moved: {
+      date: row.date,
+      description: row.description,
+      amount: Number(row.amount),
+      category,
+      deduction_pct: deductionPct,
+    },
+  };
+}
+
+async function handleReclassifyAllForMerchant(args: Args) {
+  const merchant = toStr(args.merchant);
+  const category = toStr(args.category);
+  const deductionPct = Math.round(toNum(args.deduction_pct) ?? 100);
+  const irsReference = toStr(args.irs_reference) ?? null;
+  const dryRun = args.dry_run === true;
+
+  if (!merchant || !category) {
+    throw new McpError(ErrorCode.InvalidParams, "merchant and category are required");
+  }
+  const pattern = `%${merchant}%`;
+
+  // Find all matching pending_review rows across both sources.
+  const legacy = await sql`
+    SELECT 'legacy' AS source, id, date::text AS date, description, amount, subcategory AS orig_sub
+    FROM personal_transactions
+    WHERE business_review_status = 'pending_review'
+      AND (description ILIKE ${pattern} OR COALESCE(subscription_name,'') ILIKE ${pattern})
+  `;
+  const mercuryRows = await sql`
+    SELECT 'mercury' AS source, id,
+           COALESCE(posted_at::date::text, created_at::date::text) AS date,
+           COALESCE(counterparty_name, bank_description, '') AS description,
+           amount, our_subcategory AS orig_sub
+    FROM mercury_transactions
+    WHERE workspace = 'personal'
+      AND business_review_status = 'pending_review'
+      AND (COALESCE(counterparty_name,'') ILIKE ${pattern}
+           OR COALESCE(bank_description,'') ILIKE ${pattern}
+           OR COALESCE(subscription_name,'') ILIKE ${pattern})
+  `;
+  const matches = [...legacy, ...mercuryRows];
+
+  if (dryRun) {
+    return {
+      dry_run: true,
+      would_move: matches.length,
+      total_amount: matches.reduce((s, r) => s + Math.abs(Number(r.amount)), 0),
+      matches: matches.map((r) => ({
+        source: r.source,
+        id: r.id,
+        date: r.date,
+        description: r.description,
+        amount: Number(r.amount),
+      })),
+    };
+  }
+
+  let moved = 0;
+  for (const r of matches) {
+    await sql`
+      INSERT INTO biz_transactions (
+        statement_id, date, description, amount, type,
+        category, subcategory, is_deductible, deduction_pct, irs_reference,
+        reclassified_from_personal_id
+      ) VALUES (
+        NULL, ${r.date}, ${r.description}, ${r.amount}, 'expense',
+        ${category}, ${r.orig_sub ?? null}, true, ${deductionPct},
+        ${irsReference}, ${r.id}
+      )
+    `;
+    if (r.source === "legacy") {
+      await sql`
+        UPDATE personal_transactions
+        SET business_review_status = 'confirmed_business', reviewed_at = now()
+        WHERE id = ${r.id}
+      `;
+    } else {
+      await sql`
+        UPDATE mercury_transactions
+        SET business_review_status = 'confirmed_business', reviewed_at = now()
+        WHERE id = ${r.id}
+      `;
+    }
+    moved += 1;
+  }
+
+  return { moved, category, deduction_pct: deductionPct };
+}
+
+async function handleMarkKeptPersonal(args: Args) {
+  const source = toStr(args.source);
+  const personalId = toStr(args.personal_id);
+  if (source !== "legacy" && source !== "mercury") {
+    throw new McpError(ErrorCode.InvalidParams, "source must be 'legacy' or 'mercury'");
+  }
+  if (!personalId) throw new McpError(ErrorCode.InvalidParams, "personal_id required");
+
+  const result =
+    source === "legacy"
+      ? await sql`
+          UPDATE personal_transactions
+          SET business_review_status = 'kept_personal', reviewed_at = now()
+          WHERE id = ${personalId}
+          RETURNING id
+        `
+      : await sql`
+          UPDATE mercury_transactions
+          SET business_review_status = 'kept_personal', reviewed_at = now()
+          WHERE id = ${personalId} AND workspace = 'personal'
+          RETURNING id
+        `;
+
+  if (result.length === 0) throw new McpError(ErrorCode.InvalidParams, `No personal transaction with id ${personalId}`);
+  return { ok: true, id: personalId };
+}
+
+async function handleAddManualBizExpense(args: Args) {
+  const date = toStr(args.date);
+  const amount = toNum(args.amount);
+  const description = toStr(args.description);
+  const category = toStr(args.category);
+  const subcategory = toStr(args.subcategory) ?? null;
+  const deductionPct = Math.round(toNum(args.deduction_pct) ?? 100);
+  const irsReference = toStr(args.irs_reference) ?? null;
+  const notes = toStr(args.notes) ?? null;
+
+  if (!date || !Number.isFinite(amount) || !description || !category) {
+    throw new McpError(ErrorCode.InvalidParams, "date, amount, description, category required");
+  }
+
+  // Manual biz expenses are debits. Normalize to negative.
+  const signed = amount! > 0 ? -Math.abs(amount!) : amount!;
+
+  const inserted = await sql`
+    INSERT INTO biz_transactions (
+      statement_id, date, description, amount, type,
+      category, subcategory, is_deductible, deduction_pct, irs_reference, notes
+    ) VALUES (
+      NULL, ${date}, ${description}, ${signed}, 'expense',
+      ${category}, ${subcategory}, true, ${deductionPct}, ${irsReference}, ${notes}
+    )
+    RETURNING id
+  `;
+  return { id: inserted[0].id, amount: signed };
+}
+
 async function handleSyncStatus() {
   const rows = await sql`
     SELECT workspace,
@@ -659,6 +939,18 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         break;
       case "get_sync_status":
         result = await handleSyncStatus();
+        break;
+      case "reclassify_to_business":
+        result = await handleReclassifyToBusiness(args);
+        break;
+      case "reclassify_all_for_merchant":
+        result = await handleReclassifyAllForMerchant(args);
+        break;
+      case "mark_kept_personal":
+        result = await handleMarkKeptPersonal(args);
+        break;
+      case "add_manual_biz_expense":
+        result = await handleAddManualBizExpense(args);
         break;
       default:
         throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
