@@ -25,7 +25,7 @@ export function getGbpAuthUrl(workspaceId: string) {
     response_type: "code",
     scope: scopes.join(" "),
     access_type: "offline",
-    prompt: "consent",
+    prompt: "select_account consent",
     state: workspaceId,
   });
 
