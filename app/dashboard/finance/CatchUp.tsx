@@ -37,23 +37,25 @@ export default function CatchUp() {
     setUploadMsg("");
 
     try {
-      // Step 1: Parse the PDF to extract transactions
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "personal");
+      // Step 1: Parse the PDF on the server (pdf-parse can't run in the browser)
+      const parseForm = new FormData();
+      parseForm.append("file", file);
 
-      // Use a lightweight parse — we don't need to save to personal_transactions,
-      // just extract the text and parse transactions
-      const pdfParseModule = await import("pdf-parse");
-      const pdfParse = (pdfParseModule as unknown as { default: (buf: Buffer) => Promise<{ text: string }> }).default || pdfParseModule;
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const pdfData = await (pdfParse as (buf: Buffer) => Promise<{ text: string }>)(buffer);
+      const parseRes = await fetch("/api/finance/parse-only", {
+        method: "POST",
+        body: parseForm,
+      });
 
-      // Import the parser
-      const { parseCapitalOneStatement } = await import("@/lib/finance/pdf-parser");
-      const parsed = parseCapitalOneStatement(pdfData.text);
+      if (!parseRes.ok) {
+        const err = await parseRes.json().catch(() => ({ error: "Parse failed" }));
+        throw new Error(err.error || "Parse failed");
+      }
 
-      if (parsed.transactions.length === 0) {
+      const parsed = await parseRes.json() as {
+        transactions: Array<{ date: string; description: string; amount: number }>;
+      };
+
+      if (!parsed.transactions || parsed.transactions.length === 0) {
         setUploadMsg("No transactions found in this PDF. Try a different statement.");
         setUploading(false);
         return;
@@ -70,11 +72,7 @@ export default function CatchUp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "scan",
-          transactions: parsed.transactions.map((tx) => ({
-            date: tx.date,
-            description: tx.description,
-            amount: tx.amount,
-          })),
+          transactions: parsed.transactions,
         }),
       });
 
