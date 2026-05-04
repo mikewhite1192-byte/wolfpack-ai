@@ -13,13 +13,15 @@ export async function GET(req: Request) {
     const workspaceId = searchParams.get("state");
 
     if (error || !code) {
-      return NextResponse.redirect(new URL("/dashboard/settings?gbp=error", req.url));
+      const reason = encodeURIComponent(error || "no_code");
+      return NextResponse.redirect(new URL(`/dashboard/settings?gbp=error&reason=${reason}`, req.url));
     }
 
     const tokens = await exchangeGbpCode(code);
 
     if (!tokens.access_token) {
-      return NextResponse.redirect(new URL("/dashboard/settings?gbp=error", req.url));
+      const reason = encodeURIComponent(`token_exchange:${tokens.error || "no_access_token"}:${tokens.error_description || ""}`);
+      return NextResponse.redirect(new URL(`/dashboard/settings?gbp=error&reason=${reason}`, req.url));
     }
 
     // Get user email
@@ -64,6 +66,8 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/dashboard/settings?gbp=connected", req.url));
   } catch (err) {
     console.error("[gbp-callback] Error:", err);
-    return NextResponse.redirect(new URL("/dashboard/settings?gbp=error", req.url));
+    const msg = err instanceof Error ? err.message : String(err);
+    const reason = encodeURIComponent(msg.slice(0, 300));
+    return NextResponse.redirect(new URL(`/dashboard/settings?gbp=error&reason=${reason}`, req.url));
   }
 }
