@@ -140,7 +140,7 @@ STAGE OPTIONS: reply_1, reply_2, reply_3, price_objection, busy_objection, not_i
 Use agreed_to_call ONLY if they explicitly said yes to a call or asked about scheduling.`;
 
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-6",
     max_tokens: 500,
     system: systemPrompt,
     messages: [{ role: "user", content: "Generate the reply." }],

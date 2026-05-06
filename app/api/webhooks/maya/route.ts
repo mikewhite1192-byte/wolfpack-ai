@@ -157,7 +157,7 @@ RULES:
     }
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-6",
       max_tokens: 120,
       temperature: 0.8,
       system: systemPrompt,
@@ -341,7 +341,7 @@ RULES:
 Write ONLY the text message. Nothing else.`;
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-6",
       max_tokens: 120,
       temperature: 0.8,
       system: systemPrompt,
@@ -497,7 +497,7 @@ RULES:
 Write ONLY the text message. Nothing else.`;
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-6",
       max_tokens: 120,
       temperature: 0.8,
       system: systemPrompt,

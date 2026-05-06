@@ -123,32 +123,6 @@ export default function TradeChatWidget({ trade, accentColor }: { trade: Trade; 
             </div>
           </div>
 
-          {/* Tabs */}
-          <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <button
-              onClick={() => setTab("chat")}
-              style={{
-                flex: 1, padding: "10px 0", background: "none", border: "none",
-                color: tab === "chat" ? accentColor : "rgba(232,230,227,0.4)",
-                fontSize: 12, fontWeight: 700, cursor: "pointer",
-                borderBottom: tab === "chat" ? `2px solid ${accentColor}` : "2px solid transparent",
-              }}
-            >
-              Chat Now
-            </button>
-            <button
-              onClick={() => setTab("text")}
-              style={{
-                flex: 1, padding: "10px 0", background: "none", border: "none",
-                color: tab === "text" ? accentColor : "rgba(232,230,227,0.4)",
-                fontSize: 12, fontWeight: 700, cursor: "pointer",
-                borderBottom: tab === "text" ? `2px solid ${accentColor}` : "2px solid transparent",
-              }}
-            >
-              Text Me Instead
-            </button>
-          </div>
-
           {tab === "chat" ? (
             <>
               {/* Messages */}

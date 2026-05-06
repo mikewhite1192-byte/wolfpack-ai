@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     const currentQuestion = ONBOARDING_QUESTIONS[currentStep];
 
     const extractResponse = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 300,
       system: `You are helping set up an AI sales agent. The user was asked: "${currentQuestion.question}"
 Their response is below. Extract the relevant information and return JSON:

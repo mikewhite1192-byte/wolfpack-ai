@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     ];
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-6",
       max_tokens: 200,
       system: `You are Maya, a helpful assistant on The Wolf Pack Co website. You answer questions about the digital marketing agency.
 

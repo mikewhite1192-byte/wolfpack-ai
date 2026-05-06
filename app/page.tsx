@@ -273,11 +273,8 @@ function HeroSection({ setDemoOpen }: { setDemoOpen: (v: boolean) => void }) {
             texts. No A2P registration. No carrier filtering. <span className="text-white/90">Your leads actually hear from you first.</span>
           </p>
           <div className="flex gap-3.5 flex-wrap animate-fade-up animate-fade-up-d5">
-            <button onClick={() => setDemoOpen(true)} className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(232,106,42,0.35)] transition-all duration-300 animate-cta-pulse">
-              See It Work On You →
-            </button>
-            <Link href="/book-demo" className="inline-flex items-center gap-2 px-7 py-4 bg-transparent border border-white/30 text-white rounded-xl text-sm font-medium no-underline backdrop-blur-sm hover:border-white/50 transition-all duration-300 cursor-pointer">
-              Book a Demo
+            <Link href="/book-demo" className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold no-underline cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(232,106,42,0.35)] transition-all duration-300 animate-cta-pulse">
+              Book a Demo →
             </Link>
           </div>
         </div>
@@ -678,7 +675,6 @@ export default function Home() {
           <a href="#how" className="text-sm text-white/40 no-underline hover:text-white transition-colors font-medium tracking-wider">How It Works</a>
           <a href="#pricing" className="text-sm text-white/40 no-underline hover:text-white transition-colors font-medium tracking-wider">Pricing</a>
           <a href="#faq" className="text-sm text-white/40 no-underline hover:text-white transition-colors font-medium tracking-wider">FAQ</a>
-          <a href="#" onClick={e => { e.preventDefault(); setDemoOpen(true); }} className="text-sm text-[#E86A2A] no-underline hover:text-[#ff7b3a] transition-colors font-medium">Live Demo</a>
           <Link href="/sign-in" className="text-sm text-white/40 no-underline hover:text-white transition-colors">Sign In</Link>
           <Link href="/sign-up" className="px-5 py-2 bg-[#E86A2A] text-white text-xs font-bold rounded-lg no-underline hover:bg-[#ff7b3a] hover:-translate-y-0.5 transition-all duration-200 shadow-[0_4px_20px_rgba(232,106,42,0.3)]">
             Get Started
@@ -873,19 +869,6 @@ export default function Home() {
         </div>
       </ScrollReveal>
 
-      {/* ── Demo CTA ── */}
-      <ScrollReveal>
-        <div className="py-20 px-5 sm:px-10" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0d0b09 40%, #0d0b09 60%, #0a0a0a 100%)" }}>
-          <div className="max-w-[640px] mx-auto text-center p-14 rounded-2xl border border-[#E86A2A]/25 shadow-[0_0_60px_rgba(232,106,42,0.06)]" style={{ background: "linear-gradient(180deg, rgba(232,106,42,0.04), rgba(232,106,42,0.01))" }}>
-            <h2 className="font-display text-4xl mb-3">SEE IT <span className="text-[#E86A2A]">WORK ON YOU</span></h2>
-            <p className="text-[15px] text-white/40 mb-7 leading-relaxed">Enter your number. Wolf Pack AI texts you back in 3 seconds, qualifies you, and books an appointment on your calendar.</p>
-            <button onClick={() => setDemoOpen(true)} className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 transition-all duration-300 animate-cta-pulse">
-              Text Me Now →
-            </button>
-          </div>
-        </div>
-      </ScrollReveal>
-
       {/* ── Pricing ── */}
       <ScrollReveal>
         <div className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0e0e0e 20%, #111 50%, #0e0e0e 80%, #0a0a0a 100%)" }}>
@@ -911,7 +894,7 @@ export default function Home() {
                     </button>
                   </div>
                   <div className="flex-1 min-w-0 md:min-w-[240px] grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 content-start">
-                    {["AI Appointment Setter", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Self-Learning AI", "CSV Import", "Analytics"].map(f => (
+                    {["AI Appointment Setter", "AI Voice Agent", "iMessage (Blue Texts)", "No A2P Registration", "No Carrier Filtering", "Unlimited Conversations", "Pipeline CRM", "Auto Follow-ups", "Gmail Integration", "Calendar + Booking", "Call Recording", "Self-Learning AI", "CSV Import", "Analytics"].map(f => (
                       <div key={f} className="text-[13px] text-white/50 py-1.5 flex items-center gap-2">
                         <span className="text-emerald-400 text-[11px] font-bold">✓</span>{f}
                       </div>
@@ -972,11 +955,8 @@ export default function Home() {
         </h2>
         <p className="text-[15px] text-white/35 mb-8 relative z-[1]">Your competitors are texting your leads right now.</p>
         <div className="flex gap-3.5 justify-center flex-wrap relative z-[1]">
-          <button onClick={() => setDemoOpen(true)} className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold border-none cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 transition-all duration-300 animate-cta-pulse">
-            See It Work On You →
-          </button>
-          <Link href="/book-demo" className="inline-flex items-center gap-2 px-7 py-4 bg-transparent border border-white/15 text-white/50 rounded-xl text-sm font-medium no-underline hover:border-white/30 hover:text-white transition-all duration-300 cursor-pointer">
-            Book a Demo
+          <Link href="/book-demo" className="inline-flex items-center gap-2 px-9 py-4 bg-[#E86A2A] text-white rounded-xl text-[15px] font-bold no-underline cursor-pointer shadow-[0_4px_20px_rgba(232,106,42,0.3)] hover:bg-[#ff7b3a] hover:-translate-y-0.5 transition-all duration-300 animate-cta-pulse">
+            Book a Demo →
           </Link>
         </div>
       </div>
@@ -988,9 +968,9 @@ export default function Home() {
       <footer className="border-t border-white/[0.04] px-5 sm:px-10 pt-20 pb-10">
         <div className="text-center mb-16">
           <div className="font-display text-[42px] tracking-wide text-white/60 mb-4">YOUR COMPETITION ISN&apos;T WAITING.</div>
-          <button onClick={() => setDemoOpen(true)} className="px-10 py-4 bg-[#E86A2A] text-white rounded-xl text-base font-bold border-none cursor-pointer hover:bg-[#ff7b3a] transition-all duration-200 shadow-[0_4px_20px_rgba(232,106,42,0.3)]">
-            See It Work On You →
-          </button>
+          <Link href="/book-demo" className="inline-block px-10 py-4 bg-[#E86A2A] text-white rounded-xl text-base font-bold no-underline cursor-pointer hover:bg-[#ff7b3a] transition-all duration-200 shadow-[0_4px_20px_rgba(232,106,42,0.3)]">
+            Book a Demo →
+          </Link>
         </div>
         <div className="font-display text-center leading-none mb-8 text-white/[0.04] select-none" style={{ fontSize: "clamp(32px, 10vw, 140px)", letterSpacing: "clamp(2px, 0.5vw, 6px)" }}>
           THE <span className="text-[#E86A2A]/[0.08]">WOLF</span> PACK

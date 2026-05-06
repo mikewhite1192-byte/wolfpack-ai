@@ -546,7 +546,7 @@ STYLE:
         if (clerkRes.ok) {
           const clerkUser = await clerkRes.json();
           const email = clerkUser.email_addresses?.[0]?.email_address?.toLowerCase() || "";
-          if (SONNET_EMAILS.includes(email)) aiModel = "claude-sonnet-4-20250514";
+          if (SONNET_EMAILS.includes(email)) aiModel = "claude-sonnet-4-6";
         }
       }
     } catch {

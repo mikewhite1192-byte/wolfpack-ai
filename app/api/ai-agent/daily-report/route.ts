@@ -132,7 +132,7 @@ Be direct, use specific names and numbers. No fluff.`
 Be direct, use specific names and numbers. No fluff.`;
 
     const response = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 800,
       system: `You are the AI sales assistant for ${workspace.name || "this business"}. You have access to real-time CRM data. Generate a concise, actionable daily report. Never use dashes in your responses. Use periods or commas instead.\n\n${crmContext}`,
       messages: [{ role: "user", content: prompt }],

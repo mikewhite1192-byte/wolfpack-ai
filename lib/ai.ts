@@ -10,7 +10,7 @@ interface ConversationContext {
 
 export async function generateSMSReply(ctx: ConversationContext): Promise<string> {
   const response = await anthropic.messages.create({
-    model: "claude-3-haiku-20240307",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 300,
     system: `You are a friendly, helpful AI sales assistant texting on behalf of ${ctx.businessName}. You're having a real SMS conversation with ${ctx.contactName}.
 
