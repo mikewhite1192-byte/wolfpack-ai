@@ -215,3 +215,65 @@ export async function validateEmails(emails: string[]): Promise<Map<string, Vali
 
   return results;
 }
+
+// ---------------------------------------------------------------------------
+// Bulk cleaner for the Email Cleaner tab (CSV upload).
+//
+// Runs syntax + dead/disposable-domain + MX checks ONLY (no SMTP). SMTP
+// mailbox verification needs outbound port 25, which serverless hosts (Vercel)
+// block — so we skip it here to stay fast and reliable in a request handler.
+// This still removes the worst deliverability killers: malformed addresses,
+// known-dead consumer domains, and domains with no mail server at all. The
+// scraper's full validateEmails() (with SMTP) still runs where port 25 is open.
+// ---------------------------------------------------------------------------
+
+export interface CleanedEmail {
+  email: string;
+  valid: boolean;
+  reason: string;
+}
+
+// Pull an address out of a raw cell value (handles "mailto:", <angle brackets>,
+// and stray surrounding punctuation). Returns "" if the cell isn't an email.
+function extractAddress(raw: string): string {
+  const s = (raw || "").trim().replace(/^mailto:/i, "").replace(/[<>]/g, "").trim().toLowerCase();
+  return s;
+}
+
+export async function cleanEmails(rawEmails: string[]): Promise<CleanedEmail[]> {
+  // Normalize + dedupe (case-insensitive), preserving first appearance.
+  const seen = new Set<string>();
+  const list: string[] = [];
+  for (const raw of rawEmails) {
+    const t = extractAddress(raw);
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    list.push(t);
+  }
+
+  const mxCache = new Map<string, string | null>();
+
+  async function classify(email: string): Promise<CleanedEmail> {
+    if (/%[0-9a-fA-F]{2}/.test(email)) return { email, valid: false, reason: "URL-encoded characters" };
+    if (/\s/.test(email)) return { email, valid: false, reason: "Contains whitespace" };
+    if (!isValidSyntax(email)) return { email, valid: false, reason: "Invalid format" };
+
+    const domain = email.split("@")[1];
+    if (DEAD_DOMAINS.has(domain)) return { email, valid: false, reason: `Dead domain (${domain})` };
+    if (DISPOSABLE_DOMAINS.has(domain)) return { email, valid: false, reason: `Disposable domain (${domain})` };
+
+    if (!mxCache.has(domain)) mxCache.set(domain, await getMxHost(domain));
+    if (!mxCache.get(domain)) return { email, valid: false, reason: `No mail server for ${domain}` };
+
+    return { email, valid: true, reason: "Valid (syntax + MX)" };
+  }
+
+  // Bounded concurrency so a big list doesn't fan out thousands of DNS lookups.
+  const CONCURRENCY = 20;
+  const results: CleanedEmail[] = [];
+  for (let i = 0; i < list.length; i += CONCURRENCY) {
+    const batch = list.slice(i, i + CONCURRENCY);
+    results.push(...(await Promise.all(batch.map(classify))));
+  }
+  return results;
+}

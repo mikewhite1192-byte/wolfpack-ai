@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import AiAssistant from "./components/AiAssistant";
-import { LayoutDashboard, Hexagon, MessageSquare, Mail, Calendar, BarChart3, Users, MapPin, Settings, Send, Phone, PhoneOff, Delete, X, DollarSign, Heart } from "lucide-react";
+import { LayoutDashboard, Hexagon, MessageSquare, Mail, MailCheck, Calendar, BarChart3, Users, MapPin, Settings, Send, Phone, PhoneOff, Delete, X, DollarSign, Heart } from "lucide-react";
 
 const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -19,6 +19,7 @@ const NAV = [
 
 const ADMIN_NAV = [
   { label: "Outreach", href: "/dashboard/outreach", icon: Send },
+  { label: "Email Cleaner", href: "/dashboard/email-cleaner", icon: MailCheck },
   { label: "AI Caller", href: "/dashboard/caller", icon: Phone },
   { label: "Finance", href: "/dashboard/finance", icon: DollarSign },
   { label: "Life", href: "/dashboard/life", icon: Heart },
